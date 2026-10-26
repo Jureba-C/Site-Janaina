@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type PointerEvent as EventoPonteiro } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as EventoPonteiro } from "react";
 import { dinheiro, escolhasPadrao, linkWhatsApp, parcelas, precoNoPix, precoUnitario, regras, resumoDasEscolhas, validarEscolhas } from "../compartilhado";
 import { CartaoProduto } from "../componentes/CartaoProduto";
 import { Foto, urlDaFoto as urlDaFotoDoProduto } from "../componentes/Foto";
@@ -9,6 +9,9 @@ import { CalculoDeFrete } from "../componentes/CalculoDeFrete";
 import { carrinho } from "../estado/carrinho";
 import { enviarFoto, urlDaFotoEnviada, lembrarFotoLocal } from "../estado/fotos";
 import type { Escolhas, FotoEnviada, IdCampo, Loja, PaginaProduto, Personalizacao, Produto as TipoProduto } from "../tipos";
+
+const Previa3D = lazy(() => import("../componentes/Previa3D"));
+const MOLDES_3D = ["caneca", "xicara", "garrafa", "copo"];
 
 const ICONES_DOS_EXTRAS: Record<string, NomeIcone> = {
   "Tampa de bambu para caneca": "tampa",
@@ -35,6 +38,7 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
   aoTocarFoto?: (indice: number, evento: EventoPonteiro<SVGElement>) => void;
 }) {
   const [vista, setVista] = useState(-1);
+  const [modo3d, setModo3d] = useState(false);
   const medir = useMedirTexto();
   const config = produto.config;
   const temPrevia = config.molde !== "nenhum" && (config.personalizacao.ativa || produto.fotos.length === 0);
@@ -42,10 +46,15 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
   const indiceFoto = vista >= 0 ? vista : 0;
   const temVerso = config.personalizacao.ativa && config.personalizacao.verso;
   const descricao = descricaoDaPrevia(produto.nome, config, escolhas, lado, aquecida);
+  const pode3d = MOLDES_3D.includes(config.molde) && config.personalizacao.ativa;
   return (
     <div className="galeria">
       <div className={`galeria-palco${mostrandoFoto ? " com-foto" : ""}`}>
-        {mostrandoFoto && produto.fotos[indiceFoto] ? (
+        {modo3d && !mostrandoFoto ? (
+          <Suspense fallback={<p className="previa-3d-aviso">Preparando o 3D…</p>}>
+            <Previa3D config={config} escolhas={escolhas} aquecida={aquecida} rotulo={`${descricao}, em 3D`} fechar={() => setModo3d(false)} />
+          </Suspense>
+        ) : mostrandoFoto && produto.fotos[indiceFoto] ? (
           <Foto src={produto.fotos[indiceFoto]} alt={`${produto.nome}, foto ${indiceFoto + 1}`} larguras={[600, 900]} sizes="(max-width: 900px) 100vw, 620px" largura={620} altura={620} className="galeria-foto" prioridade />
         ) : (
           <>
@@ -62,6 +71,11 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
               <PecaSvg config={config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} medir={medir} fotoSelecionada={aoTocarFoto ? fotoSelecionada : undefined} aoTocarFoto={aoTocarFoto} urlDaFotoDoMolde={config.moldeFoto?.foto ? urlDaFotoDoProduto(config.moldeFoto.foto, 900) : null} />
             </svg>
             <p className="visualmente-oculto" aria-live="polite">{descricao}</p>
+            {pode3d ? (
+              <button type="button" className="botao botao-escuro galeria-3d" onClick={() => setModo3d(true)}>
+                <Icone nome="girar" tamanho={18} />Ver em 3D
+              </button>
+            ) : null}
             {config.magica ? (
               <button type="button" className="botao botao-escuro galeria-calor" aria-pressed={aquecida} onClick={() => setAquecida(!aquecida)}>
                 <Icone nome="calor" tamanho={18} />{aquecida ? "Ver a caneca fria" : "Ver depois de aquecer"}

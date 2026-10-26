@@ -1,12 +1,24 @@
 {
+  "src/componentes/Previa3D.tsx": {
+    "file": "parte-Cnv2RFRG.js",
+    "name": "Previa3D",
+    "src": "src/componentes/Previa3D.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "src/entrada-cliente.tsx"
+    ]
+  },
   "src/entrada-cliente.tsx": {
-    "file": "loja-vGZFhfu-.js",
+    "file": "loja-3bHbmaEl.js",
     "name": "entrada-cliente",
     "src": "src/entrada-cliente.tsx",
-    "isEntry": true
+    "isEntry": true,
+    "dynamicImports": [
+      "src/componentes/Previa3D.tsx"
+    ]
   },
   "style.css": {
-    "file": "style-B_5BuDfS.css",
+    "file": "style-Cd3VYLI7.css",
     "src": "style.css"
   }
 }

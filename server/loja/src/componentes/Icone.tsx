@@ -34,6 +34,7 @@ const CAMINHOS = {
   calor: "M12 3c2 3-2 4 0 7s-2 4 0 7M7 6c1.5 2.5-1.5 3.5 0 6M17 6c1.5 2.5-1.5 3.5 0 6M5 21h14",
   filtro: "M4 6h16M7 12h10M10 18h4",
   topo: "M6 15l6-6 6 6",
+  girar: "M4 12a8 8 0 0 1 13.7-5.7L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.7L4 15.5M4 20v-4.5h4.5",
 } as const;
 
 export type NomeIcone = keyof typeof CAMINHOS;

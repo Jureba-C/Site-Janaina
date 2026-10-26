@@ -41,10 +41,12 @@
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^6.1.2",
     "acorn": "^8.19.0",
     "oxc-parser": "^0.155.0",
     "playwright": "^1.64.1",
+    "three": "^0.186.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.5"
   }
