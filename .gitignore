@@ -14,3 +14,4 @@ server/*.db-shm
 server/img/products/
 
 docs/security-audit/
+.fuse_hidden*

@@ -28,30 +28,6 @@
     return round2((Number(amount) || 0) - pixDiscountFor(amount));
   }
 
-  const PROMO_LEVE4_GRUPO = 4;
-
-  function promoLeve4Pague3Breakdown(items) {
-    const unidades = [];
-    (Array.isArray(items) ? items : []).forEach(item => {
-      const qty = Math.max(0, Number(item.qty) || 0);
-      const price = Number(item.price) || 0;
-      for (let k = 0; k < qty; k++) unidades.push({ id: item.id, price });
-    });
-    unidades.sort((a, b) => b.price - a.price);
-    let discount = 0;
-    const freeQtyById = new Map();
-    for (let i = PROMO_LEVE4_GRUPO - 1; i < unidades.length; i += PROMO_LEVE4_GRUPO) {
-      const unidade = unidades[i];
-      discount += unidade.price;
-      freeQtyById.set(unidade.id, (freeQtyById.get(unidade.id) || 0) + 1);
-    }
-    return { discount: round2(discount), freeQtyById };
-  }
-
-  function promoLeve4Pague3For(items) {
-    return promoLeve4Pague3Breakdown(items).discount;
-  }
-
   function installmentValueFor(amount, count) {
     const total = Number(amount) || 0;
     const rate = PAYMENT_RULES.monthlyInterestRate;
@@ -105,8 +81,6 @@
     formatMoney,
     pixDiscountFor,
     pixPriceFor,
-    promoLeve4Pague3Breakdown,
-    promoLeve4Pague3For,
     installmentValueFor,
     installmentCountFor,
     installmentPlanFor,

@@ -659,8 +659,6 @@
   const cartDiscountRow = document.getElementById("cartDiscountRow");
   const cartCouponCodeEl = document.getElementById("cartCouponCode");
   const cartDiscountEl = document.getElementById("cartDiscount");
-  const cartPromoRow = document.getElementById("cartPromoRow");
-  const cartPromoDiscountEl = document.getElementById("cartPromoDiscount");
   const cartPixRow = document.getElementById("cartPixRow");
   const cartPixPercentEl = document.getElementById("cartPixPercent");
   const cartPixDiscountEl = document.getElementById("cartPixDiscount");
@@ -699,15 +697,6 @@
     return coupon ? Math.round(subtotal * coupon.percentOff / 100 * 100) / 100 : 0;
   }
 
-  function currentPromoDiscount(){
-    const couponFactor = coupon ? (1 - coupon.percentOff / 100) : 1;
-    const itensComCupom = cart.map(i => {
-      const p = findProduct(i.id);
-      return p ? { qty: i.qty, price: pricing.round2(p.price * couponFactor) } : null;
-    }).filter(Boolean);
-    return pricing.promoLeve4Pague3For(itensComCupom);
-  }
-
   let paymentMethod = "pix";
 
   function updateTotals(){
@@ -726,10 +715,6 @@
     const afterCoupon = pricing.round2(subtotal - discount);
     const pixDiscount = pricing.pixDiscountFor(afterCoupon);
     const shippingPrice = shipping ? shipping.price : 0;
-    const promoDiscount = currentPromoDiscount();
-
-    cartPromoRow.classList.toggle("d-none", promoDiscount <= 0);
-    cartPromoDiscountEl.textContent = "-" + formatMoney(promoDiscount);
 
     pmPixNoteEl.textContent = pixDiscount > 0
       ? `${pricing.PAYMENT_RULES.pixDiscountPercent}% de desconto`
@@ -743,7 +728,7 @@
     cartPixPercentEl.textContent = `(${pricing.PAYMENT_RULES.pixDiscountPercent}%)`;
     cartPixDiscountEl.textContent = "-" + formatMoney(pixDiscount);
 
-    const total = pricing.round2(afterCoupon - (isPix ? pixDiscount : 0) - promoDiscount + shippingPrice);
+    const total = pricing.round2(afterCoupon - (isPix ? pixDiscount : 0) + shippingPrice);
     cartShippingRow.classList.toggle("d-none", !shipping);
     if(shipping) cartShippingPriceEl.textContent = formatMoney(shipping.price);
     cartTotalEl.textContent = formatMoney(total);

@@ -72,3 +72,15 @@ acumuladas"), com a data.
   servidor e testes).
 - 2026-10-26 — Pode começar a parte de funcionamento e o catálogo antes da
   identidade visual ser aprovada.
+- 2026-10-26 — O visual segue o **design feito no Claude Design** ("Arte
+  Canecas — Loja", https://claude.ai/artifact/WffqjbpiTy843A5wjSuR6b),
+  resumido em `server/docs/design.md`: estrutura da Aqui Tem Caneca com a
+  identidade da cliente. Mudou o canvas, vale o canvas.
+- 2026-10-26 — Pode pedir para instalar qualquer skill ou ferramenta que
+  ajude. Meta: "o melhor site que a cliente vai ver na vida dela" — moderno,
+  rápido, sem cara de IA (nada de degradê genérico, emoji, texto genérico,
+  número ou avaliação inventada) e tudo funcionando.
+- 2026-10-26 — A prévia da arte vale para **qualquer tipo de produto**
+  (caneca, xícara, garrafa, copo, azulejo e o que mais ela vender), não só
+  caneca.
+- 2026-10-26 — O prompt completo para construir o site está em `PROMPT.md`.

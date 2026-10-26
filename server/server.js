@@ -1248,37 +1248,17 @@ async function buildCheckoutDraft(req){
   subtotal = pricing.round2(subtotal);
   const discount = pricing.round2(couponDiscount);
 
-  const { discount: promoDiscountRaw, freeQtyById } = pricing.promoLeve4Pague3Breakdown(
-    itensComCupom.map(({ id, qty, afterCoupon }) => ({ id, qty, price: afterCoupon }))
-  );
-  const promoDiscount = pricing.round2(promoDiscountRaw);
-
   let pixDiscount = 0;
-  const preferenceItems = itensComCupom.flatMap(({ id, qty, product, afterCoupon }) => {
-    const freeQty = freeQtyById.get(id) || 0;
-    const paidQty = qty - freeQty;
-    const linhas = [];
-    if(paidQty > 0){
-      const unitPrice = paymentMethod === "pix" ? pricing.pixPriceFor(afterCoupon) : afterCoupon;
-      pixDiscount += (afterCoupon - unitPrice) * paidQty;
-      linhas.push({
-        id: String(id),
-        title: product.name,
-        quantity: paidQty,
-        unit_price: unitPrice,
-        currency_id: "BRL",
-      });
-    }
-    if(freeQty > 0){
-      linhas.push({
-        id: String(id),
-        title: `${product.name} · grátis (Leve 4, pague 3)`,
-        quantity: freeQty,
-        unit_price: 0,
-        currency_id: "BRL",
-      });
-    }
-    return linhas;
+  const preferenceItems = itensComCupom.map(({ id, qty, product, afterCoupon }) => {
+    const unitPrice = paymentMethod === "pix" ? pricing.pixPriceFor(afterCoupon) : afterCoupon;
+    pixDiscount += (afterCoupon - unitPrice) * qty;
+    return {
+      id: String(id),
+      title: product.name,
+      quantity: qty,
+      unit_price: unitPrice,
+      currency_id: "BRL",
+    };
   });
   pixDiscount = pricing.round2(pixDiscount);
 
@@ -1297,8 +1277,8 @@ async function buildCheckoutDraft(req){
 
   return {
     cep, address, paymentMethod, validatedItems, preferenceItems,
-    coupon, customerPhone, chosenShipping, subtotal, discount, pixDiscount, promoDiscount,
-    total: pricing.round2(subtotal - discount - pixDiscount - promoDiscount + chosenShipping.price),
+    coupon, customerPhone, chosenShipping, subtotal, discount, pixDiscount,
+    total: pricing.round2(subtotal - discount - pixDiscount + chosenShipping.price),
   };
 }
 
@@ -1318,7 +1298,6 @@ function orderRowFrom(draft, orderRef, user){
     subtotal: draft.subtotal,
     discount: draft.discount,
     pixDiscount: draft.pixDiscount,
-    promoDiscount: draft.promoDiscount,
     paymentMethod: draft.paymentMethod,
     shippingPrice: draft.chosenShipping.price,
     total: draft.total,
@@ -2075,7 +2054,6 @@ async function runApprovedOrderSideEffects(orderRow, info){
       subtotal: orderRow.subtotal,
       discount: orderRow.discount,
       pixDiscount: orderRow.pix_discount,
-      promoDiscount: orderRow.promo_discount,
       shippingPrice: orderRow.shipping_price,
       total: orderRow.total,
       couponCode: orderRow.coupon_code,
@@ -2803,7 +2781,6 @@ app.get("/api/orders", auth.requireAuth, (req, res) => {
         subtotal: row.subtotal,
         discount: row.discount,
         pixDiscount: row.pix_discount || 0,
-        promoDiscount: row.promo_discount || 0,
         paymentMethod: row.payment_method || "card",
         shippingPrice: row.shipping_price,
         total: row.total,
@@ -3017,7 +2994,6 @@ app.get("/api/admin/orders", auth.requireAdmin, auth.requireAdminTwoFactor, (req
         subtotal: row.subtotal,
         discount: row.discount,
         pixDiscount: row.pix_discount || 0,
-        promoDiscount: row.promo_discount || 0,
         paymentMethod: row.payment_method || "card",
         shippingPrice: row.shipping_price,
         total: row.total,

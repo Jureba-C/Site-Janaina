@@ -33,34 +33,3 @@ test("pixPriceFor e round2 lidam com entrada inválida sem quebrar", () => {
   assert.equal(pricing.pixPriceFor(undefined), 0);
 });
 
-test("promoção Leve 4 Pague 3: nada grátis abaixo de 4 unidades", () => {
-  assert.equal(pricing.promoLeve4Pague3For([]), 0);
-  assert.equal(pricing.promoLeve4Pague3For([{ qty: 1, price: 50 }]), 0);
-  assert.equal(pricing.promoLeve4Pague3For([{ qty: 3, price: 50 }]), 0);
-});
-
-test("promoção Leve 4 Pague 3: 1 grátis a cada 4 unidades, sempre a mais barata do grupo", () => {
-  assert.equal(pricing.promoLeve4Pague3For([{ qty: 4, price: 50 }]), 50);
-  assert.equal(pricing.promoLeve4Pague3For([{ qty: 5, price: 50 }]), 50);
-  assert.equal(pricing.promoLeve4Pague3For([{ qty: 7, price: 50 }]), 50);
-  assert.equal(pricing.promoLeve4Pague3For([{ qty: 8, price: 50 }]), 100);
-  assert.equal(pricing.promoLeve4Pague3For([{ qty: 12, price: 50 }]), 150);
-});
-
-test("promoção Leve 4 Pague 3: mistura produtos, sempre libera a mais barata do grupo de 4", () => {
-  assert.equal(pricing.promoLeve4Pague3For([
-    { qty: 3, price: 100 },
-    { qty: 1, price: 20 },
-  ]), 20);
-  assert.equal(pricing.promoLeve4Pague3For([
-    { qty: 6, price: 100 },
-    { qty: 2, price: 10 },
-  ]), 110);
-});
-
-test("promoção Leve 4 Pague 3: não muda com a ordem dos itens no carrinho", () => {
-  const a = pricing.promoLeve4Pague3For([{ qty: 1, price: 90 }, { qty: 3, price: 30 }]);
-  const b = pricing.promoLeve4Pague3For([{ qty: 3, price: 30 }, { qty: 1, price: 90 }]);
-  assert.equal(a, b);
-  assert.equal(a, 30);
-});

@@ -32,7 +32,14 @@ Canva. ⚠️ Nada disso abre na nuvem (a rede da sessão bloqueia, e o Canva
 pede login). Sem ver o material dela, não dá para definir cores, fontes,
 logo, produtos e preços. Por isso a Fase 0 vem antes de tudo.
 
-## Fase 0 — Coletar o material da cliente ⬜ (bloqueia a parte visual)
+## Fase 0 — Coletar o material da cliente ✅
+
+Feito em 2026-10-26: `server/docs/identidade.md` e capturas em
+`server/docs/referencias/`. Design feito no Claude Design e resumido em
+`server/docs/design.md`.
+
+<details><summary>Como foi coletado</summary>
+
 
 Uma das duas opções:
 
@@ -49,6 +56,8 @@ Uma das duas opções:
 Saída: `docs/identidade.md` com paleta (hex), fontes, tom de voz, regras de
 foto, lista de produtos e preços, e as capturas de referência em
 `docs/referencias/` (fora do site publicado).
+
+</details>
 
 ## Fase 1 — Marca e identidade ⬜
 
@@ -78,8 +87,8 @@ foto, lista de produtos e preços, e as capturas de referência em
   Pedir à cliente as medidas da caixa que ela usa.
 - Prazo de produção (hoje "até 2 dias úteis") para o prazo real dela, em
   `lib/prazoFrete.js`, textos e e-mails.
-- Promoção "Leve 4, pague 3" (`js/pricing.js`): manter, trocar ou desligar
-  (decisão da cliente).
+- Promoção "Leve 4, pague 3": retirada (site, cobrança e testes) em
+  2026-10-26.
 - `PAYMENT_RULES`: Pix 10% e 3x sem juros, como na inspiração (confirmar).
 
 ## Fase 3 — Personalização da caneca ⬜ (recurso novo, o mais importante)
@@ -95,8 +104,10 @@ O que a inspiração tem e o site da Adriana não tem:
   de WhatsApp e no painel (com botão para **baixar as fotos** da arte).
 - Caixa "quero aprovar a arte pelo WhatsApp antes da produção" e botão
   "arte 100% personalizada? Fale no WhatsApp".
-- Prévia simples da arte (foto sobre um molde de caneca), se a cliente quiser
-  (custo extra; decidir).
+- **Prévia da arte ao vivo** (decidido): molde em SVG para cada tipo de peça
+  (caneca, xícara, garrafa, copo/vidro, azulejo, plano) e "molde por foto"
+  no painel para qualquer outro produto. Frente e verso, cor da peça, letra,
+  arte e fotos. O painel baixa a arte em PNG para a produção.
 - LGPD: dizer na política por quanto tempo as fotos ficam guardadas e apagar
   sozinho depois da entrega + X dias.
 - Política de troca: produto personalizado pode ter regra diferente (defeito
@@ -156,13 +167,26 @@ Estrutura (com a identidade da cliente, sem copiar a arte da outra loja):
 - 2026-10-26 — Promoção "Leve 4, pague 3" sai do site.
 - 2026-10-26 — Funcionamento e catálogo (Fases 2 e 3) começam já.
 
+- 2026-10-26 — Design no Claude Design (canvas "Arte Canecas — Loja"),
+  resumido em `server/docs/design.md`.
+- 2026-10-26 — Tecnologia: continua Node 22 + Express 5 + SQLite
+  (`node:sqlite`) + HTML/CSS/JS sem framework e sem etapa de build. É o
+  mais rápido para uma loja desse tamanho, já está testado (254 testes) e é
+  o mesmo funcionamento do site da Adriana.
+- 2026-10-26 — Prévia da arte para qualquer produto (moldes + molde por foto).
+
 ## Decisões pendentes (Caio/cliente)
 
 1. Quais linhas além de caneca entram no lançamento (copo, azulejo, quadro,
    kit)?
 2. Regra de troca para personalizados.
 3. Onde hospedar a prévia para a cliente.
-4. Pix com desconto e parcelas sem juros (inspiração: Pix 10% e 3x).
+4. Pix com desconto e parcelas sem juros (inspiração: Pix 10% e 3x). O
+   design usa 10% e 3x como exemplo.
+5. Prévia em 3D (girar a caneca com o dedo): bonito, mas pesa ~150 KB a mais
+   só na página de produto. O padrão é a prévia 2D em SVG.
+6. Prazo de produção, peso e caixa de envio, CNPJ/endereço, domínio, logo
+   em arquivo e fotos em boa resolução (ver `server/docs/identidade.md`).
 
 ## Ordem de trabalho
 
