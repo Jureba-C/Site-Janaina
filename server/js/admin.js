@@ -474,11 +474,11 @@
   function whatsappRecoveryUrl(order){
     const firstName = String(order.customer?.nome || "").trim().split(" ")[0] || "";
     const itemNames = order.items.map(i => i.name).join(", ");
-    const msg = `Olá${firstName ? " " + firstName : ""}! Vi que você começou uma compra (${itemNames}) aqui na Nome da Loja e queria saber se posso ajudar a finalizar 💗`;
+    const msg = `Olá${firstName ? " " + firstName : ""}! Vi que você começou uma compra (${itemNames}) aqui na Arte Canecas e queria saber se posso ajudar a finalizar 💗`;
     return whatsappUrl(order.customer?.telefone, msg);
   }
 
-  const WHATSAPP_POST_SALE_MESSAGE = "Olá, recebemos o seu pedido na Nome da Loja e estamos à disposição para qualquer dúvida.";
+  const WHATSAPP_POST_SALE_MESSAGE = "Olá, recebemos o seu pedido na Arte Canecas e estamos à disposição para qualquer dúvida.";
   function whatsappContactUrl(order){
     return whatsappUrl(order.customer?.telefone, WHATSAPP_POST_SALE_MESSAGE);
   }
@@ -508,7 +508,7 @@
       "",
       "Fico à disposição por aqui para o que precisar.",
       "",
-      "🎀 *Nome da Loja*",
+      "🎀 *Arte Canecas*",
       "Laços feitos à mão em Brasília",
     ].join("\n");
     return whatsappUrl(order.customer?.telefone, msg);
@@ -1314,8 +1314,8 @@
     if(!nome){ apDescription.value = ""; return; }
     const categoria = currentCategories.find(c => c.slug === apCategory.value);
     apDescription.value = categoria
-      ? `${nome} — laço artesanal feito à mão pela Nome da Loja, ideal para ${categoria.label.toLowerCase()}.`
-      : `${nome} — laço artesanal feito à mão pela Nome da Loja.`;
+      ? `${nome} — laço artesanal feito à mão pela Arte Canecas, ideal para ${categoria.label.toLowerCase()}.`
+      : `${nome} — laço artesanal feito à mão pela Arte Canecas.`;
   }
   apDescription.addEventListener("input", () => { apDescription.dataset.descricaoManual = "true"; });
 
@@ -2142,7 +2142,7 @@
   }
 
   const WHATSAPP_SEM_COMPRA_MESSAGE =
-    "Oi! Aqui é da Nome da Loja. Vi que você se cadastrou na loja e queria saber se posso ajudar a escolher um laço 💗";
+    "Oi! Aqui é da Arte Canecas. Vi que você se cadastrou na loja e queria saber se posso ajudar a escolher um laço 💗";
 
   let segmentoDeClientes = "compraram";
   let dadosDeClientes = { customers: [], contas: [], subscribers: [] };
@@ -2252,7 +2252,7 @@
         ? (c.orders || []).find(o => o.status === "pendente") : null;
       const contactUrl = mensagem
         ? whatsappUrl(c.telefone, mensagem)
-        : whatsappUrl(c.telefone, `Olá${c.nome && c.nome !== "—" ? " " + String(c.nome).split(" ")[0] : ""}! Vi que você começou uma compra aqui na Nome da Loja e queria saber se posso ajudar a finalizar 💗`);
+        : whatsappUrl(c.telefone, `Olá${c.nome && c.nome !== "—" ? " " + String(c.nome).split(" ")[0] : ""}! Vi que você começou uma compra aqui na Arte Canecas e queria saber se posso ajudar a finalizar 💗`);
       const historyRows = c.orders.map(o => `
         <div class="d-flex justify-content-between gap-2 py-1 small">
           <span>${formatDate(o.createdAt)}</span>
@@ -2301,7 +2301,7 @@
     toggleBlock(list, messages.length > 0);
     toggleBlock(empty, messages.length === 0);
     list.innerHTML = messages.map(m => {
-      const contactUrl = whatsappUrl(m.telefone, "Olá! Recebemos a sua mensagem na Nome da Loja.");
+      const contactUrl = whatsappUrl(m.telefone, "Olá! Recebemos a sua mensagem na Arte Canecas.");
       return `
       <div class="order-card">
         <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">

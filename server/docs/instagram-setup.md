@@ -1,7 +1,7 @@
 # Configuração do Instagram (feed automático)
 
 Passo único e manual, feito por quem tem acesso à conta
-@nomedaloja (precisa ser conta Business ou Creator — se
+@arte.canecasbsb (precisa ser conta Business ou Creator — se
 ainda for pessoal, troque em Instagram > Configurações > Conta antes de
 começar).
 
@@ -14,7 +14,7 @@ começar).
    (qualquer URL sob seu controle que responda 200 — pode ser a própria
    home do site).
 4. Gere a URL de autorização (o próprio painel monta o link), abra
-   logado como @nomedaloja, autorize o app, e copie o
+   logado como @arte.canecasbsb, autorize o app, e copie o
    `code` que aparece na URL de redirect.
 5. Troque o `code` pelo token de curta duração seguindo o `curl` exato
    que o painel do Meta mostra para o seu app (`POST` para

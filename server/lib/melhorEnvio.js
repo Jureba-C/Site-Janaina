@@ -1,7 +1,7 @@
 "use strict";
 
 const MELHOR_ENVIO_BASE_URL = process.env.MELHOR_ENVIO_BASE_URL || "https://melhorenvio.com.br";
-const MELHOR_ENVIO_USER_AGENT = process.env.MELHOR_ENVIO_USER_AGENT || "NomeDaLoja (defina MELHOR_ENVIO_USER_AGENT no .env com seu e-mail)";
+const MELHOR_ENVIO_USER_AGENT = process.env.MELHOR_ENVIO_USER_AGENT || "ArteCanecas (defina MELHOR_ENVIO_USER_AGENT no .env com seu e-mail)";
 
 async function meFetch(path, { method = "GET", body, timeoutMs = 12000, retries = 0 } = {}){
   let ultimoErro = null;

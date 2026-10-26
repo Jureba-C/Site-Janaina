@@ -3,7 +3,7 @@ const path = require("path");
 const { formatCurrency, formatOrderDateTime, deliveryLineFor } = require("./orderFormatting");
 
 const LOGO_CID = "logo-loja";
-const ASSINATURA_LOJA = "Nome da Loja — ateliê artesanal de laços, Brasília/DF";
+const ASSINATURA_LOJA = "Arte Canecas — ateliê artesanal de laços, Brasília/DF";
 const LOGO_PATH = path.join(__dirname, "..", "img", "logo-loja-email.png");
 
 const CORES = {
@@ -95,7 +95,7 @@ function emailShell({ titulo, preheader, eyebrow, tituloCartao, corpoHtml }) {
 
           <tr>
             <td align="center" class="e-faixa" style="background:${CORES.faixa}; border-radius:24px 24px 0 0; padding:28px 24px 22px;">
-              <img src="cid:${LOGO_CID}" alt="Nome da Loja" width="192" style="display:block; border:0;">
+              <img src="cid:${LOGO_CID}" alt="Arte Canecas" width="192" style="display:block; border:0;">
             </td>
           </tr>
 
@@ -119,9 +119,9 @@ function emailShell({ titulo, preheader, eyebrow, tituloCartao, corpoHtml }) {
 
           <tr>
             <td align="center" class="e-apoio" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:12px; line-height:1.7; padding:22px 24px 0;">
-              Nome da Loja — ateliê artesanal de laços, feitos à mão em Brasília/DF.<br>
+              Arte Canecas — ateliê artesanal de laços, feitos à mão em Brasília/DF.<br>
               Dúvidas? Responda este e-mail ou fale pelo
-              <a href="https://wa.me/5500000000000" class="e-destaque" style="color:${CORES.destaque}; text-decoration:none;">WhatsApp</a>.
+              <a href="https://wa.me/5561996927401" class="e-destaque" style="color:${CORES.destaque}; text-decoration:none;">WhatsApp</a>.
             </td>
           </tr>
 
@@ -305,12 +305,12 @@ async function notifyOwnerOfPaidOrder(order) {
 
 async function sendPasswordResetEmail({ to, name, resetUrl, expiresInMinutes }) {
   const firstName = String(name || "").trim().split(" ")[0] || "cliente";
-  const subject = "Redefinição de senha — Nome da Loja";
+  const subject = "Redefinição de senha — Arte Canecas";
 
   const text = [
     `Olá, ${firstName}!`,
     "",
-    "Recebemos um pedido para redefinir a senha da sua conta na Nome da Loja.",
+    "Recebemos um pedido para redefinir a senha da sua conta na Arte Canecas.",
     "",
     `Abra este link para escolher uma nova senha (vale por ${expiresInMinutes} minutos):`,
     resetUrl,
@@ -345,7 +345,7 @@ async function sendPasswordResetEmail({ to, name, resetUrl, expiresInMinutes }) 
 
 async function sendTwoFactorEmailCode({ to, name, code, expiresInMinutes }) {
   const firstName = String(name || "").trim().split(" ")[0] || "";
-  const subject = "Seu código de verificação — Nome da Loja";
+  const subject = "Seu código de verificação — Arte Canecas";
 
   const text = [
     firstName ? `Olá, ${firstName}!` : "Olá!",
@@ -459,7 +459,7 @@ function formatOrderConfirmationEmail({
     `Acompanhar o pedido: ${trackUrl}`,
     "",
     ASSINATURA_LOJA,
-    "contato@nomedaloja.com.br",
+    "arte.canecasbsb@gmail.com",
   ].join("\n");
 
   const html = emailShell({
@@ -524,7 +524,7 @@ function formatTrackingEmail({ externalReference, trackingCode, address, trackUr
     `Acompanhar a entrega: ${trackUrl}`,
     "",
     ASSINATURA_LOJA,
-    "contato@nomedaloja.com.br",
+    "arte.canecasbsb@gmail.com",
   ].join("\n");
 
   const html = emailShell({
@@ -560,7 +560,7 @@ function formatTrackingEmail({ externalReference, trackingCode, address, trackUr
 }
 
 async function sendWelcomeCouponEmail({ to, couponCode, percentOff, shopUrl, unsubscribeUrl }) {
-  const subject = `🎀 Seu cupom de ${percentOff}% — Nome da Loja`;
+  const subject = `🎀 Seu cupom de ${percentOff}% — Arte Canecas`;
 
   const text = [
     "Obrigada por se cadastrar!",
@@ -573,7 +573,7 @@ async function sendWelcomeCouponEmail({ to, couponCode, percentOff, shopUrl, uns
     `Ver a coleção: ${shopUrl}`,
     "",
     ASSINATURA_LOJA,
-    "contato@nomedaloja.com.br",
+    "arte.canecasbsb@gmail.com",
     ...(unsubscribeUrl ? ["", `Não quer mais receber estes e-mails? ${unsubscribeUrl}`] : []),
   ].join("\n");
 
@@ -945,7 +945,7 @@ function formatCampanhaEmail({ assunto, chamada, corpo, produtos, shopUrl, unsub
 }
 
 function formatAniversarioEmail({ nome, couponCode, percentOff, shopUrl, contaUrl }){
-  const subject = `🎂 Feliz aniversário${nome ? `, ${nome}` : ""}! Um presente da Nome da Loja`;
+  const subject = `🎂 Feliz aniversário${nome ? `, ${nome}` : ""}! Um presente da Arte Canecas`;
   const text = [
     nome ? `Feliz aniversário, ${nome}! 🎀` : "Feliz aniversário! 🎀",
     "",

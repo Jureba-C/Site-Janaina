@@ -64,7 +64,7 @@
       nativo.addEventListener("click", async () => {
         try{
           await navigator.share({
-            title: "Nome da Loja",
+            title: "Arte Canecas",
             text: mensagemDe(bloco),
             url: comUtm(enderecoDe(bloco), "nativo"),
           });

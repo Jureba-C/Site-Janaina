@@ -19,7 +19,7 @@ const pedido = {
     { qty: 2, name: "Laço Borboleta", price: 44.90 },
   ],
   endereco: {
-    nome: "Cliente de Teste", telefone: "(00) 00000-0000",
+    nome: "Cliente de Teste", telefone: "(61) 99692-7401",
     rua: "Rua Exemplo", numero: "12", complemento: "Casa",
     bairro: "Centro", cidade: "Brasília", uf: "DF", cep: "70040020",
   },

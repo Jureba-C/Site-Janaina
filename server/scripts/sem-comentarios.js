@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const acorn = require("acorn");
+const { parseSync } = require("oxc-parser");
 
 const RAIZ = path.join(__dirname, "..");
 const PASTAS_IGNORADAS = new Set(["node_modules", "vendor", "backups", ".git"]);
@@ -59,6 +60,12 @@ function comentariosJs(codigo){
     }
   }
   return [];
+}
+
+function comentariosTs(codigo, nome = "arquivo.tsx"){
+  const resultado = parseSync(nome, codigo);
+  if(resultado.errors.length) return [{ tipo: "ts-invalido", indice: 0, texto: resultado.errors[0].message }];
+  return resultado.comments.map(c => ({ tipo: "ts", indice: c.start, texto: trecho(codigo, c.start) }));
 }
 
 function comentariosCss(css){
@@ -164,6 +171,8 @@ const POR_EXTENSAO = {
   ".js": comentariosJs,
   ".cjs": comentariosJs,
   ".mjs": comentariosJs,
+  ".ts": (codigo) => comentariosTs(codigo, "arquivo.ts"),
+  ".tsx": (codigo) => comentariosTs(codigo, "arquivo.tsx"),
   ".css": comentariosCss,
   ".html": comentariosHtml,
   ".svg": comentariosHtml,
@@ -196,7 +205,7 @@ function verificar(raiz = RAIZ, extras = []){
   return { arquivos, problemas };
 }
 
-module.exports = { verificar, comentariosJs, comentariosCss, comentariosHtml };
+module.exports = { verificar, comentariosJs, comentariosTs, comentariosCss, comentariosHtml };
 
 if(require.main === module){
   const { arquivos, problemas } = verificar(RAIZ, [path.join(RAIZ, "..", ".gitignore")]);

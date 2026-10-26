@@ -174,6 +174,12 @@ Estrutura (com a identidade da cliente, sem copiar a arte da outra loja):
   mais rápido para uma loja desse tamanho, já está testado (254 testes) e é
   o mesmo funcionamento do site da Adriana.
 - 2026-10-26 — Prévia da arte para qualquer produto (moldes + molde por foto).
+- 2026-10-26 — O Caio pediu TypeScript + React. Escolhido: **só as páginas da
+  loja** (início, categoria, busca, produto e carrinho) em React 19 +
+  TypeScript, com Vite e renderização no servidor (o Google recebe o HTML
+  pronto). O resto (servidor Express, painel, conta, pagamentos, e-mails)
+  continua em JavaScript, sem risco no checkout. Substitui a decisão
+  "sem framework" acima para essas páginas.
 
 ## Decisões pendentes (Caio/cliente)
 

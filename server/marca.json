@@ -1,13 +1,13 @@
 {
-  "nomeLoja": "Nome da Loja",
-  "responsavel": "Nome da Responsável",
+  "nomeLoja": "Arte Canecas",
+  "responsavel": "Janaina",
   "dominio": "nomedaloja.com.br",
-  "email": "contato@nomedaloja.com.br",
-  "instagram": "nomedaloja",
-  "whatsappDigitos": "5500000000000",
-  "whatsappFormatado": "(00) 00000-0000",
+  "email": "arte.canecasbsb@gmail.com",
+  "instagram": "arte.canecasbsb",
+  "whatsappDigitos": "5561996927401",
+  "whatsappFormatado": "(61) 99692-7401",
   "cnpj": "00.000.000/0000-00",
   "endereco": "Endereço completo — CEP 00000-000 — Cidade/UF",
-  "nomeFatura": "NOMEDALOJA",
-  "nomeSemEspaco": "NomeDaLoja"
+  "nomeFatura": "ARTECANECAS",
+  "nomeSemEspaco": "ArteCanecas"
 }

@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const PERFIL_INSTAGRAM = "https://www.instagram.com/nomedaloja/";
+  const PERFIL_INSTAGRAM = "https://www.instagram.com/arte.canecasbsb/";
 
   const card = document.getElementById("instagramFeedCard");
   if (!card) return;
@@ -19,7 +19,7 @@
 
   function showLive(feed) {
     liveEl.querySelector(".instagram-feed-avatar").src = feed.profilePictureUrl || "";
-    liveEl.querySelector(".instagram-feed-username").textContent = feed.username ? `@${feed.username}` : "@nomedaloja";
+    liveEl.querySelector(".instagram-feed-username").textContent = feed.username ? `@${feed.username}` : "@arte.canecasbsb";
 
     const grid = liveEl.querySelector(".instagram-feed-grid");
     grid.innerHTML = "";

@@ -60,6 +60,14 @@ test("a troca é feita em uma passada só, sem trocar duas vezes o mesmo trecho"
   assert.equal(substituir(texto, trocas), "oi@lojanova.com.br lojanova.com.br @lojanova /lojanova\\.com\\.br/");
 });
 
+test("um campo que não muda protege o texto dele de outra troca que caiba dentro", () => {
+  const atual = { ...MARCA, instagram: "minhaloja", dominio: "minhaloja.com.br" };
+  const nova = { ...atual, instagram: "loja.nova" };
+  const trocas = montarTrocas(atual, nova);
+  assert.equal(substituir("https://minhaloja.com.br @minhaloja", trocas), "https://minhaloja.com.br @loja.nova");
+  assert.equal(montarTrocas(atual, { ...atual }).size, 0);
+});
+
 test("aplicar troca os arquivos e grava a marca nova", () => {
   const pasta = fs.mkdtempSync(path.join(os.tmpdir(), "marca-"));
   const arquivoMarca = path.join(pasta, "marca.json");

@@ -463,7 +463,7 @@
             badges: Array.isArray(o.badges) ? o.badges : [],
             soldOut: Boolean(o.soldOut),
             slug: o.slug || null,
-            desc: o.description || "Peça exclusiva, feita à mão pela Nome da Loja.",
+            desc: o.description || "Peça exclusiva, feita à mão pela Arte Canecas.",
             image: o.photoUrl || null,
             photos: Array.isArray(o.photos) ? o.photos : (o.photoUrl ? [o.photoUrl] : []),
           };
@@ -1384,7 +1384,7 @@
       });
     } catch(networkErr){
       console.error("Falha de rede ao iniciar checkout:", networkErr);
-      checkoutMsg.innerHTML = `<i class="bi bi-exclamation-triangle"></i><span>Não conseguimos abrir o pagamento agora (sem conexão com o servidor). Tente novamente em instantes ou <a href="https://wa.me/5500000000000" target="_blank" rel="noopener noreferrer">finalize pelo WhatsApp</a>.</span>`;
+      checkoutMsg.innerHTML = `<i class="bi bi-exclamation-triangle"></i><span>Não conseguimos abrir o pagamento agora (sem conexão com o servidor). Tente novamente em instantes ou <a href="https://wa.me/5561996927401" target="_blank" rel="noopener noreferrer">finalize pelo WhatsApp</a>.</span>`;
       checkoutBtn.disabled = false;
       return;
     }

@@ -1,4 +1,4 @@
-# Auditoria de segurança e performance — Nome da Loja
+# Auditoria de segurança e performance — Arte Canecas
 
 Auditoria do código enviado (`index.html`, `css/style.css`, `js/main.js`) e
 do que foi adicionado nesta rodada (carrinho + checkout).

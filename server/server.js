@@ -368,9 +368,9 @@ function dadosEstruturados(){
     const item = {
       "@type": "Product",
       name: p.name,
-      description: `${p.name} — laço artesanal feito à mão pela Nome da Loja, ideal para ${categoria.toLowerCase()}.`,
+      description: `${p.name} — laço artesanal feito à mão pela Arte Canecas, ideal para ${categoria.toLowerCase()}.`,
       category: p.category,
-      brand: { "@type": "Brand", name: "Nome da Loja" },
+      brand: { "@type": "Brand", name: "Arte Canecas" },
       offers: {
         "@type": "Offer",
         price: p.price.toFixed(2),
@@ -396,13 +396,13 @@ function dadosEstruturados(){
       {
         "@type": "Store",
         "@id": `${SITE_URL}/#loja`,
-        name: "Nome da Loja",
+        name: "Arte Canecas",
         description: "Ateliê artesanal de laços e presilhas para bebês e crianças. Cada peça é feita à mão, sob encomenda, na cor escolhida pela cliente.",
         url: SITE_URL,
         logo: `${SITE_URL}/img/logo-loja.png`,
         image: `${SITE_URL}/img/og-loja.jpg`,
-        telephone: "+5500000000000",
-        email: "contato@nomedaloja.com.br",
+        telephone: "+5561996927401",
+        email: "arte.canecasbsb@gmail.com",
         taxID: "00.000.000/0000-00",
         priceRange: "R$ 29 - R$ 90",
         currenciesAccepted: "BRL",
@@ -414,13 +414,13 @@ function dadosEstruturados(){
           addressCountry: "BR",
         },
         areaServed: { "@type": "Country", name: "Brasil" },
-        sameAs: ["https://www.instagram.com/nomedaloja"],
+        sameAs: ["https://www.instagram.com/arte.canecasbsb"],
       },
       {
         "@type": "WebSite",
         "@id": `${SITE_URL}/#site`,
         url: SITE_URL,
-        name: "Nome da Loja",
+        name: "Arte Canecas",
         inLanguage: "pt-BR",
         publisher: { "@id": `${SITE_URL}/#loja` },
       },
@@ -831,17 +831,17 @@ function metaSocialPadrao(){
 
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:site_name" content="Nome da Loja">
+<meta property="og:site_name" content="Arte Canecas">
 <meta property="og:url" content="${SITE_URL}/">
-<meta property="og:title" content="Nome da Loja — Laços artesanais feitos com carinho">
+<meta property="og:title" content="Arte Canecas — Laços artesanais feitos com carinho">
 <meta property="og:description" content="Presilhas e laços artesanais em cetim e algodão, feitos sob encomenda na cor que você escolher. Envio para todo o Brasil.">
 <meta property="og:image" content="${OG_IMAGEM_PADRAO}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:alt" content="Nome da Loja">
+<meta property="og:image:alt" content="Arte Canecas">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Nome da Loja — Laços artesanais feitos com carinho">
+<meta name="twitter:title" content="Arte Canecas — Laços artesanais feitos com carinho">
 <meta name="twitter:description" content="Presilhas e laços artesanais em cetim e algodão, feitos sob encomenda na cor que você escolher.">
 <meta name="twitter:image" content="${OG_IMAGEM_PADRAO}">`;
 }
@@ -857,11 +857,11 @@ function imagemSocialDoProduto(p){
 function descricaoDoProduto(p){
   if(p.description) return p.description;
   const rotulo = getAllCategories().find(c => c.slug === p.category)?.label || p.category;
-  return `${p.name} — laço artesanal feito à mão pela Nome da Loja, ideal para ${String(rotulo).toLowerCase()}.`;
+  return `${p.name} — laço artesanal feito à mão pela Arte Canecas, ideal para ${String(rotulo).toLowerCase()}.`;
 }
 
 function tituloDoProduto(p){
-  return `${p.name} — Nome da Loja`;
+  return `${p.name} — Arte Canecas`;
 }
 
 function metaSocialDoProduto(id, p){
@@ -873,7 +873,7 @@ function metaSocialDoProduto(id, p){
 
 <meta property="og:type" content="product">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:site_name" content="Nome da Loja">
+<meta property="og:site_name" content="Arte Canecas">
 <meta property="og:url" content="${escaparHtml(url)}">
 <meta property="og:title" content="${titulo}">
 <meta property="og:description" content="${descricao}">
@@ -898,7 +898,7 @@ function blocoDadosDoProduto(id, p){
     category: categoria,
     url: SITE_URL + produtoUrl.caminhoDoProduto(id, p.name),
     image: imagemSocialDoProduto(p),
-    brand: { "@type": "Brand", name: "Nome da Loja" },
+    brand: { "@type": "Brand", name: "Arte Canecas" },
     offers: {
       "@type": "Offer",
       price: p.price.toFixed(2),
@@ -1333,7 +1333,7 @@ app.post("/api/create-preference", strictLimiter, auth.requireAuth, async (req, 
         },
         auto_return: "approved",
         notification_url: `${process.env.SERVER_PUBLIC_URL || "https://SEU-DOMINIO-DO-SERVIDOR.com"}/api/webhook`,
-        statement_descriptor: "NOMEDALOJA",
+        statement_descriptor: "ARTECANECAS",
       },
     });
 
@@ -1361,7 +1361,7 @@ app.post("/api/create-pix-payment", strictLimiter, auth.requireAuth, async (req,
     const result = await payment.create({
       body: {
         transaction_amount: draft.total,
-        description: `Pedido ${orderRef.slice(0, 8)} — Nome da Loja`,
+        description: `Pedido ${orderRef.slice(0, 8)} — Arte Canecas`,
         payment_method_id: "pix",
         external_reference: orderRef,
         notification_url: `${process.env.SERVER_PUBLIC_URL || "https://SEU-DOMINIO-DO-SERVIDOR.com"}/api/webhook`,
@@ -1431,7 +1431,7 @@ app.post("/api/orders/:reference/resume-payment", strictLimiter, auth.requireAut
       const result = await payment.create({
         body: {
           transaction_amount: draft.total,
-          description: `Pedido ${orderRef.slice(0, 8)} — Nome da Loja`,
+          description: `Pedido ${orderRef.slice(0, 8)} — Arte Canecas`,
           payment_method_id: "pix",
           external_reference: orderRef,
           notification_url: `${process.env.SERVER_PUBLIC_URL || "https://SEU-DOMINIO-DO-SERVIDOR.com"}/api/webhook`,
@@ -1483,7 +1483,7 @@ app.post("/api/orders/:reference/resume-payment", strictLimiter, auth.requireAut
         },
         auto_return: "approved",
         notification_url: `${process.env.SERVER_PUBLIC_URL || "https://SEU-DOMINIO-DO-SERVIDOR.com"}/api/webhook`,
-        statement_descriptor: "NOMEDALOJA",
+        statement_descriptor: "ARTECANECAS",
       },
     });
 
@@ -2191,7 +2191,7 @@ function handleNewsletterUnsubscribe(req, res) {
   res.set("Content-Type", "text/html; charset=utf-8");
   res.send(`<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Descadastro — Nome da Loja</title></head>
+<title>Descadastro — Arte Canecas</title></head>
 <body style="margin:0; padding:0; background:#FFFDFC; font-family:'Segoe UI', Helvetica, Arial, sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FFFDFC;"><tr><td align="center" style="padding:64px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:420px; background:#FFFFFF; border-radius:24px; padding:36px 32px; text-align:center;">
@@ -2201,7 +2201,7 @@ function handleNewsletterUnsubscribe(req, res) {
       </td></tr>
       <tr><td style="color:#8C6577; font-size:14px; line-height:1.6;">
         ${ok
-          ? "Você não vai mais receber e-mails promocionais da Nome da Loja. Pedidos e redefinições de senha continuam chegando normalmente, se você tiver conta."
+          ? "Você não vai mais receber e-mails promocionais da Arte Canecas. Pedidos e redefinições de senha continuam chegando normalmente, se você tiver conta."
           : "O link parece inválido ou já foi usado. Se precisar de ajuda, fale pelo WhatsApp."}
       </td></tr>
     </table>
@@ -2806,7 +2806,7 @@ app.use("/api/admin", noStore);
 app.post("/api/admin/2fa/setup", auth.requireAdmin, async (req, res) => {
   try {
     const secret = auth.generateTotpSecret();
-    const uri = auth.totpAuthUri({ secret, email: req.user.email, issuer: "Nome da Loja" });
+    const uri = auth.totpAuthUri({ secret, email: req.user.email, issuer: "Arte Canecas" });
     const qrDataUri = await qrcode.toDataURL(uri, { margin: 1, width: 240 });
     res.json({ secret, qrDataUri });
   } catch (err) {

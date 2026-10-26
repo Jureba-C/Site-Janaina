@@ -163,7 +163,7 @@
           <div class="form-check consent-check avaliar-consentimento d-none" id="consent-wrap-${id}">
             <input class="form-check-input" type="checkbox" id="consent-${id}">
             <label class="form-check-label small" for="consent-${id}">
-              Autorizo publicar esta foto no site da Nome da Loja. Se aparece uma criança, sou responsável por ela.
+              Autorizo publicar esta foto no site da Arte Canecas. Se aparece uma criança, sou responsável por ela.
             </label>
           </div>
         </div>

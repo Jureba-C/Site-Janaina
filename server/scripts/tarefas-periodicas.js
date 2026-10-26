@@ -78,7 +78,7 @@ function linkDeAvaliacao(reference){
   return `${CLIENT_ORIGIN}/avaliar.html?pedido=${encodeURIComponent(reference)}#t=${token}`;
 }
 
-const WHATSAPP_DA_LOJA = "https://wa.me/5500000000000";
+const WHATSAPP_DA_LOJA = "https://wa.me/5561996927401";
 
 const KINDS_COM_DESCADASTRO = new Set(["carrinho_esquecido", "campanha"]);
 

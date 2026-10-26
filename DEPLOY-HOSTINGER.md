@@ -78,7 +78,7 @@ Copie os valores do seu `server/.env`:
 | `SMTP_PASS` | Senha de app do Gmail (16 letras, sem espaços) em [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) — exige verificação em duas etapas. Sem ela **nenhum e-mail sai**: nem aviso de venda, nem redefinição de senha, nem cupom da newsletter. |
 | `MELHOR_ENVIO_TOKEN` | Token de produção em [melhorenvio.com.br/painel/gerenciar/tokens](https://melhorenvio.com.br/painel/gerenciar/tokens). Sem ele **o cálculo de frete não funciona** e ninguém consegue fechar pedido. |
 | `MELHOR_ENVIO_BASE_URL` | `https://melhorenvio.com.br` — único valor válido (o sandbox foi descontinuado; apontar para ele faz toda cotação voltar 401). |
-| `MELHOR_ENVIO_USER_AGENT` | `Nome da Loja (contato@nomedaloja.com.br)` |
+| `MELHOR_ENVIO_USER_AGENT` | `Arte Canecas (arte.canecasbsb@gmail.com)` |
 
 ---
 

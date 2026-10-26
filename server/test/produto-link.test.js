@@ -45,11 +45,11 @@ test("o link canônico do produto responde 200 com a prévia daquele laço", asy
   const res = await fetch(`${ORIGIN}/laco/2-laco-duquesa`);
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /<meta property="og:title" content="Laço Duquesa — Nome da Loja">/);
+  assert.match(html, /<meta property="og:title" content="Laço Duquesa — Arte Canecas">/);
   assert.match(html, /<meta property="og:url" content="[^"]*\/laco\/2-laco-duquesa">/);
   assert.match(html, /<link rel="canonical" href="[^"]*\/laco\/2-laco-duquesa">/);
   assert.match(html, /<meta property="product:price:amount" content="49\.90">/);
-  assert.match(html, /<title>Laço Duquesa — Nome da Loja<\/title>/);
+  assert.match(html, /<title>Laço Duquesa — Arte Canecas<\/title>/);
 });
 
 test("a espiada rápida abre sozinha: data-produto sai no body", async () => {

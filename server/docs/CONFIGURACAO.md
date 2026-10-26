@@ -61,7 +61,7 @@ A API oficial só entrega texto livre para quem falou com o número nas últimas
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | Gmail: `smtp.gmail.com`, `587`, `false`. |
 | `SMTP_USER` | Conta que envia. |
 | `SMTP_PASS` | **Secreta.** Senha de app de 16 letras (myaccount.google.com/apppasswords, exige verificação em duas etapas). Sem ela nenhum e-mail sai. |
-| `SMTP_FROM` | Remetente exibido, ex.: `Nome da Loja <conta@gmail.com>`. |
+| `SMTP_FROM` | Remetente exibido, ex.: `Arte Canecas <conta@gmail.com>`. |
 | `OWNER_EMAIL` | Quem recebe o aviso de venda. Também vira o Reply-To dos e-mails para clientes. |
 
 Teste com `node scripts/testar-email.js` e `node scripts/testar-email-cliente.js`.

@@ -84,3 +84,8 @@ acumuladas"), com a data.
   (caneca, xícara, garrafa, copo, azulejo e o que mais ela vender), não só
   caneca.
 - 2026-10-26 — O prompt completo para construir o site está em `PROMPT.md`.
+- 2026-10-26 — **As páginas da loja (início, categoria, busca, produto com
+  prévia e carrinho) são em React + TypeScript**, com Vite e montadas no
+  servidor (SSR) para o Google. Servidor, painel, conta, pedidos e pagamentos
+  continuam em JavaScript sem framework. Vale também para TS/TSX: zero
+  comentário.

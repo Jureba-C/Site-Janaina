@@ -18,11 +18,11 @@ const MOCK_HEXES = ["#F4B4CC", "#EA8FB4", "#DD6E9B", "#FAD3E1", "#C05480", "#FBD
 
 const MOCK_FEED = {
   available: true,
-  username: "nomedaloja",
+  username: "arte.canecasbsb",
   profilePictureUrl: mockSquare("#DD6E9B"),
   posts: MOCK_HEXES.map((hex, i) => ({
     id: `mock-${i}`,
-    permalink: "https://www.instagram.com/nomedaloja/",
+    permalink: "https://www.instagram.com/arte.canecasbsb/",
     caption: `Post de exemplo ${i + 1}`,
     displayUrl: mockSquare(hex),
   })),

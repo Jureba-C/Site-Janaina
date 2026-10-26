@@ -36,7 +36,10 @@ Janaina mandar os dela.
 7. Perguntar quando a decisão for de gosto/estética ou tiver custo; decidir
    sozinho o que é técnico.
 8. Seguir o jeito do código ao redor: nomes em português nos arquivos novos,
-   CommonJS no servidor, scripts sem módulo no navegador, sem framework.
+   CommonJS no servidor. As páginas da loja (início, categoria, busca,
+   produto e carrinho) são React + TypeScript em `server/loja/` (Vite, com
+   renderização no servidor); as demais páginas são scripts sem módulo, sem
+   framework.
 
 ## Comandos
 

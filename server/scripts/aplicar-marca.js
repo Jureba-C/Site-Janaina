@@ -34,9 +34,9 @@ function escaparRegex(texto){
 
 function montarTrocas(atual, nova){
   const trocas = new Map();
+  if(CAMPOS.every(campo => atual[campo] === nova[campo])) return trocas;
   for(const campo of CAMPOS){
-    if(atual[campo] === nova[campo]) continue;
-    trocas.set(atual[campo], nova[campo]);
+    if(!trocas.has(atual[campo]) || atual[campo] !== nova[campo]) trocas.set(atual[campo], nova[campo]);
     if(campo === "dominio") trocas.set(escaparRegex(atual.dominio), escaparRegex(nova.dominio));
   }
   return trocas;

@@ -1,7 +1,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const path = require("node:path");
-const { verificar, comentariosJs, comentariosCss, comentariosHtml } = require("../scripts/sem-comentarios.js");
+const { verificar, comentariosJs, comentariosTs, comentariosCss, comentariosHtml } = require("../scripts/sem-comentarios.js");
 
 test("nenhum arquivo do projeto tem comentário", () => {
   const { arquivos, problemas } = verificar(path.join(__dirname, ".."), [path.join(__dirname, "..", "..", ".gitignore")]);
@@ -22,4 +22,7 @@ test("o verificador acha comentários de verdade e ignora os falsos", () => {
   assert.equal(comentariosHtml("<p>oi</p><" + "!-- nota -->").length, 1);
   assert.equal(comentariosHtml("<script>const a = 1; // nota\n</script>").length, 1);
   assert.equal(comentariosHtml('<script type="application/ld+json">{"a":"//b"}</script>').length, 0);
+  assert.equal(comentariosTs("const a: number = 1; // nota").length, 1);
+  assert.equal(comentariosTs("const b = <p>{/* nota */}</p>;").length, 1);
+  assert.equal(comentariosTs('const c: string = "https://exemplo.com/*x*/";').length, 0);
 });
