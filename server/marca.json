@@ -1,0 +1,13 @@
+{
+  "nomeLoja": "Nome da Loja",
+  "responsavel": "Nome da Responsável",
+  "dominio": "nomedaloja.com.br",
+  "email": "contato@nomedaloja.com.br",
+  "instagram": "nomedaloja",
+  "whatsappDigitos": "5500000000000",
+  "whatsappFormatado": "(00) 00000-0000",
+  "cnpj": "00.000.000/0000-00",
+  "endereco": "Endereço completo — CEP 00000-000 — Cidade/UF",
+  "nomeFatura": "NOMEDALOJA",
+  "nomeSemEspaco": "NomeDaLoja"
+}

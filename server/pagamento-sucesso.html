@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagamento aprovado — Nome da Loja</title>
+<meta name="description" content="Seu pagamento foi aprovado. Obrigada pela compra na Nome da Loja.">
+<meta name="robots" content="noindex, nofollow">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; script-src 'self' https://sdk.mercadopago.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' https: data:; connect-src 'self' https://api.mercadopago.com https://viacep.com.br; frame-src https://www.mercadopago.com https://www.mercadopago.com.br; object-src 'none'; form-action 'self'">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+
+<link rel="stylesheet" href="css/vendor/bootstrap.purged.css">
+<link rel="stylesheet" href="css/vendor/bootstrap-icons.subset.css">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-payment-result="sucesso">
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="bow-shape" viewBox="0 0 100 70">
+    <path d="M50 35 C50 35 38 6 15 10 C-4 13 -4 47 15 51 C36 56 50 35 50 35 Z"/>
+    <path d="M50 35 C50 35 62 6 85 10 C104 13 104 47 85 51 C64 56 50 35 50 35 Z"/>
+    <rect x="42" y="26" width="16" height="18" rx="5"/>
+    <path d="M45 44 L38 68 L48 60 Z"/>
+    <path d="M55 44 L62 68 L52 60 Z"/>
+  </symbol>
+</svg>
+
+<header class="simple-header">
+  <div class="container d-flex align-items-center justify-content-between">
+    <a href="index.html" class="plc-brand" aria-label="Nome da Loja — página inicial">
+      <img src="img/logo-loja.png" alt="Nome da Loja" width="168" height="54">
+    </a>
+    <div id="navAccount" class="d-flex align-items-center gap-2"></div>
+  </div>
+</header>
+
+<main class="account-main">
+  <div class="container">
+    <div class="mx-auto" style="max-width:440px">
+      <div class="account-card text-center">
+        <span class="thanks-mark" aria-hidden="true">
+          <svg class="thanks-bow"><use href="#bow-shape"/></svg>
+          <span class="thanks-mark-badge"><i class="bi bi-check-lg"></i></span>
+        </span>
+        <p class="section-eyebrow justify-content-center mt-3 mb-1">pedido confirmado</p>
+        <h1 class="section-title mb-2" style="font-size:1.9rem">Obrigada pela sua compra!</h1>
+        <p class="section-sub mb-4">A partir de agora seu laço entra na fila de produção — feito à mão, uma peça de cada vez.</p>
+
+                <ol class="thanks-steps">
+          <li class="thanks-step is-done">
+            <span class="thanks-step-icon"><i class="bi bi-check-lg"></i></span>
+            <span><strong>Pagamento confirmado</strong><br>Recebemos tudo certinho.</span>
+          </li>
+          <li class="thanks-step">
+            <span class="thanks-step-icon"><i class="bi bi-scissors"></i></span>
+            <span><strong>Produção artesanal</strong><br>Cada peça é preparada à mão, com carinho.</span>
+          </li>
+          <li class="thanks-step">
+            <span class="thanks-step-icon"><i class="bi bi-box-seam"></i></span>
+            <span><strong>Envio com código de rastreio</strong><br>Avisamos por e-mail assim que despachar.</span>
+          </li>
+        </ol>
+
+        <div class="d-flex flex-column gap-2">
+          <a href="pedidos.html" class="btn-blush">Acompanhar meu pedido</a>
+          <a href="index.html" class="btn-outline-blush">Continuar comprando</a>
+        </div>
+
+        <div class="share-block" data-share-url="https://nomedaloja.com.br/">
+          <p class="share-title">Conhece alguém que ia amar?</p>
+          <div class="share-buttons">
+            <button type="button" class="share-btn share-btn-native" hidden aria-label="Compartilhar">
+              <i class="bi bi-share-fill"></i>
+            </button>
+            <a class="share-btn" data-share="whatsapp" href="#" target="_blank" rel="noopener noreferrer" aria-label="Compartilhar no WhatsApp">
+              <i class="bi bi-whatsapp"></i>
+            </a>
+            <a class="share-btn" data-share="facebook" href="#" target="_blank" rel="noopener noreferrer" aria-label="Compartilhar no Facebook">
+              <i class="bi bi-facebook"></i>
+            </a>
+            <a class="share-btn" data-share="pinterest" href="#" target="_blank" rel="noopener noreferrer" aria-label="Compartilhar no Pinterest">
+              <i class="bi bi-pinterest"></i>
+            </a>
+            <button type="button" class="share-btn share-btn-copy" aria-label="Copiar link da loja">
+              <i class="bi bi-link-45deg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/error-boundary.js" defer></script>
+<script src="js/loading.js" defer></script>
+<script src="js/vendor/bootstrap.min.js" defer></script>
+<script src="js/auth.js" defer></script>
+<script src="js/pagamento-retorno.js" defer></script>
+<script src="js/compartilhar.js" defer></script>
+<script src="js/cookie-consent.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nome da Loja — Laços artesanais feitos com carinho</title>
+<meta name="description" content="Laços de cabelo artesanais para cada ocasião: maternidade, festa, batizado e presente. Feitos à mão, um a um.">
+<meta name="keywords" content="laços artesanais, presilhas de cabelo, laços para bebê, laços de cetim, acessórios infantis, laço personalizado, presente para bebê, Nome da Loja">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; script-src 'self' https://sdk.mercadopago.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' https: data:; connect-src 'self' https://api.mercadopago.com https://viacep.com.br; frame-src https://www.mercadopago.com https://www.mercadopago.com.br; object-src 'none'; form-action 'self'">
+<template data-marca=META-SOCIAL></template>
+
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+
+<template data-marca=DADOS-ESTRUTURADOS></template>
+<template data-marca=DADOS-PRODUTO></template>
+
+<template data-marca=HERO-PRELOAD></template>
+<link rel="preload" href="/css/fonts/fraunces-400-latin-39ce20.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/css/fonts/fraunces-500-latin-ddaaa5.woff2" as="font" type="font/woff2" crossorigin>
+
+<link rel="stylesheet" href="/css/vendor/bootstrap.purged.css">
+<link rel="stylesheet" href="/css/vendor/bootstrap-icons.subset.css">
+<link rel="stylesheet" href="/css/fonts.css">
+
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="com-faixa-promo">
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="bow-shape" viewBox="0 0 100 70">
+    <path d="M50 35 C50 35 38 6 15 10 C-4 13 -4 47 15 51 C36 56 50 35 50 35 Z"/>
+    <path d="M50 35 C50 35 62 6 85 10 C104 13 104 47 85 51 C64 56 50 35 50 35 Z"/>
+    <rect x="42" y="26" width="16" height="18" rx="5"/>
+    <path d="M45 44 L38 68 L48 60 Z"/>
+    <path d="M55 44 L62 68 L52 60 Z"/>
+  </symbol>
+</svg>
+
+<div class="fita-guia" aria-hidden="true">
+  <svg class="fita-guia-svg" viewBox="0 0 60 1000" preserveAspectRatio="none" focusable="false">
+    <path class="fita-guia-trilho" d="M30 0 C62 110 -2 230 30 350 C62 470 -2 590 30 710 C62 830 -2 910 30 1000"/>
+    <path class="fita-guia-fio"    d="M30 0 C62 110 -2 230 30 350 C62 470 -2 590 30 710 C62 830 -2 910 30 1000"/>
+  </svg>
+  <svg class="fita-guia-laco bow-icon" focusable="false"><use href="#bow-shape"/></svg>
+</div>
+
+<div class="faixa-promo" id="faixaPromo">
+  <span class="faixa-promo-laco" aria-hidden="true"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+  <a class="faixa-promo-slide is-ativa" href="#colecoes" aria-label="Promoção Leve 4, pague 3: a peça mais barata sai grátis. Ver coleção.">
+    <span class="faixa-promo-conteudo">
+      <span class="faixa-promo-grito"><i class="bi bi-tags" aria-hidden="true"></i> Leve 4, pague 3</span>
+      <span class="faixa-promo-sep" aria-hidden="true"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span class="faixa-promo-mecanica">a peça mais barata sai grátis</span>
+      <span class="faixa-promo-mecanica-curta" aria-hidden="true">a peça mais barata sai grátis</span>
+      <span class="faixa-promo-cta">Ver coleção<i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+    </span>
+  </a>
+  <button type="button" class="faixa-promo-slide" id="faixaPromoCupom" hidden aria-label="Ganhe 10% de desconto na primeira compra: cadastre seu e-mail e receba o cupom.">
+    <span class="faixa-promo-conteudo">
+      <span class="faixa-promo-grito"><i class="bi bi-gift-fill" aria-hidden="true"></i> Ganhe 10% na primeira compra</span>
+      <span class="faixa-promo-sep" aria-hidden="true"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span class="faixa-promo-mecanica">cupom de boas-vindas no seu e-mail</span>
+      <span class="faixa-promo-mecanica-curta" aria-hidden="true">cupom no seu e-mail</span>
+      <span class="faixa-promo-cta">Quero o cupom<i class="bi bi-chevron-right" aria-hidden="true"></i></span>
+    </span>
+  </button>
+</div>
+
+<nav class="plc-navbar" id="mainNav" aria-label="Navegação principal">
+  <div class="container d-flex align-items-center justify-content-between">
+
+        <a href="#inicio" class="plc-brand" aria-label="Nome da Loja — página inicial">
+      <img src="/img/logo-loja.png" alt="Nome da Loja" width="168" height="54">
+    </a>
+
+        <div class="d-none d-xl-flex align-items-center">
+      <a href="#inicio" class="plc-nav-link">Início</a>
+      <a href="#colecoes" class="plc-nav-link">Coleções</a>
+      <a href="#historia" class="plc-nav-link">Nossa história</a>
+      <a href="#sobre" class="plc-nav-link">Como funciona</a>
+      <a href="#depoimentos" class="plc-nav-link">Garantias</a>
+      <a href="#contato" class="nav-cta">Contato</a>
+    </div>
+
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+
+            <div id="navAccount" class="d-flex align-items-center gap-2"></div>
+
+            <button class="cart-pill" type="button" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" aria-controls="cartOffcanvas" aria-label="Abrir carrinho">
+        <i class="bi bi-bag-heart"></i>
+        <span class="cart-badge" id="cartCount">0</span>
+      </button>
+
+            <button class="navbar-toggler border-0 d-xl-none p-0 ms-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#navOffcanvas" aria-label="Abrir menu" aria-controls="navOffcanvas" style="color:var(--ink)">
+        <i class="bi bi-list fs-2"></i>
+      </button>
+
+    </div>
+  </div>
+</nav>
+
+<div class="offcanvas offcanvas-end" id="navOffcanvas" tabindex="-1" aria-label="Menu de navegação" style="background:var(--cream)">
+  <div class="offcanvas-header">
+    <span class="plc-brand"><img src="/img/logo-loja.png" alt="Nome da Loja" width="168" height="54"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+  </div>
+  <div class="offcanvas-body d-flex flex-column gap-3">
+    <a href="#inicio" class="plc-nav-link">Início</a>
+    <a href="#colecoes" class="plc-nav-link">Coleções</a>
+    <a href="#historia" class="plc-nav-link">Nossa história</a>
+    <a href="#sobre" class="plc-nav-link">Como funciona</a>
+    <a href="#depoimentos" class="plc-nav-link">Garantias</a>
+    <a href="#contato" class="plc-nav-link">Contato</a>
+        <div id="navAccountMobile" class="d-flex flex-column gap-2 pt-2 border-top" style="border-color:var(--blush-100)!important"></div>
+    <a href="#contato" class="btn-blush text-center mt-2">Fazer pedido</a>
+    <button type="button" class="btn-outline-blush text-center" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+      <i class="bi bi-bag-heart me-1"></i> Ver carrinho (<span id="cartCountMobile">0</span>)
+    </button>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-end cart-offcanvas" tabindex="-1" id="cartOffcanvas" data-step="1" aria-labelledby="cartOffcanvasLabel">
+  <div class="offcanvas-header">
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="cart-back-btn" id="cartBackBtn" data-bs-dismiss="offcanvas" aria-label="Voltar para a loja"><i class="bi bi-arrow-left"></i></button>
+      <h5 class="offcanvas-title font-display mb-0" id="cartOffcanvasLabel">Seu carrinho</h5>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+  </div>
+
+  <div class="offcanvas-body">
+    <div id="cartEmptyState" class="cart-empty d-none">
+      <i class="bi bi-bag-heart"></i>
+      <p>Seu carrinho está vazio.<br>Que tal escolher um laço?</p>
+    </div>
+
+    <div class="cart-step" id="cartStep1">
+      <div id="cartItemsList" class="cart-items"></div>
+
+      <section class="cart-section">
+        <h2 class="cart-section-title" id="shippingTitle">Entrega</h2>
+        <div class="cart-field-row">
+          <input type="text" class="form-control" id="cepInput" placeholder="Seu CEP" inputmode="numeric" maxlength="9" autocomplete="postal-code" aria-labelledby="shippingTitle">
+          <button class="btn-outline-blush cart-field-btn" id="calcShippingBtn" type="button">Calcular</button>
+        </div>
+        <div class="cart-hint" id="shippingMsg"></div>
+        <div id="shippingOptions" class="cart-choices"></div>
+      </section>
+
+      <section class="cart-section">
+        <button type="button" class="cart-disclosure" id="couponToggle" aria-expanded="false" aria-controls="couponFields">
+          <i class="bi bi-ticket-perforated"></i>Tenho um cupom
+        </button>
+        <div class="cart-disclosure-body d-none" id="couponFields">
+          <div class="cart-field-row">
+            <input type="text" class="form-control" id="couponInput" maxlength="30" autocomplete="off" placeholder="Código do cupom" aria-label="Código do cupom">
+            <button class="btn-outline-blush cart-field-btn" id="couponApplyBtn" type="button">Aplicar</button>
+          </div>
+          <div class="cart-hint" id="couponMsg"></div>
+        </div>
+      </section>
+
+      <section class="cart-section d-none" id="cartRecommendations">
+        <h2 class="cart-section-title">Complete seu pedido</h2>
+        <div id="cartRecsList" class="cart-recs-list"></div>
+      </section>
+
+      <a href="#colecoes" class="cart-continue-link" id="cartContinueLink">Ver mais produtos</a>
+    </div>
+
+    <div class="cart-step" id="cartStep2">
+      <section class="cart-section">
+        <h2 class="cart-section-title">Entrega</h2>
+        <div class="cart-chosen" id="cartChosenShipping"></div>
+      </section>
+
+      <section class="cart-section cart-address" id="addressFields">
+        <h2 class="cart-section-title">Endereço</h2>
+        <p class="cart-address-hint"><i class="bi bi-info-circle"></i><span>Precisamos de todos os campos para a etiqueta de envio — só o complemento é opcional.</span></p>
+        <div class="row g-3">
+          <div class="col-12 cart-address-field">
+            <label class="form-label" for="addrNome">Nome completo</label>
+            <input type="text" class="form-control" id="addrNome" required aria-describedby="addrNome-error" autocomplete="name">
+            <div class="field-error" id="addrNome-error"></div>
+          </div>
+          <div class="col-12 cart-address-field">
+            <label class="form-label" for="addrTelefone">Telefone / WhatsApp</label>
+            <input type="tel" class="form-control" id="addrTelefone" placeholder="(00) 00000-0000" inputmode="tel" required aria-describedby="addrTelefone-error" autocomplete="tel">
+            <div class="field-error" id="addrTelefone-error"></div>
+          </div>
+          <div class="col-12 cart-address-field">
+            <label class="form-label" for="addrCpf">CPF do destinatário</label>
+            <input type="text" class="form-control" id="addrCpf" placeholder="000.000.000-00" inputmode="numeric" required aria-describedby="addrCpf-error" autocomplete="off" maxlength="14">
+            <div class="field-error" id="addrCpf-error"></div>
+          </div>
+          <div class="col-8 cart-address-field">
+            <label class="form-label" for="addrRua">Rua</label>
+            <input type="text" class="form-control" id="addrRua" required aria-describedby="addrRua-error" autocomplete="address-line1">
+            <div class="field-error" id="addrRua-error"></div>
+          </div>
+          <div class="col-4 cart-address-field">
+            <label class="form-label" for="addrNumero">Número</label>
+            <input type="text" class="form-control" id="addrNumero" required aria-describedby="addrNumero-error" autocomplete="off">
+            <div class="field-error" id="addrNumero-error"></div>
+          </div>
+          <div class="col-12 cart-address-field">
+            <label class="form-label" for="addrComplemento">Complemento <span class="optional-mark">(opcional)</span></label>
+            <input type="text" class="form-control" id="addrComplemento" placeholder="Apto, bloco, casa" autocomplete="address-line2">
+          </div>
+          <div class="col-12 cart-address-field">
+            <label class="form-label" for="addrBairro">Bairro</label>
+            <input type="text" class="form-control" id="addrBairro" required aria-describedby="addrBairro-error" autocomplete="off">
+            <div class="field-error" id="addrBairro-error"></div>
+          </div>
+          <div class="col-8 cart-address-field">
+            <label class="form-label" for="addrCidade">Cidade</label>
+            <input type="text" class="form-control" id="addrCidade" required aria-describedby="addrCidade-error" autocomplete="address-level2">
+            <div class="field-error" id="addrCidade-error"></div>
+          </div>
+          <div class="col-4 cart-address-field">
+            <label class="form-label" for="addrUf">Estado</label>
+            <select class="form-select" id="addrUf" required aria-describedby="addrUf-error" autocomplete="address-level1">
+              <option value="">UF</option>
+              <option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option><option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option><option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option><option>SP</option><option>SE</option><option>TO</option>
+            </select>
+            <div class="field-error" id="addrUf-error"></div>
+          </div>
+        </div>
+        <div class="form-check consent-check mt-2">
+          <input class="form-check-input" type="checkbox" id="saveAddressCheck" checked>
+          <label class="form-check-label small" for="saveAddressCheck">Salvar este endereço para as próximas compras</label>
+        </div>
+      </section>
+
+      <section class="cart-section">
+        <h2 class="cart-section-title" id="payMethodLabel">Pagamento</h2>
+        <div class="pay-methods" id="payMethodGroup" role="radiogroup" aria-labelledby="payMethodLabel">
+          <label class="pay-method">
+            <input type="radio" name="payMethod" value="pix" checked>
+            <span class="pm-icon"><i class="bi bi-qr-code"></i></span>
+            <span class="pm-body">
+              <span class="pm-name">Pix</span>
+              <span class="pm-note" id="pmPixNote"></span>
+            </span>
+          </label>
+          <label class="pay-method">
+            <input type="radio" name="payMethod" value="card">
+            <span class="pm-icon"><i class="bi bi-credit-card"></i></span>
+            <span class="pm-body">
+              <span class="pm-name">Cartão ou boleto</span>
+              <span class="pm-note" id="pmCardNote"></span>
+            </span>
+          </label>
+        </div>
+        <p class="cart-gateway-note">
+          <i class="bi bi-shield-lock-fill"></i>
+          <span id="cartGatewayText">Você conclui a compra no <strong>Mercado Pago</strong>, com segurança.</span>
+        </p>
+      </section>
+
+      <div class="cart-login-notice d-none" id="cartLoginNotice">
+        <i class="bi bi-person-circle"></i>
+        <span>Entre na sua conta para finalizar. Assim você também acompanha a entrega em "Meus pedidos".</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cart-footer" id="cartFooter">
+    <div class="cart-resumo">
+      <div class="cart-total-line">
+        <span>Subtotal</span>
+        <strong id="cartSubtotal">R$ 0,00</strong>
+      </div>
+      <div class="cart-total-line d-none" id="cartShippingRow">
+        <span>Frete</span>
+        <strong id="cartShippingPrice">—</strong>
+      </div>
+      <div class="cart-total-line is-discount d-none" id="cartDiscountRow">
+        <span>Desconto <span id="cartCouponCode"></span></span>
+        <strong id="cartDiscount">-R$ 0,00</strong>
+      </div>
+      <div class="cart-total-line is-discount d-none" id="cartPromoRow">
+        <span>Leve 4, pague 3</span>
+        <strong id="cartPromoDiscount">-R$ 0,00</strong>
+      </div>
+      <div class="cart-total-line is-discount d-none" id="cartPixRow">
+        <span>Desconto Pix <span id="cartPixPercent"></span></span>
+        <strong id="cartPixDiscount">-R$ 0,00</strong>
+      </div>
+      <div class="cart-total-line is-grand">
+        <span>Total</span>
+        <strong id="cartTotal">R$ 0,00</strong>
+      </div>
+      <div class="cart-hint" id="cartInstallmentNote"></div>
+    </div>
+    <button class="btn-blush cart-checkout-btn" id="checkoutBtn">Continuar</button>
+    <div class="cart-hint text-center" id="checkoutMsg"></div>
+  </div>
+</div>
+
+<header class="hero" id="inicio">
+  <div class="hero-flutuantes" aria-hidden="true">
+    <svg class="bow-icon floaty f1"><use href="#bow-shape"/></svg>
+    <svg class="bow-icon floaty f2"><use href="#bow-shape"/></svg>
+    <svg class="bow-icon floaty f3"><use href="#bow-shape"/></svg>
+    <svg class="bow-icon floaty f4"><use href="#bow-shape"/></svg>
+    <svg class="bow-icon floaty f5"><use href="#bow-shape"/></svg>
+    <svg class="bow-icon floaty f6"><use href="#bow-shape"/></svg>
+    <svg class="bow-icon floaty f7"><use href="#bow-shape"/></svg>
+    <svg class="bow-icon floaty f8"><use href="#bow-shape"/></svg>
+    <svg class="bow-icon floaty f9"><use href="#bow-shape"/></svg>
+    <svg class="bow-icon floaty f10"><use href="#bow-shape"/></svg>
+  </div>
+  <div class="container">
+    <div class="row hero-linha gy-5">
+      <div class="col-lg-5 hero-texto">
+        <p class="hero-selo"><span class="hero-selo-pilula"><svg class="bow-icon hero-selo-laco" viewBox="0 0 100 70" aria-hidden="true" focusable="false"><use href="#bow-shape"/></svg>Ateliê Nome da Loja</span><span class="visually-hidden">, </span><span class="hero-selo-local">Brasília/DF</span></p>
+        <h1 class="hero-title">Cada laço, feito à mão pela <em>Nome da Responsável.</em></h1>
+        <p class="hero-lead">Você escolhe o modelo e a cor da fita, eu costuro um por um aqui no ateliê.</p>
+        <p class="hero-assinatura" aria-hidden="true">— Nome da Responsável</p>
+        <div class="hero-acoes">
+          <a href="#colecoes" class="btn-blush hero-cta">Escolher meu laço <i class="bi bi-arrow-down-short" aria-hidden="true"></i></a>
+          <a href="https://wa.me/5500000000000" target="_blank" rel="noopener" class="btn-outline-blush hero-whats"><i class="bi bi-whatsapp" aria-hidden="true"></i> Falar no WhatsApp</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><span class="hero-stat-icone" aria-hidden="true"><svg class="bow-icon" viewBox="0 0 100 70"><use href="#bow-shape"/></svg></span><span class="num"><span class="num-valor" data-contar="3200" data-prefixo="+">+3.200</span></span><span class="lbl">laços entregues</span></div>
+          <template data-marca=NOTA-MEDIA></template>
+          <div class="hero-stat"><span class="hero-stat-icone" aria-hidden="true"><i class="bi bi-scissors"></i></span><span class="num"><span class="num-valor" data-contar="100" data-sufixo="%">100%</span></span><span class="lbl">feito à mão</span></div>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="hero-art">
+          <div class="hero-lacos-foto" aria-hidden="true">
+            <svg class="bow-icon lacinho g1"><use href="#bow-shape"/></svg>
+            <svg class="bow-icon lacinho g2"><use href="#bow-shape"/></svg>
+            <svg class="bow-icon lacinho g3"><use href="#bow-shape"/></svg>
+            <svg class="bow-icon lacinho g4"><use href="#bow-shape"/></svg>
+            <svg class="bow-icon lacinho g5"><use href="#bow-shape"/></svg>
+            <svg class="bow-icon lacinho g6"><use href="#bow-shape"/></svg>
+          </div>
+          <div class="hero-carrossel" id="heroCarrossel" role="group" aria-label="Fotos das peças do ateliê">
+            <div class="hero-quadro">
+              <template data-marca=HERO-FOTOS></template>
+            </div>
+            <p class="visually-hidden hero-vivo" aria-live="polite" aria-atomic="true"></p>
+            <div class="hero-controles">
+              <div class="hero-pontos" role="group" aria-label="Escolher a foto"></div>
+              <button type="button" class="hero-pausa" aria-pressed="false" aria-label="Pausar a troca das fotos" hidden><span class="hero-pausa-icone" aria-hidden="true"></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="plc-marquee" role="region" aria-label="Diferenciais da loja">
+    <div class="plc-marquee-track">
+    <div class="plc-marquee-group">
+      <span><i class="bi bi-truck" aria-hidden="true"></i> Envio para todo o Brasil</span>
+      <span class="plc-marquee-sep" aria-hidden="true"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-palette2" aria-hidden="true"></i> Cores e fitas personalizáveis</span>
+      <span class="plc-marquee-sep" aria-hidden="true"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Devolução grátis em até 7 dias</span>
+      <span class="plc-marquee-sep" aria-hidden="true"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-scissors" aria-hidden="true"></i> Feito à mão em cetim e algodão</span>
+      <span class="plc-marquee-sep" aria-hidden="true"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-tags" aria-hidden="true"></i> Leve 4, pague 3 — o mais barato sai grátis</span>
+      <span class="plc-marquee-sep" aria-hidden="true"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+    </div>
+    <div class="plc-marquee-group" aria-hidden="true">
+      <span><i class="bi bi-truck"></i> Envio para todo o Brasil</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-palette2"></i> Cores e fitas personalizáveis</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-arrow-repeat"></i> Devolução grátis em até 7 dias</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-scissors"></i> Feito à mão em cetim e algodão</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-tags"></i> Leve 4, pague 3 — o mais barato sai grátis</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+    </div>
+    <div class="plc-marquee-group" aria-hidden="true">
+      <span><i class="bi bi-truck"></i> Envio para todo o Brasil</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-palette2"></i> Cores e fitas personalizáveis</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-arrow-repeat"></i> Devolução grátis em até 7 dias</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-scissors"></i> Feito à mão em cetim e algodão</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-tags"></i> Leve 4, pague 3 — o mais barato sai grátis</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+    </div>
+    <div class="plc-marquee-group" aria-hidden="true">
+      <span><i class="bi bi-truck"></i> Envio para todo o Brasil</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-palette2"></i> Cores e fitas personalizáveis</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-arrow-repeat"></i> Devolução grátis em até 7 dias</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-scissors"></i> Feito à mão em cetim e algodão</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+      <span><i class="bi bi-tags"></i> Leve 4, pague 3 — o mais barato sai grátis</span>
+      <span class="plc-marquee-sep"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>
+    </div>
+  </div>
+</div>
+
+<section id="colecoes" class="py-5 py-lg-6" style="padding-top:5rem; padding-bottom:5rem;">
+  <div class="container">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-4 mb-4">
+      <div class="reveal">
+        <span class="section-eyebrow"><i class="bi bi-flower1"></i> nossa coleção</span>
+        <h2 class="section-title">Um laço para cada momento</h2>
+        <p class="section-sub mt-2">Escolha pelo tipo e monte o pedido — cada peça é confeccionada especialmente para você.</p>
+      </div>
+
+      <div class="vitrine-busca reveal">
+        <label class="visually-hidden" for="buscaProduto">Buscar produto pelo nome</label>
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" id="buscaProduto" class="form-control" placeholder="Buscar pelo nome…" autocomplete="off">
+        <button type="button" id="buscaLimpar" class="vitrine-busca-limpar d-none" aria-label="Limpar busca"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+
+    <div class="chip-linha mb-3">
+      <div class="chip-group" id="filterGroup" role="group" aria-label="Filtrar por tipo de produto">
+        <button class="chip active" data-cat="todos" aria-pressed="true">Todos</button>
+        <button class="chip" data-cat="laco-unico" aria-pressed="false">Laço Único</button>
+        <button class="chip" data-cat="parzinho" aria-pressed="false">Parzinho</button>
+        <button class="chip" data-cat="laco-g" aria-pressed="false">Laço G</button>
+        <button class="chip" data-cat="laco-pompom" aria-pressed="false">Laço Pompom</button>
+        <button class="chip" data-cat="tiara" aria-pressed="false">Tiara</button>
+        <button class="chip" data-cat="kit" aria-pressed="false">Kit</button>
+        <button class="chip" data-cat="bolsa" aria-pressed="false">Bolsa</button>
+        <button class="chip" data-cat="cabide" aria-pressed="false">Cabide</button>
+      </div>
+      <button type="button" class="chip chip-mais d-none" id="verTodasCategorias" aria-controls="filterGroup" aria-expanded="false">
+        <span id="verTodasCategoriasTexto">Ver todas</span>
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <p class="vitrine-contagem mb-4" id="vitrineContagem" role="status" aria-live="polite"></p>
+
+    <div class="row g-4" id="productsGrid"></div>
+
+    <div class="vitrine-vazio d-none" id="vitrineVazio">
+      <svg class="bow-icon" aria-hidden="true"><use href="#bow-shape"/></svg>
+      <p class="mb-1">Nenhum laço encontrado para <strong id="vitrineVazioTermo"></strong>.</p>
+      <p class="section-sub mb-0">Tente outro nome ou veja todas as ocasiões.</p>
+    </div>
+
+    <div class="text-center mt-5 d-none" id="vitrineMaisWrap">
+      <button type="button" class="btn-outline-blush" id="vitrineMais">Ver mais produtos</button>
+    </div>
+  </div>
+</section>
+
+<section id="historia" class="py-5" style="padding-top:5rem; padding-bottom:5rem;">
+  <div class="container">
+    <div class="row align-items-center gy-5">
+      <div class="col-lg-6 reveal">
+        <span class="section-eyebrow"><i class="bi bi-heart-fill"></i> nossa história</span>
+        <h2 class="section-title mb-3">Comecei nas feirinhas e nos colégios de Brasília</h2>
+        <p class="section-sub mb-3">Faz mais de oito anos que eu faço laço à mão. Até hoje, o que eu mais gosto é de ver a menina escolher de perto a cor que ela vai levar.</p>
+        <p class="section-sub mb-4">Corto, costuro e finalizo cada peça uma de cada vez, com o mesmo cuidado de quando o laço é para alguém da minha própria família. O site mudou só o alcance: ele continua saindo daqui do mesmo jeito que saía no primeiro dia.</p>
+        <div class="d-flex align-items-center gap-3">
+          <div class="social-circle" style="background:var(--blush-100); color:var(--blush-700)"><i class="bi bi-scissors"></i></div>
+          <div>
+            <div class="fw-semibold font-display" style="font-size:1.05rem">Nome da Responsável</div>
+            <div class="small" style="color:var(--ink-soft)">Idealizadora e artesã</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6 reveal reveal-delay-1">
+        <div class="instagram-follow-head">
+          <a href="https://www.instagram.com/nomedaloja/" target="_blank" rel="noopener noreferrer" class="btn-outline-blush"><i class="bi bi-instagram me-1"></i> Seguir no Instagram</a>
+        </div>
+        <div class="instagram-feed-card" id="instagramFeedCard" data-state="loading">
+          <div class="instagram-feed-loading">
+            <div class="instagram-feed-header">
+              <div class="instagram-feed-avatar is-loading"></div>
+              <div class="instagram-feed-headline">
+                <div class="instagram-feed-skeleton-line" style="width:60%"></div>
+                <div class="instagram-feed-skeleton-line" style="width:40%"></div>
+              </div>
+            </div>
+            <div class="instagram-feed-grid">
+              <div class="instagram-feed-thumb is-loading"></div>
+              <div class="instagram-feed-thumb is-loading"></div>
+              <div class="instagram-feed-thumb is-loading"></div>
+              <div class="instagram-feed-thumb is-loading"></div>
+              <div class="instagram-feed-thumb is-loading"></div>
+              <div class="instagram-feed-thumb is-loading"></div>
+            </div>
+          </div>
+
+          <div class="instagram-feed-live d-none">
+            <a class="instagram-feed-header instagram-feed-profile-link" href="https://www.instagram.com/nomedaloja/" target="_blank" rel="noopener noreferrer">
+              <img class="instagram-feed-avatar" alt="" width="52" height="52">
+              <div class="instagram-feed-headline">
+                <span class="instagram-feed-username"></span>
+                <span class="instagram-feed-cta">Ver perfil no Instagram <i class="bi bi-box-arrow-up-right"></i></span>
+              </div>
+            </a>
+            <div class="instagram-feed-grid"></div>
+          </div>
+
+          <div class="instagram-feed-fallback d-none">
+            <div class="instagram-feed-fallback-icon"><i class="bi bi-instagram"></i></div>
+            <div class="fw-semibold font-display" style="font-size:1.15rem">@nomedaloja</div>
+            <p class="section-sub mb-0" style="font-size:.9rem">Acompanhe as novidades e bastidores no nosso perfil.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="sobre">
+  <div class="sobre-caixa py-5">
+  <div class="container">
+    <div class="text-center mx-auto mb-5 reveal" style="max-width:560px">
+      <span class="section-eyebrow"><i class="bi bi-heart"></i> como funciona</span>
+      <h2 class="section-title">Do pedido até a sua porta</h2>
+      <p class="section-sub mx-auto mt-2">Três passos simples para o laço perfeito chegar até você.</p>
+    </div>
+
+    <div class="process-wrap row g-5">
+      <div class="process-line d-none d-md-block"></div>
+      <div class="process-package-mobile" id="processPackage" aria-hidden="true">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="process-truck" id="processTruck" aria-hidden="true">
+        <svg class="process-truck-lines" viewBox="0 0 20 40" width="20" height="40">
+          <line x1="18" y1="12" x2="6" y2="12"/>
+          <line x1="18" y1="20" x2="3" y2="20"/>
+          <line x1="18" y1="28" x2="6" y2="28"/>
+        </svg>
+        <svg class="process-truck-svg" viewBox="0 0 64 40" width="100%" height="100%">
+          <ellipse class="process-truck-shadow" cx="27" cy="35" rx="21" ry="2.6"/>
+          <rect class="process-truck-body" x="4" y="10" width="34" height="17" rx="4"/>
+          <path class="process-truck-cab" d="M38 15 h10 a4 4 0 0 1 4 4 v4 a4 4 0 0 1 -4 4 h-10 z"/>
+          <rect class="process-truck-window" x="42" y="17" width="7" height="6" rx="1.4"/>
+          <use class="process-truck-bow" href="#bow-shape" x="10" y="14" width="14" height="10"/>
+          <g class="process-truck-wheel">
+            <circle cx="14" cy="29" r="5"/>
+            <circle class="process-truck-hub" cx="14" cy="29" r="2"/>
+          </g>
+          <g class="process-truck-wheel">
+            <circle cx="40" cy="29" r="5"/>
+            <circle class="process-truck-hub" cx="40" cy="29" r="2"/>
+          </g>
+        </svg>
+      </div>
+      <div class="col-md-4 process-step reveal">
+        <div class="process-icon-wrap">
+          <div class="process-icon" aria-hidden="true"><i class="bi bi-search-heart"></i></div>
+          <span class="process-num">1</span>
+        </div>
+        <h3 class="h5 font-display">Escolha o laço</h3>
+        <p class="section-sub mx-auto">Navegue pela coleção e escolha o modelo que combina com a ocasião.</p>
+      </div>
+      <div class="col-md-4 process-step reveal reveal-delay-1">
+        <div class="process-icon-wrap">
+          <div class="process-icon" aria-hidden="true"><i class="bi bi-palette"></i></div>
+          <span class="process-num">2</span>
+        </div>
+        <h3 class="h5 font-display">Personalize</h3>
+        <p class="section-sub mx-auto">Escolha a cor da fita que combina com a ocasião.</p>
+      </div>
+      <div class="col-md-4 process-step reveal reveal-delay-2">
+        <div class="process-icon-wrap">
+          <div class="process-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></div>
+          <span class="process-num">3</span>
+        </div>
+        <h3 class="h5 font-display">Receba em casa</h3>
+        <p class="section-sub mx-auto">Produzimos à mão, embalamos com carinho e enviamos para todo o Brasil.</p>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<section id="depoimentos" class="garantias-section">
+  <div class="container">
+    <div class="divisor-laco" aria-hidden="true">
+      <svg viewBox="0 0 100 70" focusable="false"><use href="#bow-shape"/></svg>
+    </div>
+    <div class="text-center mx-auto garantias-head">
+      <span class="section-eyebrow"><i class="bi bi-shield-check"></i> nossa promessa pra você</span>
+      <h2 class="section-title">Sua compra, protegida do início ao fim</h2>
+    </div>
+    <div class="garantias">
+      <article class="garantia reveal">
+        <span class="garantia-icone" aria-hidden="true"><i class="bi bi-shield-lock-fill"></i></span>
+        <h3 class="garantia-titulo font-display">Pagamento seguro</h3>
+        <p class="garantia-desc">Pix com 5% de desconto ou cartão em até 3x sem juros, processado pelo Mercado Pago.</p>
+      </article>
+      <article class="garantia reveal reveal-delay-1">
+        <span class="garantia-icone" aria-hidden="true"><i class="bi bi-scissors"></i></span>
+        <h3 class="garantia-titulo font-display">Feito sob encomenda</h3>
+        <p class="garantia-desc">Assim que o pagamento entra, sua peça vai para a fila de produção — feita à mão, uma de cada vez.</p>
+      </article>
+      <article class="garantia reveal reveal-delay-2">
+        <span class="garantia-icone" aria-hidden="true"><i class="bi bi-chat-heart-fill"></i></span>
+        <h3 class="garantia-titulo font-display">Atendimento direto</h3>
+        <p class="garantia-desc">Dúvida antes ou depois da compra? Você fala com a gente no WhatsApp, sem robô no meio.</p>
+      </article>
+      <article class="garantia reveal reveal-delay-3">
+        <span class="garantia-icone" aria-hidden="true"><i class="bi bi-arrow-counterclockwise"></i></span>
+        <h3 class="garantia-titulo font-display">Devolução grátis em 7 dias</h3>
+        <p class="garantia-desc">Não gostou? Reembolso integral, com o frete de volta por nossa conta e sem precisar justificar.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+
+<template data-marca=AVALIACOES></template>
+
+<section id="contato" class="py-5" style="padding-top:3rem; padding-bottom:6rem;">
+  <div class="container">
+    <div class="divisor-laco" aria-hidden="true">
+      <svg viewBox="0 0 100 70" focusable="false"><use href="#bow-shape"/></svg>
+    </div>
+    <div class="row g-5">
+      <div class="col-lg-5 reveal">
+        <span class="section-eyebrow"><i class="bi bi-envelope-heart"></i> fale com a gente</span>
+        <h2 class="section-title">Vamos criar seu laço?</h2>
+        <p class="section-sub mt-2 mb-4">Conte a ocasião, a cor e o tamanho — respondemos em até 24h úteis.</p>
+        <div class="contact-info-row">
+          <span class="social-circle contact-info-icon"><i class="bi bi-whatsapp"></i></span>
+          <div>
+            <div class="fw-semibold">WhatsApp</div>
+            <a href="https://wa.me/5500000000000" target="_blank" rel="noopener">(00) 00000-0000</a>
+          </div>
+        </div>
+        <div class="contact-info-row">
+          <span class="social-circle contact-info-icon"><i class="bi bi-envelope"></i></span>
+          <div>
+            <div class="fw-semibold">E-mail</div>
+            <a href="mailto:contato@nomedaloja.com.br">contato@nomedaloja.com.br</a>
+          </div>
+        </div>
+        <div class="contact-info-row contact-info-row-last">
+          <span class="social-circle contact-info-icon"><i class="bi bi-geo-alt"></i></span>
+          <div>
+            <div class="fw-semibold">Ateliê</div>
+            <span class="section-sub">Brasília, DF — envios para todo o Brasil</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-7 reveal reveal-delay-1">
+        <div class="contact-form-card">
+        <form class="row g-3" id="contactForm" novalidate>
+          <div class="col-sm-6">
+            <label class="form-label small fw-semibold" for="contactNome">Nome</label>
+            <div class="contact-field-icon">
+              <i class="bi bi-person"></i>
+              <input type="text" class="form-control" id="contactNome" name="nome" autocomplete="name" maxlength="120" required>
+              <div class="invalid-feedback">Conte seu nome para a gente</div>
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label small fw-semibold" for="contactTelefone">WhatsApp</label>
+            <div class="contact-field-icon">
+              <i class="bi bi-whatsapp"></i>
+              <input type="tel" class="form-control" id="contactTelefone" name="telefone" autocomplete="tel" maxlength="30" required>
+              <div class="invalid-feedback">Informe um telefone para contato.</div>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold" for="contactOcasiao">Ocasião</label>
+            <select class="form-select" id="contactOcasiao" name="ocasiao" required>
+              <option value="" selected disabled>Selecione...</option>
+              <option>Maternidade</option>
+              <option>Festa</option>
+              <option>Batizado</option>
+              <option>Dia a dia</option>
+              <option>Presente</option>
+            </select>
+            <div class="invalid-feedback">Escolha uma ocasião.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold" for="contactMensagem">Mensagem</label>
+            <textarea class="form-control" id="contactMensagem" name="mensagem" rows="4" maxlength="2000" placeholder="Cor, tamanho, quantidade..." required></textarea>
+            <div class="invalid-feedback">Escreva sua mensagem.</div>
+          </div>
+          <div class="col-12">
+            <div class="form-check consent-check">
+              <input class="form-check-input" type="checkbox" id="contactConsent" required>
+              <label class="form-check-label small" for="contactConsent">
+                <span>Li e concordo com a <a href="/politica.html" target="_blank" rel="noopener">Política de Privacidade</a> e autorizo o uso dos meus dados para responder este contato.</span>
+              </label>
+              <div class="invalid-feedback">É preciso aceitar para enviar.</div>
+            </div>
+          </div>
+          <div class="col-12 d-flex align-items-center flex-wrap gap-3">
+            <button class="btn-blush" type="submit">Enviar mensagem <i class="bi bi-send ms-1"></i></button>
+            <span class="small" id="contactMsg" style="color:var(--blush-700)"></span>
+          </div>
+        </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="plc-footer">
+  <div class="plc-footer-topo" aria-hidden="true"></div>
+
+  <div class="container">
+    <div class="plc-footer-grid">
+      <div class="plc-footer-marca">
+        <div class="plc-footer-logo">
+          <svg class="bow-icon" aria-hidden="true"><use href="#bow-shape"/></svg>
+          <span class="font-display plc-footer-brand">Nome da Loja</span>
+        </div>
+        <p class="plc-footer-desc">Ateliê artesanal de laços e presilhas para bebês e crianças. Cada peça é feita à mão, com fitas selecionadas e muito carinho.</p>
+        <div class="plc-footer-social">
+          <a href="https://www.instagram.com/nomedaloja/" target="_blank" rel="noopener" class="social-circle" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+          <a href="https://wa.me/5500000000000" target="_blank" rel="noopener" class="social-circle" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+        </div>
+      </div>
+
+      <nav class="plc-footer-col" aria-label="Coleções">
+        <h3 class="plc-footer-heading">Coleções</h3>
+        <a href="#colecoes">Tiara</a>
+        <a href="#colecoes">Parzinho</a>
+        <a href="#colecoes">Laço Único</a>
+        <a href="#colecoes">Kit</a>
+      </nav>
+
+      <nav class="plc-footer-col" aria-label="Ateliê">
+        <h3 class="plc-footer-heading">Ateliê</h3>
+        <a href="#historia">Nossa história</a>
+        <a href="#sobre">Como funciona</a>
+        <a href="#depoimentos">Garantias</a>
+        <a href="#contato">Contato</a>
+      </nav>
+
+      <nav class="plc-footer-col" aria-label="Ajuda">
+        <h3 class="plc-footer-heading">Ajuda</h3>
+        <a href="/acompanhar-pedido.html">Acompanhar pedido</a>
+        <a href="/politica.html">Trocas e devoluções</a>
+        <a href="/politica.html#privacidade">Privacidade</a>
+      </nav>
+    </div>
+
+    <div class="plc-footer-pagamento" id="formasPagamento">
+      <h3 class="plc-footer-heading">Formas de pagamento</h3>
+      <div class="pay-row">
+        <div class="pay-badges">
+          <span class="pay-badge" id="payBadgePix">Pix</span>
+          <span class="pay-badge" id="payBadgeInstallments">Parcelamento no cartão</span>
+        </div>
+        <div class="pay-logos" aria-label="Bandeiras e meios de pagamento aceitos">
+          <span class="pay-logo-badge"><img src="/img/payment/visa.svg" alt="Visa" loading="lazy"></span>
+          <span class="pay-logo-badge"><img src="/img/payment/mastercard.svg" alt="Mastercard" loading="lazy"></span>
+          <span class="pay-logo-badge"><img src="/img/payment/amex.svg" alt="American Express" loading="lazy"></span>
+          <span class="pay-logo-badge"><img src="/img/payment/elo.svg" alt="Elo" loading="lazy"></span>
+          <span class="pay-logo-badge"><img src="/img/payment/hipercard.svg" alt="Hipercard" loading="lazy"></span>
+          <span class="pay-logo-badge"><img src="/img/payment/hiper.jpg" alt="Hiper" loading="lazy"></span>
+          <span class="pay-logo-badge is-icon"><i class="bi bi-upc-scan"></i>Boleto</span>
+          <span class="pay-logo-badge"><img src="/img/payment/pix.svg" alt="Pix" loading="lazy"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 Nome da Loja — CNPJ 00.000.000/0000-00</span>
+      <span>Feito com <i class="bi bi-heart-fill" aria-hidden="true"></i> em Brasília</span>
+    </div>
+  </div>
+</footer>
+
+<button class="fab fab-top" id="btnTop" aria-label="Voltar ao topo"><i class="bi bi-arrow-up"></i></button>
+<a class="fab" href="https://wa.me/5500000000000" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+
+<div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" style="z-index:1080">
+  <div id="cartToast" class="toast align-items-center border-0" role="alert" style="background:var(--ink); color:#fff">
+    <div class="d-flex">
+      <div class="toast-body"><i class="bi bi-check-circle me-2"></i>Adicionado ao carrinho!</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+  <div id="checkoutHintToast" class="toast checkout-hint-toast align-items-center border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body"><i class="bi bi-exclamation-circle-fill me-2"></i><span id="checkoutHintToastBody"></span></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade avaliacao-foto-modal" id="avaliacaoFotoModal" tabindex="-1" aria-labelledby="avaliacaoFotoLegenda" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <button type="button" class="avaliacao-foto-fechar" data-bs-dismiss="modal" aria-label="Fechar foto"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <img id="avaliacaoFotoImagem" class="avaliacao-foto-ampliada" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="">
+      <p id="avaliacaoFotoLegenda" class="avaliacao-foto-legenda"></p>
+    </div>
+  </div>
+</div>
+
+<div class="qv-zoom" id="qvZoom" hidden>
+  <button type="button" class="qv-zoom-fechar" id="qvZoomFechar" aria-label="Fechar a foto ampliada"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+  <img id="qvZoomImagem" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="">
+  <p class="qv-zoom-dica" id="qvZoomDica">Toque na foto para aproximar</p>
+</div>
+
+<div class="modal fade" id="quickViewModal" tabindex="-1" aria-labelledby="qvName" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+    <div class="modal-content" style="border-radius:var(--radius-md); border:none">
+      <div class="modal-header border-0">
+        <h5 class="modal-title font-display" id="qvName">Laço</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body qv-body">
+        <div class="qv-media">
+          <div class="qv-thumb is-loading mb-2" id="qvThumb">
+            <img id="qvImage" src="" alt="" width="480" height="720" decoding="async">
+            <svg class="bow-icon"><use href="#bow-shape"/></svg>
+            <button type="button" class="qv-zoom-btn" id="qvZoomBtn" aria-label="Ampliar a foto"><i class="bi bi-zoom-in" aria-hidden="true"></i></button>
+            <div class="qv-share-fab share-block" id="qvShareFab" data-share-url="">
+              <button type="button" class="qv-share-fab-btn" id="qvShareFabBtn" aria-expanded="false" aria-controls="qvShareFabLista" aria-label="Compartilhar este laço"><i class="bi bi-share-fill" aria-hidden="true"></i></button>
+              <div class="qv-share-fab-lista" id="qvShareFabLista" hidden>
+                <button type="button" class="share-btn share-btn-native" hidden aria-label="Compartilhar este laço">
+                  <i class="bi bi-share-fill"></i>
+                </button>
+                <a class="share-btn" data-share="whatsapp" href="#" target="_blank" rel="noopener noreferrer" aria-label="Enviar este laço pelo WhatsApp">
+                  <i class="bi bi-whatsapp"></i>
+                </a>
+                <a class="share-btn" data-share="facebook" href="#" target="_blank" rel="noopener noreferrer" aria-label="Compartilhar este laço no Facebook">
+                  <i class="bi bi-facebook"></i>
+                </a>
+                <a class="share-btn" data-share="pinterest" href="#" target="_blank" rel="noopener noreferrer" aria-label="Salvar este laço no Pinterest">
+                  <i class="bi bi-pinterest"></i>
+                </a>
+                <button type="button" class="share-btn share-btn-copy" aria-label="Copiar o link deste laço">
+                  <i class="bi bi-link-45deg"></i>
+                </button>
+              </div>
+            </div>
+            <button type="button" class="qv-gallery-nav-btn is-prev d-none" id="qvGalleryPrev" aria-label="Foto anterior"><i class="bi bi-chevron-left"></i></button>
+            <button type="button" class="qv-gallery-nav-btn is-next d-none" id="qvGalleryNext" aria-label="Próxima foto"><i class="bi bi-chevron-right"></i></button>
+          </div>
+          <div class="qv-gallery-thumbs d-none" id="qvGalleryThumbs" role="group" aria-label="Fotos do produto"></div>
+        </div>
+        <div class="qv-info">
+          <div class="qv-tags" id="qvTags"></div>
+
+          <p class="section-sub qv-desc" id="qvDesc">Descrição do produto.</p>
+
+          <div class="qv-soldout-msg d-none" id="qvSoldOutMsg">
+            <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i> Esgotado no momento.
+          </div>
+
+          <ul class="qv-garantias">
+            <li><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Devolução grátis em até 7 dias</li>
+            <li><i class="bi bi-scissors" aria-hidden="true"></i> Feito à mão, sob encomenda</li>
+            <li><i class="bi bi-truck" aria-hidden="true"></i> Enviamos para todo o Brasil</li>
+            <li><i class="bi bi-qr-code" aria-hidden="true"></i> Pix com 5% de desconto</li>
+          </ul>
+
+          <div class="share-block is-compacto" id="qvShare" data-share-url="">
+            <p class="share-title">Mostrar para alguém</p>
+            <div class="share-buttons">
+              <button type="button" class="share-btn share-btn-native" hidden aria-label="Compartilhar este laço">
+                <i class="bi bi-share-fill"></i>
+              </button>
+              <a class="share-btn" data-share="whatsapp" href="#" target="_blank" rel="noopener noreferrer" aria-label="Enviar este laço pelo WhatsApp">
+                <i class="bi bi-whatsapp"></i>
+              </a>
+              <a class="share-btn" data-share="facebook" href="#" target="_blank" rel="noopener noreferrer" aria-label="Compartilhar este laço no Facebook">
+                <i class="bi bi-facebook"></i>
+              </a>
+              <a class="share-btn" data-share="pinterest" href="#" target="_blank" rel="noopener noreferrer" aria-label="Salvar este laço no Pinterest">
+                <i class="bi bi-pinterest"></i>
+              </a>
+              <button type="button" class="share-btn share-btn-copy" aria-label="Copiar o link deste laço">
+                <i class="bi bi-link-45deg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 qv-footer">
+        <div class="qv-payment" style="border-color:var(--blush-100)!important">
+          <div class="qv-pix">
+            <div class="qv-pix-main">
+              <span class="qv-pix-price" id="qvPixPrice">R$ 0,00</span>
+              <span class="qv-pix-tag"><i class="bi bi-lightning-charge-fill"></i> no Pix</span>
+            </div>
+            <div class="qv-pix-note" id="qvPixNote"></div>
+          </div>
+          <div class="qv-card mt-2">
+            <span class="qv-card-price" id="qvPrice">R$ 0,00</span>
+            <span class="qv-card-label">no cartão</span>
+            <span class="qv-card-inst" id="qvInstallment"></span>
+          </div>
+        </div>
+        <div class="qv-order-row">
+          <div class="qv-stepper" role="group" aria-label="Quantidade">
+            <button type="button" id="qvMinus" aria-label="Diminuir quantidade">−</button>
+            <span id="qvQty" aria-live="polite">1</span>
+            <button type="button" id="qvPlus" aria-label="Aumentar quantidade">+</button>
+          </div>
+          <button class="btn-blush" id="qvAddBtn">Adicionar ao carrinho</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed p-3 coupon-toast-container" id="couponToastContainer">
+  <div id="couponToast" class="toast coupon-toast" role="alert" aria-live="polite" aria-atomic="true"
+       data-cupom="%%CUPOM-BOAS-VINDAS%%">
+    <div class="coupon-toast-body">
+      <button type="button" class="coupon-toast-close" aria-label="Fechar notificação">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <div class="coupon-toast-head">
+        <span class="coupon-toast-icon" aria-hidden="true"><i class="bi bi-gift-fill"></i></span>
+        <p class="coupon-toast-text">
+          Ganhe <strong id="couponToastPercent">10%</strong> na primeira compra
+        </p>
+      </div>
+
+      <form id="couponToastForm" novalidate>
+        <div class="coupon-toast-field">
+          <i class="bi bi-envelope" aria-hidden="true"></i>
+          <label for="couponToastEmail" class="visually-hidden">Seu e-mail</label>
+          <input type="email" class="coupon-toast-input" id="couponToastEmail"
+                 placeholder="seu@email.com" autocomplete="email"
+                 aria-describedby="couponToastError">
+        </div>
+        <p class="coupon-toast-error" id="couponToastError" role="alert">E-mail inválido</p>
+      </form>
+
+      <div class="coupon-toast-reveal" id="couponToastReveal">
+        <p class="coupon-toast-success-text">Cupom liberado! Use no carrinho antes de finalizar.</p>
+        <div class="coupon-toast-code-row">
+          <span class="coupon-toast-code" id="couponToastCode">—</span>
+          <button type="button" class="coupon-toast-copy" id="couponToastCopyBtn">
+            <i class="bi bi-clipboard"></i> Copiar cupom
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/error-boundary.js" defer></script>
+<script src="/js/loading.js" defer></script>
+<script src="/js/vendor/bootstrap.min.js" defer></script>
+<link rel="preload" as="script" id="assetScrollTrigger" href="/js/vendor/ScrollTrigger.min.js" fetchpriority="low">
+<link rel="preload" as="script" id="assetSplitText" href="/js/vendor/SplitText.min.js" fetchpriority="low">
+<script src="/js/vendor/gsap.min.js" defer fetchpriority="low"></script>
+
+<script src="/js/auth.js" defer></script>
+<script src="/js/pricing.js" defer></script>
+<script src="/js/produto-url.js" defer></script>
+<script src="/js/main.js" defer></script>
+<script src="/js/hero-carrossel.js" defer></script>
+<script src="/js/animacoes.js" defer fetchpriority="low"></script>
+<script src="/js/instagram-feed.js" defer></script>
+<script src="/js/cupom-toast.js" defer></script>
+<script src="/js/faixa-promo.js" defer></script>
+<script src="/js/avaliacoes-home.js" defer></script>
+<script src="/js/compartilhar.js" defer></script>
+<script src="/js/cookie-consent.js" defer></script>
+</body>
+</html>

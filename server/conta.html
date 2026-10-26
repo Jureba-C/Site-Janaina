@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar ou criar conta — Nome da Loja</title>
+<meta name="description" content="Entre na sua conta ou cadastre-se para acompanhar seus pedidos na Nome da Loja.">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; script-src 'self' https://sdk.mercadopago.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; font-src 'self'; img-src 'self' https: data:; connect-src 'self' https://api.mercadopago.com https://viacep.com.br https://accounts.google.com; frame-src https://www.mercadopago.com https://www.mercadopago.com.br https://accounts.google.com; object-src 'none'; form-action 'self'">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+
+<link rel="stylesheet" href="css/vendor/bootstrap.purged.css">
+<link rel="stylesheet" href="css/vendor/bootstrap-icons.subset.css">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-page">
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="bow-shape" viewBox="0 0 100 70">
+    <path d="M50 35 C50 35 38 6 15 10 C-4 13 -4 47 15 51 C36 56 50 35 50 35 Z"/>
+    <path d="M50 35 C50 35 62 6 85 10 C104 13 104 47 85 51 C64 56 50 35 50 35 Z"/>
+    <rect x="42" y="26" width="16" height="18" rx="5"/>
+    <path d="M45 44 L38 68 L48 60 Z"/>
+    <path d="M55 44 L62 68 L52 60 Z"/>
+  </symbol>
+</svg>
+
+<header class="simple-header">
+  <div class="container d-flex align-items-center justify-content-between">
+    <a href="index.html" class="plc-brand" aria-label="Nome da Loja — página inicial">
+      <img src="img/logo-loja.png" alt="Nome da Loja" width="168" height="54">
+    </a>
+    <div id="navAccount" class="d-flex align-items-center gap-2"></div>
+  </div>
+</header>
+
+<main class="account-main">
+  <div class="container">
+
+    <div id="alreadyLoggedIn" class="account-card mx-auto d-none text-center py-3">
+      <i class="bi bi-check-circle" style="font-size:2rem; color:var(--blush-600)"></i>
+      <p class="mt-3 mb-1">Você já está logado como</p>
+      <p class="fw-semibold font-display mb-4" id="alreadyName" style="font-size:1.2rem"></p>
+      <a href="pedidos.html" id="alreadyPrimaryLink" class="btn-blush d-block w-100 mb-2">Ver meus pedidos</a>
+      <a href="index.html" class="btn-outline-blush d-block w-100">Voltar para a loja</a>
+    </div>
+
+        <div id="authForms" class="auth-shell" data-mode="login">
+
+            <div class="auth-deco">
+        <svg class="auth-deco-motif auth-deco-motif-1" aria-hidden="true"><use href="#bow-shape"/></svg>
+        <svg class="auth-deco-motif auth-deco-motif-2" aria-hidden="true"><use href="#bow-shape"/></svg>
+
+        <span class="auth-bow-wrap" aria-hidden="true">
+          <svg class="auth-bow"><use href="#bow-shape"/></svg>
+        </span>
+
+        <p class="auth-deco-mobile-title d-lg-none">Sua conta Nome da Loja</p>
+
+        <div class="auth-deco-copies">
+          <div class="auth-deco-copy" data-deco-for="login">
+            <p class="auth-deco-script">é a sua primeira vez por aqui?</p>
+            <h2 class="auth-deco-title">Ainda não tem conta?</h2>
+            <p class="auth-deco-text">Crie a sua e acompanhe cada pedido de perto.</p>
+            <button type="button" class="auth-switch" data-auth-mode="register">Criar minha conta</button>
+          </div>
+          <div class="auth-deco-copy" data-deco-for="register">
+            <p class="auth-deco-script">que bom te ver de novo</p>
+            <h2 class="auth-deco-title">Já tem uma conta?</h2>
+            <p class="auth-deco-text">Entre para ver seus pedidos e novidades.</p>
+            <button type="button" class="auth-switch" data-auth-mode="login">Entrar</button>
+          </div>
+          <div class="auth-deco-copy" data-deco-for="forgot">
+            <p class="auth-deco-script">calma, acontece</p>
+            <h2 class="auth-deco-title">Vamos recuperar</h2>
+            <p class="auth-deco-text">Enviamos um link no seu e-mail para criar uma nova senha.</p>
+            <button type="button" class="auth-switch" data-auth-mode="login">Voltar ao login</button>
+          </div>
+        </div>
+      </div>
+
+            <div class="auth-tabs d-lg-none" role="tablist">
+        <button type="button" class="auth-tab" role="tab" aria-selected="true" data-auth-mode="login">Entrar</button>
+        <button type="button" class="auth-tab" role="tab" aria-selected="false" data-auth-mode="register">Criar conta</button>
+      </div>
+
+      <div class="auth-pane auth-pane-login">
+        <div class="auth-form">
+          <p class="auth-eyebrow">bem-vinda de volta</p>
+          <h1 class="auth-title">Entrar</h1>
+          <p class="auth-subtitle">Acesse sua conta para acompanhar seus pedidos.</p>
+          <form id="loginForm" novalidate>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold" for="loginEmail">E-mail</label>
+              <input type="email" class="form-control" id="loginEmail" required autocomplete="email">
+            </div>
+            <div class="mb-3">
+              <div class="auth-label-row">
+                <label class="form-label small fw-semibold mb-0" for="loginPassword">Senha</label>
+                <button type="button" class="auth-link" data-auth-mode="forgot">Esqueci a senha</button>
+              </div>
+              <div class="password-field">
+                <input type="password" class="form-control" id="loginPassword" required autocomplete="current-password" minlength="8">
+                <button type="button" class="password-toggle-btn" data-target="loginPassword" aria-label="Mostrar senha" aria-pressed="false"><i class="bi bi-eye"></i></button>
+              </div>
+            </div>
+            <button class="btn-blush w-100" type="submit" id="loginSubmitBtn">Entrar</button>
+            <div class="small mt-2 account-msg" id="loginMsg" role="alert"></div>
+            <div class="auth-google d-none" data-auth-google>
+              <div class="auth-google-ou"><span>ou</span></div>
+              <div class="auth-google-botao" data-auth-google-botao></div>
+              <div class="small mt-2 account-msg" data-auth-google-msg role="alert"></div>
+            </div>
+            <p class="auth-foot"><i class="bi bi-shield-check"></i>Seus dados ficam protegidos.</p>
+          </form>
+        </div>
+      </div>
+
+      <div class="auth-pane auth-pane-forgot">
+        <div class="auth-form">
+          <p class="auth-eyebrow">sem problema</p>
+          <h1 class="auth-title">Esqueci a senha</h1>
+          <p class="auth-subtitle">Informe seu e-mail e enviaremos um link para você criar uma nova senha.</p>
+          <form id="forgotForm" novalidate>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold" for="forgotEmail">E-mail</label>
+              <input type="email" class="form-control" id="forgotEmail" required autocomplete="email">
+            </div>
+            <button class="btn-blush w-100" type="submit" id="forgotSubmitBtn">Enviar link de redefinição</button>
+            <div class="small mt-2 account-msg" id="forgotMsg" role="alert"></div>
+            <p class="auth-foot">
+              <button type="button" class="auth-link" data-auth-mode="login">Voltar para o login</button>
+            </p>
+          </form>
+        </div>
+      </div>
+
+            <div class="auth-pane auth-pane-twofactor">
+        <div class="auth-form">
+          <p class="auth-eyebrow">só mais um passo</p>
+          <h1 class="auth-title">Confirmar identidade</h1>
+
+                    <div id="twoFactorChoiceStep">
+            <p class="auth-subtitle">Como você quer confirmar?</p>
+            <div class="verify-choice-group">
+              <button type="button" class="verify-choice" id="chooseAppBtn">
+                <span class="vc-icon"><i class="bi bi-shield-lock"></i></span>
+                <span class="vc-body">
+                  <span class="vc-name">Código do app autenticador</span>
+                  <span class="vc-note">ou um código de recuperação salvo</span>
+                </span>
+              </button>
+              <button type="button" class="verify-choice" id="chooseEmailBtn">
+                <span class="vc-icon"><i class="bi bi-envelope"></i></span>
+                <span class="vc-body">
+                  <span class="vc-name">Receber código por e-mail</span>
+                  <span class="vc-note">enviamos um código de 6 dígitos</span>
+                </span>
+              </button>
+            </div>
+            <p class="auth-foot">
+              <button type="button" class="auth-link" data-auth-mode="login">Voltar para o login</button>
+            </p>
+          </div>
+
+                    <div id="twoFactorCodeStep" class="d-none">
+            <button type="button" class="auth-link auth-back-link" id="twoFactorBackBtn">
+              <i class="bi bi-arrow-left"></i> escolher outro jeito
+            </button>
+            <p class="auth-subtitle" id="twoFactorCodeSubtitle">Abra seu app de autenticação e digite o código de 6 dígitos.</p>
+            <form id="twoFactorForm" novalidate>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold" for="twoFactorCode">Código</label>
+                <input type="text" class="form-control auth-code-input" id="twoFactorCode" required
+                       inputmode="numeric" autocomplete="one-time-code" maxlength="6"
+                       placeholder="000000" aria-describedby="twoFactorHint">
+                <div class="form-text" id="twoFactorHint">Perdeu o celular? Digite um dos seus códigos de recuperação.</div>
+                <div class="form-text d-none" id="twoFactorEmailHint">
+                  Confira seu e-mail. <button type="button" class="auth-link" id="twoFactorEmailBtn">Reenviar código</button>
+                </div>
+              </div>
+              <button class="btn-blush w-100" type="submit" id="twoFactorSubmitBtn">Confirmar</button>
+            </form>
+          </div>
+
+          <div class="small mt-2 account-msg" id="twoFactorMsg" role="alert"></div>
+        </div>
+      </div>
+
+      <div class="auth-pane auth-pane-register">
+        <div class="auth-form">
+          <p class="auth-eyebrow">prazer em te conhecer</p>
+          <h1 class="auth-title">Criar conta</h1>
+          <p class="auth-subtitle">Leva menos de um minuto — e seus pedidos ficam salvos.</p>
+          <form id="registerForm" novalidate>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold" for="registerName">Nome completo</label>
+              <input type="text" class="form-control" id="registerName" required autocomplete="name" minlength="2">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold" for="registerEmail">E-mail</label>
+              <input type="email" class="form-control" id="registerEmail" required autocomplete="email">
+            </div>
+                        <div class="mb-3">
+              <label class="form-label small fw-semibold" for="registerCpf">CPF</label>
+              <input type="text" class="form-control" id="registerCpf" required autocomplete="off"
+                     inputmode="numeric" placeholder="000.000.000-00" maxlength="14">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold" for="registerPassword">Senha</label>
+              <div class="password-field">
+                <input type="password" class="form-control" id="registerPassword" required autocomplete="new-password" minlength="8">
+                <button type="button" class="password-toggle-btn" data-target="registerPassword" aria-label="Mostrar senha" aria-pressed="false"><i class="bi bi-eye"></i></button>
+              </div>
+              <div class="form-text">Mínimo de 8 caracteres.</div>
+            </div>
+            <div class="form-check consent-check mb-3">
+              <input class="form-check-input" type="checkbox" id="registerConsent">
+              <label class="form-check-label small" for="registerConsent">
+                <span>Li e concordo com a <a href="politica.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span>
+              </label>
+            </div>
+            <button class="btn-blush w-100" type="submit" id="registerSubmitBtn">Criar minha conta</button>
+            <div class="small mt-2 account-msg" id="registerMsg" role="alert"></div>
+            <div class="auth-google d-none" data-auth-google>
+              <div class="auth-google-ou"><span>ou</span></div>
+              <div class="auth-google-botao" data-auth-google-botao></div>
+              <div class="small mt-2 account-msg" data-auth-google-msg role="alert"></div>
+            </div>
+            <p class="auth-foot"><i class="bi bi-shield-check"></i>Seus dados ficam protegidos.</p>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="js/error-boundary.js" defer></script>
+<script src="js/loading.js" defer></script>
+<script src="js/vendor/bootstrap.min.js" defer></script>
+<script src="js/auth.js" defer></script>
+<script src="js/conta.js" defer></script>
+<script src="js/cookie-consent.js" defer></script>
+</body>
+</html>

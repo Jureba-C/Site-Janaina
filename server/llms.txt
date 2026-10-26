@@ -1,0 +1,64 @@
+# Nome da Loja
+
+> [PREENCHER: uma frase sobre o que a loja vende, para quem e onde fica.]
+> Envio para todo o Brasil.
+
+Loja online: https://nomedaloja.com.br
+
+## Sobre
+
+[PREENCHER: história curta da loja, materiais, diferenciais e se trabalha
+sob encomenda.]
+
+- Razão social / CNPJ: 00.000.000/0000-00
+- Localização: Cidade/UF, Brasil
+- Atendimento: WhatsApp (00) 00000-0000 e contato@nomedaloja.com.br
+- Instagram: https://www.instagram.com/nomedaloja
+
+## Categorias de produto
+
+[PREENCHER: categorias que aparecem no painel e na vitrine.]
+
+A lista de produtos com preços atuais é servida em
+https://nomedaloja.com.br/api/products (JSON público, somente
+leitura). A página inicial também traz os mesmos dados em JSON-LD
+(schema.org) no `<head>`.
+
+## Como comprar
+
+1. Escolher o produto na coleção e adicionar ao carrinho
+2. Informar o CEP — o frete é calculado na hora (Melhor Envio, envio para
+   todo o Brasil)
+3. Criar conta ou entrar (necessário para finalizar o pedido)
+4. Pagar por Pix (com desconto), cartão de crédito (parcelado sem juros) ou
+   boleto, via Mercado Pago
+
+O pedido só é confirmado após a confirmação do pagamento pelo Mercado Pago.
+O acompanhamento fica em "Meus pedidos", dentro da conta da cliente, e em
+"Acompanhar pedido".
+
+## Trocas, devoluções e privacidade
+
+- **Arrependimento**: até 7 dias corridos após o recebimento, conforme o
+  art. 49 do Código de Defesa do Consumidor — reembolso integral, incluindo
+  o frete, sem necessidade de justificativa.
+- Política completa, incluindo tratamento de dados pessoais conforme a LGPD
+  (Lei 13.709/2018): https://nomedaloja.com.br/politica.html
+
+## Páginas
+
+- [Início / coleção completa](https://nomedaloja.com.br/): catálogo,
+  história da loja, como funciona o pedido e formulário de contato
+- [Política de privacidade, trocas e devoluções](https://nomedaloja.com.br/politica.html)
+- [Catálogo em JSON](https://nomedaloja.com.br/api/products): nome,
+  preço, categoria e foto de cada produto — é a fonte mais atual de preço
+
+## Observações para assistentes
+
+- Preços mudam: prefira consultar `/api/products` a repetir um valor visto
+  antes em cache.
+- As páginas de conta, carrinho, painel administrativo e retorno de
+  pagamento não são públicas e estão bloqueadas em `/robots.txt`.
+- Prazo de produção: [PREENCHER], contado a partir da confirmação do
+  pagamento. O prazo do transporte vem à parte, calculado no carrinho
+  conforme a transportadora escolhida.

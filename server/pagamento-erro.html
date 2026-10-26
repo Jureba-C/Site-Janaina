@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagamento não concluído — Nome da Loja</title>
+<meta name="description" content="Não foi possível concluir seu pagamento na Nome da Loja.">
+<meta name="robots" content="noindex, nofollow">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; script-src 'self' https://sdk.mercadopago.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' https: data:; connect-src 'self' https://api.mercadopago.com https://viacep.com.br; frame-src https://www.mercadopago.com https://www.mercadopago.com.br; object-src 'none'; form-action 'self'">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+
+<link rel="stylesheet" href="css/vendor/bootstrap.purged.css">
+<link rel="stylesheet" href="css/vendor/bootstrap-icons.subset.css">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-payment-result="erro">
+
+<header class="simple-header">
+  <div class="container d-flex align-items-center justify-content-between">
+    <a href="index.html" class="plc-brand" aria-label="Nome da Loja — página inicial">
+      <img src="img/logo-loja.png" alt="Nome da Loja" width="168" height="54">
+    </a>
+    <div id="navAccount" class="d-flex align-items-center gap-2"></div>
+  </div>
+</header>
+
+<main class="account-main">
+  <div class="container">
+    <div class="mx-auto" style="max-width:440px">
+      <div class="account-card text-center">
+        <i class="bi bi-x-circle" style="font-size:2.6rem; color:var(--color-danger)"></i>
+        <h1 class="section-title mt-3 mb-2" style="font-size:1.5rem">Não foi possível concluir o pagamento</h1>
+        <p class="section-sub mb-1" id="orderRefLine">Nenhum valor foi cobrado.</p>
+        <p class="section-sub mb-4">Isso pode acontecer por saldo insuficiente, dados do cartão incorretos ou uma instabilidade momentânea. Seu carrinho continua salvo — você pode tentar de novo.</p>
+        <div class="d-flex flex-column gap-2">
+          <a href="index.html#colecoes" class="btn-blush">Tentar novamente</a>
+          <a href="https://wa.me/5500000000000" target="_blank" rel="noopener noreferrer" class="btn-outline-blush"><i class="bi bi-whatsapp me-1"></i>Falar no WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/error-boundary.js" defer></script>
+<script src="js/loading.js" defer></script>
+<script src="js/vendor/bootstrap.min.js" defer></script>
+<script src="js/auth.js" defer></script>
+<script src="js/pagamento-retorno.js" defer></script>
+<script src="js/cookie-consent.js" defer></script>
+</body>
+</html>

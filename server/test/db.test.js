@@ -1,0 +1,289 @@
+const { test, before, after } = require("node:test");
+const assert = require("node:assert/strict");
+const path = require("node:path");
+const os = require("node:os");
+const fs = require("node:fs");
+const bcrypt = require("bcryptjs");
+
+const TMP_DB = path.join(os.tmpdir(), `plc-test-${process.pid}-${Date.now()}.db`);
+process.env.DB_PATH = TMP_DB;
+const db = require("../lib/db.js");
+const auth = require("../lib/auth.js");
+
+after(() => {
+  for (const suffix of ["", "-wal", "-shm"]) {
+    try { fs.unlinkSync(TMP_DB + suffix); } catch {}
+  }
+});
+
+test("createUser / getUserByEmail", () => {
+  const u = db.createUser({ name: "Ana", email: "ana@example.com", passwordHash: "x", cpf: "11144477735" });
+  assert.ok(u.id > 0);
+  assert.equal(db.getUserByEmail("ana@example.com").id, u.id);
+  assert.equal(db.getUserByEmail("naoexiste@example.com"), null);
+});
+
+test("hasUsedCoupon — pago bloqueia; cupom diferente não", () => {
+  const u = db.createUser({ name: "B", email: "b@example.com", passwordHash: "x", cpf: "11144477735" });
+  const base = {
+    userId: u.id, items: [{ id: 1, qty: 1, price: 34.9 }],
+    address: { nome: "B", telefone: "(61) 90000-0000", rua: "R", numero: "1", bairro: "B", cidade: "Bsb", uf: "DF", cep: "70040020" },
+    shipping: { name: "X", price: 10 }, subtotal: 34.9, shippingPrice: 10, total: 44.9, customerPhone: "61900000000",
+  };
+  assert.equal(db.hasUsedCoupon({ code: "BEMVINDA10", userId: u.id }), false);
+  db.createOrder({ ...base, externalReference: "PAGO1", status: "pago", couponCode: "BEMVINDA10" });
+  assert.equal(db.hasUsedCoupon({ code: "BEMVINDA10", userId: u.id }), true);
+  assert.equal(db.hasUsedCoupon({ code: "OUTRO", userId: u.id }), false);
+});
+
+test("hasUsedCoupon — pedido PENDENTE recente bloqueia (fecha o TOCTOU)", () => {
+  const u = db.createUser({ name: "C", email: "c@example.com", passwordHash: "x", cpf: "11144477735" });
+  db.createOrder({
+    externalReference: "PEND1", userId: u.id, status: "pendente", couponCode: "BEMVINDA10",
+    items: [{ id: 1, qty: 1, price: 34.9 }],
+    address: { nome: "C", telefone: "x", rua: "R", numero: "1", bairro: "B", cidade: "Bsb", uf: "DF", cep: "70040020" },
+    shipping: { name: "X", price: 10 }, subtotal: 34.9, shippingPrice: 10, total: 44.9, customerPhone: "61911112222",
+  });
+  assert.equal(db.hasUsedCoupon({ code: "BEMVINDA10", userId: u.id }), true, "por userId");
+  assert.equal(db.hasUsedCoupon({ code: "BEMVINDA10", phone: "61911112222" }), true, "por telefone");
+});
+
+test("updateOrderTracking avança fulfillment_status para 'postado' e grava shipped_at só uma vez", () => {
+  const u = db.createUser({ name: "Rastreio", email: "rastreio@example.com", passwordHash: "x", cpf: "11144477735" });
+  db.createOrder({
+    externalReference: "TRACK1", userId: u.id, status: "pago",
+    items: [{ id: 1, qty: 1, price: 34.9 }],
+    address: { nome: "R", telefone: "x", rua: "R", numero: "1", bairro: "B", cidade: "Bsb", uf: "DF", cep: "70040020" },
+    shipping: { name: "X", price: 10 }, subtotal: 34.9, shippingPrice: 10, total: 44.9, customerPhone: "61933334444",
+  });
+
+  db.markOrderInProduction("TRACK1");
+  let order = db.getOrderByExternalReference("TRACK1");
+  assert.equal(order.fulfillment_status, "em_producao");
+  assert.equal(order.shipped_at, null);
+
+  db.updateOrderTracking("TRACK1", "AA123456789BR");
+  order = db.getOrderByExternalReference("TRACK1");
+  assert.equal(order.fulfillment_status, "postado");
+  assert.equal(order.tracking_code, "AA123456789BR");
+  const firstShippedAt = order.shipped_at;
+  assert.ok(firstShippedAt, "shipped_at devia ser gravado ao postar");
+
+  db.updateOrderTracking("TRACK1", "BB987654321BR");
+  order = db.getOrderByExternalReference("TRACK1");
+  assert.equal(order.fulfillment_status, "postado");
+  assert.equal(order.tracking_code, "BB987654321BR");
+  assert.equal(order.shipped_at, firstShippedAt, "shipped_at não muda numa correção de código");
+
+  db.markOrderDelivered("TRACK1");
+  order = db.getOrderByExternalReference("TRACK1");
+  assert.equal(order.fulfillment_status, "entregue");
+  assert.ok(order.delivered_at);
+});
+
+test("setMelhorEnvioShipmentId grava o id do envio sem mexer em mais nada", () => {
+  const u = db.createUser({ name: "Envio", email: "envio@example.com", passwordHash: "x", cpf: "11144477735" });
+  db.createOrder({
+    externalReference: "SHIP1", userId: u.id, status: "pago",
+    items: [{ id: 1, qty: 1, price: 34.9 }],
+    address: { nome: "E", telefone: "x", rua: "R", numero: "1", bairro: "B", cidade: "Bsb", uf: "DF", cep: "70040020" },
+    shipping: { name: "X", price: 10 }, subtotal: 34.9, shippingPrice: 10, total: 44.9, customerPhone: "61955556666",
+  });
+  db.setMelhorEnvioShipmentId("SHIP1", "999888");
+  const order = db.getOrderByExternalReference("SHIP1");
+  assert.equal(order.melhor_envio_shipment_id, "999888");
+  assert.equal(order.fulfillment_status, null, "só grava o id do envio, não avança a linha do tempo");
+});
+
+test("deleteUserAccount — apaga o titular e anonimiza os pedidos (LGPD)", () => {
+  const u = db.createUser({ name: "Del", email: "del@example.com", passwordHash: bcrypt.hashSync("x", 4), cpf: "11144477735" });
+  db.addNewsletterSubscriber("del@example.com");
+  db.createOrder({
+    externalReference: "DEL1", userId: u.id, status: "pago",
+    items: [{ id: 1, qty: 1, price: 34.9 }],
+    address: { nome: "Del Fulano", telefone: "(61) 91111-2222", rua: "Rua X", numero: "9", bairro: "B", cidade: "Bsb", uf: "DF", cep: "70040020" },
+    shipping: { name: "S", price: 10 }, subtotal: 34.9, shippingPrice: 10, total: 44.9, customerPhone: "61911112222",
+  });
+
+  assert.equal(db.deleteUserAccount(u.id), true);
+
+  assert.equal(db.getUserById(u.id), null);
+  assert.equal(db.listNewsletterSubscribers().some(s => s.email === "del@example.com"), false);
+
+  const order = db.getOrderByExternalReference("DEL1");
+  assert.ok(order, "pedido deve continuar existindo (retenção fiscal)");
+  assert.equal(order.customer_phone, null);
+  assert.equal(order.user_id, null);
+  assert.match(order.address_json, /anonimizado/);
+  assert.equal(order.total, 44.9, "valor preservado");
+  assert.ok(order.created_at, "data preservada");
+
+  assert.equal(db.deleteUserAccount(u.id), false);
+});
+
+test("getSavedAddress / saveAddress — endereço padrão por conta, isolado entre clientes", () => {
+  const a = db.createUser({ name: "End A", email: "enda@example.com", passwordHash: "x", cpf: "11144477735" });
+  const b = db.createUser({ name: "End B", email: "endb@example.com", passwordHash: "x", cpf: "11144477735" });
+
+  assert.equal(db.getSavedAddress(a.id), null, "sem endereço salvo, começa nulo");
+
+  const endereco = { nome: "End A", telefone: "61911112222", rua: "Rua A", numero: "1", bairro: "B", cidade: "Bsb", uf: "DF", cep: "70040020" };
+  db.saveAddress(a.id, endereco);
+  assert.deepEqual(db.getSavedAddress(a.id), endereco);
+
+  const novoEndereco = { ...endereco, rua: "Rua Nova", numero: "2" };
+  db.saveAddress(a.id, novoEndereco);
+  assert.deepEqual(db.getSavedAddress(a.id), novoEndereco);
+
+  assert.equal(db.getSavedAddress(b.id), null);
+});
+
+test("upsertProductOverride — available_colors: [] explícito nunca vira NULL (diferente de badges)", () => {
+  const semCor = db.upsertProductOverride(90001, { name: "Produto Teste Cor" });
+  assert.equal(semCor.available_colors, null, "chave ausente preserva NULL");
+
+  const comDuasCores = db.upsertProductOverride(90001, { availableColors: ["#F4B4CC", "#DD6E9B"] });
+  assert.deepEqual(JSON.parse(comDuasCores.available_colors), ["#F4B4CC", "#DD6E9B"]);
+
+  const esgotado = db.upsertProductOverride(90001, { availableColors: [] });
+  assert.equal(esgotado.available_colors, "[]", "array vazio grava como [], não NULL");
+  assert.deepEqual(JSON.parse(esgotado.available_colors), []);
+
+  const depoisDeOutraEdicao = db.upsertProductOverride(90001, { price: 39.9 });
+  assert.equal(depoisDeOutraEdicao.available_colors, "[]", "edição de outro campo preserva o esgotado");
+});
+
+test("upsertProductOverride — photos: [] explícito nunca vira NULL, e a ORDEM é preservada (não é um Set)", () => {
+  const semFoto = db.upsertProductOverride(90002, { name: "Produto Teste Foto" });
+  assert.equal(semFoto.photos, null, "chave ausente preserva NULL — cai para a foto única antiga (photo_url) na leitura");
+
+  const comFotos = db.upsertProductOverride(90002, { photos: ["/img/products/b.jpg", "/img/products/a.jpg"] });
+  assert.deepEqual(JSON.parse(comFotos.photos), ["/img/products/b.jpg", "/img/products/a.jpg"]);
+
+  const semFotoDeNovo = db.upsertProductOverride(90002, { photos: [] });
+  assert.equal(semFotoDeNovo.photos, "[]", "array vazio grava como [], não NULL");
+
+  const depoisDeOutraEdicao = db.upsertProductOverride(90002, { price: 39.9 });
+  assert.equal(depoisDeOutraEdicao.photos, "[]", "edição de outro campo preserva o estado sem foto");
+});
+
+test("listCustomColors / insertCustomColor — round-trip de uma cor criada pelo painel", () => {
+  assert.deepEqual(db.listCustomColors().map(c => c.hex), []);
+  const created = db.insertCustomColor({ hex: "#7A2E4F", label: "Vinho" });
+  assert.deepEqual(created, { hex: "#7A2E4F", label: "Vinho" });
+  const listed = db.listCustomColors();
+  assert.equal(listed.length, 1);
+  assert.equal(listed[0].hex, "#7A2E4F");
+  assert.equal(listed[0].label, "Vinho");
+
+  db.deleteCustomColor("#7A2E4F");
+  assert.deepEqual(db.listCustomColors().map(c => c.hex), []);
+
+  db.deleteCustomColor("#000000");
+});
+
+test("upsertProductOverride — allow_second_color: NULL e 0 são a mesma coisa (desligado), sem distinção especial", () => {
+  const semTocar = db.upsertProductOverride(90003, { name: "Kit Teste" });
+  assert.ok(!semTocar.allow_second_color, "chave ausente fica \"desligado\" (NULL ou 0 — os dois são equivalentes aqui)");
+
+  const ligado = db.upsertProductOverride(90003, { allowSecondColor: true });
+  assert.equal(ligado.allow_second_color, 1);
+
+  const desligadoDeNovo = db.upsertProductOverride(90003, { allowSecondColor: false });
+  assert.equal(desligadoDeNovo.allow_second_color, 0);
+
+  db.upsertProductOverride(90003, { allowSecondColor: true });
+  const depoisDeOutraEdicao = db.upsertProductOverride(90003, { price: 55 });
+  assert.equal(depoisDeOutraEdicao.allow_second_color, 1, "edição de outro campo preserva o estado ligado");
+});
+
+test("upsertProductOverride — description: mesmo padrão de name (ausente preserva, vazio limpa pro padrão)", () => {
+  const semTocar = db.upsertProductOverride(90004, { name: "Produto Teste Descrição" });
+  assert.equal(semTocar.description, null, "chave ausente preserva NULL — front-end cai pra descrição padrão");
+
+  const comDescricao = db.upsertProductOverride(90004, { description: "Laço todo feito à mão, em cetim importado." });
+  assert.equal(comDescricao.description, "Laço todo feito à mão, em cetim importado.");
+
+  const depoisDeOutraEdicao = db.upsertProductOverride(90004, { price: 42 });
+  assert.equal(depoisDeOutraEdicao.description, "Laço todo feito à mão, em cetim importado.", "edição de outro campo preserva a descrição");
+
+  const limpa = db.upsertProductOverride(90004, { description: "" });
+  assert.equal(limpa.description, null, "descrição vazia volta pro padrão (NULL)");
+});
+
+test("upsertProductOverride — ncm: mesmo padrão de description (ausente preserva, vazio limpa)", () => {
+  const semTocar = db.upsertProductOverride(90005, { name: "Produto Teste NCM" });
+  assert.equal(semTocar.ncm, null, "chave ausente preserva NULL — emissão de nota recusa item sem NCM");
+
+  const comNcm = db.upsertProductOverride(90005, { ncm: "61171000" });
+  assert.equal(comNcm.ncm, "61171000");
+
+  const depoisDeOutraEdicao = db.upsertProductOverride(90005, { price: 42 });
+  assert.equal(depoisDeOutraEdicao.ncm, "61171000", "edição de outro campo preserva o NCM salvo");
+
+  const limpa = db.upsertProductOverride(90005, { ncm: "" });
+  assert.equal(limpa.ncm, null, "NCM vazio volta pro padrão (NULL)");
+});
+
+function hashToken(token) {
+  return require("node:crypto").createHash("sha256").update(token).digest("hex");
+}
+
+function criarUsuarioCom2FA(email) {
+  const u = db.createUser({ name: "2FA", email, passwordHash: "x", cpf: "11144477735" });
+  db.setUserTotp(u.id, { secret: "JBSWY3DPEHPK3PXP", recoveryJson: null });
+  return u;
+}
+
+test("issueTwoFactorEmailCode / verifyTwoFactorEmailCode — ida e volta", async () => {
+  const u = criarUsuarioCom2FA("2fa-roundtrip@example.com");
+  const token = auth.issueTwoFactorChallenge(u.id);
+
+  const result = await auth.issueTwoFactorEmailCode(token);
+  assert.equal(result.error, undefined);
+  assert.match(result.code, /^\d{6}$/, "código de 6 dígitos");
+
+  assert.equal(await auth.verifyTwoFactorEmailCode(token, result.code), true);
+  assert.equal(await auth.verifyTwoFactorEmailCode(token, "000000"), false, "código errado nunca bate");
+});
+
+test("verifyTwoFactorEmailCode — limite de tentativas invalida até o código certo", async () => {
+  const u = criarUsuarioCom2FA("2fa-tentativas@example.com");
+  const token = auth.issueTwoFactorChallenge(u.id);
+  const { code } = await auth.issueTwoFactorEmailCode(token);
+
+  for (let i = 0; i < 5; i++) {
+    assert.equal(await auth.verifyTwoFactorEmailCode(token, "111111"), false);
+  }
+  assert.equal(await auth.verifyTwoFactorEmailCode(token, code), false, "após 5 tentativas erradas, nem o código certo vale mais");
+});
+
+test("issueTwoFactorEmailCode — cooldown de reenvio bloqueia pedido duplicado imediato", async () => {
+  const u = criarUsuarioCom2FA("2fa-cooldown@example.com");
+  const token = auth.issueTwoFactorChallenge(u.id);
+
+  const primeiro = await auth.issueTwoFactorEmailCode(token);
+  assert.equal(primeiro.error, undefined);
+
+  const segundo = await auth.issueTwoFactorEmailCode(token);
+  assert.equal(segundo.error, "cooldown");
+  assert.ok(segundo.retryAfterMs > 0);
+});
+
+test("verifyTwoFactorEmailCode — código expirado nunca verifica, mesmo com o valor certo", async () => {
+  const u = criarUsuarioCom2FA("2fa-expirado@example.com");
+  const token = auth.issueTwoFactorChallenge(u.id);
+  const bcrypt = require("bcryptjs");
+
+  const code = "654321";
+  const codeHash = await bcrypt.hash(code, 4);
+  db.setTwoFactorEmailCode({
+    tokenHash: hashToken(token),
+    codeHash,
+    codeExpiresAt: Date.now() - 1000,
+    sentAt: Date.now() - 2000,
+    challengeExpiresAt: Date.now() + 5 * 60 * 1000,
+  });
+
+  assert.equal(await auth.verifyTwoFactorEmailCode(token, code), false, "expirado não verifica mesmo com o código certo");
+});

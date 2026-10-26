@@ -1,0 +1,16 @@
+.DS_Store
+.vscode/
+.idea/
+.claude/settings.local.json
+
+server/.env
+server/.env.*
+!server/.env.example
+server/node_modules/
+server/*.db
+server/*.db-journal
+server/*.db-wal
+server/*.db-shm
+server/img/products/
+
+docs/security-audit/

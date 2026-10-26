@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /$
+Allow: /index.html
+Allow: /politica.html
+Allow: /laco/
+Allow: /llms.txt
+Disallow: /admin.html
+Disallow: /conta.html
+Disallow: /pedidos.html
+Disallow: /redefinir-senha.html
+Disallow: /pagamento-sucesso.html
+Disallow: /pagamento-erro.html
+Disallow: /pagamento-pendente.html
+Disallow: /pagamento-pix.html
+Disallow: /api/
+
+Sitemap: https://nomedaloja.com.br/sitemap.xml
