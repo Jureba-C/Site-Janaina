@@ -148,15 +148,21 @@ Estrutura (com a identidade da cliente, sem copiar a arte da outra loja):
   com Node 22+, domínio. Chaves coladas pelo Caio direto na hospedagem.
 - Publicação seguindo `DEPLOY-HOSTINGER.md`.
 
+## Decisões tomadas
+
+- 2026-10-26 — Fase 0 pela opção A: sessão no Mac do Caio, com o Claude in
+  Chrome.
+- 2026-10-26 — Personalização com prévia visual da arte na caneca.
+- 2026-10-26 — Promoção "Leve 4, pague 3" sai do site.
+- 2026-10-26 — Funcionamento e catálogo (Fases 2 e 3) começam já.
+
 ## Decisões pendentes (Caio/cliente)
 
-1. Fase 0: opção A (sessão no Mac) ou B (mandar arquivos)?
-2. Personalização com prévia visual da arte ou só campos + fotos?
-3. Manter "Leve 4, pague 3"?
-4. Quais linhas além de caneca entram no lançamento (copo, azulejo, quadro,
+1. Quais linhas além de caneca entram no lançamento (copo, azulejo, quadro,
    kit)?
-5. Regra de troca para personalizados.
-6. Onde hospedar a prévia para a cliente.
+2. Regra de troca para personalizados.
+3. Onde hospedar a prévia para a cliente.
+4. Pix com desconto e parcelas sem juros (inspiração: Pix 10% e 3x).
 
 ## Ordem de trabalho
 

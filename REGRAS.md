@@ -65,3 +65,10 @@ acumuladas"), com a data.
   mudanças (`npm run ao-vivo`).
 - 2026-10-26 — Sempre verificar se não tem nada errado nem bug depois de
   qualquer mudança (itens 6 a 10).
+- 2026-10-26 — Trabalho continua numa sessão no Mac do Caio (opção A), com o
+  Claude in Chrome para ver Instagram, bio.site, Canva e a inspiração.
+- 2026-10-26 — Personalização **com prévia da arte** na caneca.
+- 2026-10-26 — **Tirar** a promoção "Leve 4, pague 3" (site, cobrança no
+  servidor e testes).
+- 2026-10-26 — Pode começar a parte de funcionamento e o catálogo antes da
+  identidade visual ser aprovada.
