@@ -35,7 +35,7 @@ after(() => {
   for(const s of ["", "-wal", "-shm"]) { try { fs.unlinkSync(TMP_DB + s); } catch {} }
 });
 
-const ARQUIVOS = ["/css/style.css", "/js/admin.js", "/js/auth.js", "/css/fonts.css"];
+const ARQUIVOS = ["/css/style.css", "/js/admin.js", "/js/auth.js", "/js/conta.js"];
 
 function pegar(caminho, headers){
   return fetch(ORIGIN + caminho, { headers: { "Accept-Encoding": "identity", ...headers } });
