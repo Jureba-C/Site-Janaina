@@ -6,7 +6,7 @@ const RAIZ_PROJETO = path.join(RAIZ_SERVIDOR, "..");
 const ARQUIVO_MARCA = path.join(RAIZ_SERVIDOR, "marca.json");
 const PASTAS_IGNORADAS = new Set(["node_modules", "vendor", ".git", "backups"]);
 const EXTENSOES = new Set([".js", ".html", ".css", ".json", ".txt", ".md", ".svg", ".xml", ".example"]);
-const ARQUIVOS_IGNORADOS = new Set(["package-lock.json", "marca.json", "CLAUDE.md"]);
+const ARQUIVOS_IGNORADOS = new Set(["package-lock.json", "marca.json", "CLAUDE.md", "REGRAS.md", "PLANO.md"]);
 
 const CAMPOS = [
   "nomeLoja", "responsavel", "dominio", "email", "instagram", "whatsappDigitos",

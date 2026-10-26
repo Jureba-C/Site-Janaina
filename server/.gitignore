@@ -16,3 +16,4 @@ backups/
 npm-debug.log*
 
 docs/CODEMAP.md
+.conferencia/

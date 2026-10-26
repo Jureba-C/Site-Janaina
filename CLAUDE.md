@@ -1,5 +1,10 @@
 # Site da Janaina — leia antes de qualquer pedido
 
+@REGRAS.md
+
+Antes de qualquer mudança no código: ler `REGRAS.md` (acima) e a fase atual
+do `PLANO.md`. O site vende **canecas**.
+
 Loja online feita pelo **Caio** para a cliente **Janaina**. A base é uma cópia
 do site da **Adriana Melo Acessórios** (repositório de referência
 `Jureba-C/Adriana-Melo-Acessorios`, branch `main`), com **o mesmo
@@ -15,10 +20,10 @@ Janaina mandar os dela.
    `.gitignore`). O teste `test/sem-comentarios.test.js` falha se aparecer um.
    Explicação vai para os `.md`, nunca para o código.
 2. **Zero erro**: antes de entregar, rodar `cd server && npm run verificar`
-   (verificador de comentários + 258 testes) e só dizer que está pronto se
-   passar. Relatar com honestidade o que falhou.
-3. **Mostrar antes de publicar**: subir `cd server && npm run dev` e abrir
-   `http://localhost:3333` para o Caio ver. Conferir celular (390 e 360 px),
+   (verificador de comentários + testes) e `npm run conferir` (navegador),
+   e só dizer que está pronto se os dois passarem. Relatar com honestidade.
+3. **Mostrar antes de publicar**: deixar `cd server && npm run ao-vivo`
+   rodando (`http://localhost:3000`) para o Caio acompanhar. Conferir celular (390 e 360 px),
    tablet (768 px) e computador (1440 e 1920 px), e também com movimento
    reduzido (as animações de entrada escondem seções em capturas comuns).
 4. **Nunca publicar sem permissão**: nada de push na `main`, deploy, mudar
@@ -38,10 +43,12 @@ Janaina mandar os dela.
 ```bash
 cd server
 npm install            # Node 22.5 ou mais novo (usa node:sqlite)
+npm run ao-vivo        # site em http://localhost:3000, recarrega sozinho a cada mudança
 npm run dev            # servidor + site em http://localhost:3333
+npm run conferir       # navegador de verdade em 5 telas; capturas em .conferencia/
 npm test               # testes (node:test)
 npm run sem-comentarios
-npm run verificar      # os dois juntos — rodar antes de toda entrega
+npm run verificar      # sem comentários + testes — rodar depois de toda mudança
 npm run aplicar-marca -- marca-nova.json [--simular]
 ```
 
@@ -145,6 +152,8 @@ Tudo fica em `server/` (é a pasta que a hospedagem usa como raiz). O
 
 ## Documentos
 
+- `REGRAS.md` — instruções do Caio (ler sempre antes de mudar).
+- `PLANO.md` — plano da loja de canecas, fases e decisões.
 - `README.md` — visão geral e como rodar.
 - `server/docs/CONFIGURACAO.md` — cada variável do `.env`.
 - `DEPLOY-HOSTINGER.md` — publicação na Hostinger.

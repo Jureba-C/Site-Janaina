@@ -24,7 +24,7 @@ function arquivosDeTexto(pasta){
   return saida;
 }
 
-const REFERENCIA_PERMITIDA = new Set(["CLAUDE.md", "README.md"]);
+const REFERENCIA_PERMITIDA = new Set(["CLAUDE.md", "README.md", "REGRAS.md", "PLANO.md"]);
 
 const TEXTOS = arquivosDeTexto(RAIZ).map(arquivo => ({ arquivo: path.relative(RAIZ, arquivo), conteudo: fs.readFileSync(arquivo, "utf8") }));
 

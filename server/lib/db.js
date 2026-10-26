@@ -25,9 +25,6 @@ db.exec(`
     expires_at INTEGER NOT NULL
   );
 
-  -- Redefinição de senha: mesma ideia da tabela sessions — só o HASH do
-  -- token fica gravado, então nem quem lê o banco consegue reconstruir um
-  -- link de redefinição válido.
   CREATE TABLE IF NOT EXISTS password_resets (
     token_hash TEXT PRIMARY KEY,
     user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -46,10 +43,6 @@ db.exec(`
     coupon_code         TEXT,
     subtotal            REAL NOT NULL,
     discount            REAL NOT NULL DEFAULT 0,
-    -- Desconto do Pix guardado separado do desconto de cupom: são duas
-    -- linhas diferentes no resumo do pedido ("Desconto (CUPOM)" e "Desconto
-    -- Pix"), e somar os dois numa coluna só tornaria impossível remontar o
-    -- recibo depois.
     pix_discount        REAL NOT NULL DEFAULT 0,
     promo_discount      REAL NOT NULL DEFAULT 0,
     payment_method      TEXT NOT NULL DEFAULT 'card',
@@ -61,13 +54,6 @@ db.exec(`
     updated_at          INTEGER NOT NULL
   );
 
-  -- Bytes das fotos de produto enviadas pelo painel. Guardadas aqui (e não
-  -- em arquivo no disco) porque só data.db tem backup automático
-  -- (server/scripts/backup-db.js) — uma pasta de upload em disco é apagada
-  -- por qualquer redeploy que reinstale a aplicação do zero (ver comentário
-  -- de UPLOAD DE FOTO DE PRODUTO em server.js). Cada linha é um upload;
-  -- nunca é sobrescrita no lugar (um novo upload sempre ganha um id novo),
-  -- então a rota que serve por id pode cachear como "immutable".
   CREATE TABLE IF NOT EXISTS product_photos (
     id          TEXT PRIMARY KEY,
     mime_type   TEXT NOT NULL,
@@ -75,10 +61,6 @@ db.exec(`
     created_at  INTEGER NOT NULL
   );
 
-  -- Versões reduzidas de product_photos, gravadas no primeiro acesso àquela
-  -- largura/formato. É cache, não fonte: apagar a tabela só custa ~35ms de
-  -- sharp no próximo acesso. O CASCADE impede a variante de sobreviver à foto
-  -- que a originou quando o painel troca a imagem de um produto.
   CREATE TABLE IF NOT EXISTS product_photo_variants (
     photo_id    TEXT NOT NULL REFERENCES product_photos(id) ON DELETE CASCADE,
     width       INTEGER NOT NULL,
@@ -89,10 +71,6 @@ db.exec(`
     PRIMARY KEY (photo_id, width, format)
   );
 
-  -- Edições feitas no painel administrativo (nome/preço/foto) por cima do
-  -- catálogo estático em PRODUCTS (server.js). Uma linha por produto só
-  -- quando ele foi editado; sem edição, o servidor usa o valor de PRODUCTS
-  -- direto (ver effectiveProduct em server.js).
   CREATE TABLE IF NOT EXISTS product_overrides (
     product_id  INTEGER PRIMARY KEY,
     name        TEXT,
@@ -103,21 +81,11 @@ db.exec(`
     updated_at  INTEGER NOT NULL
   );
 
-  -- Cupons criados pelo painel administrativo. BEMVINDA10 (o único cupom
-  -- fixo que existia antes) é semeado aqui automaticamente na primeira
-  -- vez que o servidor sobe com um banco novo/antigo sem essa tabela (ver
-  -- seedDefaultCoupon logo abaixo) — depois disso, este banco é a única
-  -- fonte da verdade pra cupom (nada mais fica hardcoded em server.js).
-  -- Quem pediu o cupom de boas-vindas na home. Antes o e-mail só ia para o
-  -- console e se perdia — a lista da loja nascia e morria no log.
   CREATE TABLE IF NOT EXISTS newsletter_subscribers (
     email      TEXT PRIMARY KEY,
     created_at INTEGER NOT NULL
   );
 
-  -- Mensagens do formulário "Vamos criar seu laço?" da home. Antes iam só
-  -- para o console: quem escrevesse enquanto o servidor estivesse fora do
-  -- ar, ou quando ninguém lesse o log, era simplesmente perdida.
   CREATE TABLE IF NOT EXISTS contact_messages (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     nome       TEXT NOT NULL,
@@ -127,12 +95,6 @@ db.exec(`
     created_at INTEGER NOT NULL
   );
 
-  /* Fila de e-mails para a CLIENTE. Aviso para a lojista pode falhar calado
-     (ela vê o pedido no painel de qualquer jeito); recibo de compra não pode.
-     Uma falha de SMTP dentro do try/catch do webhook não deixava rastro
-     nenhum, e o site promete rastreio por e-mail na própria página.
-     Aqui a mensagem é gravada ANTES de tentar enviar: se a tentativa na hora
-     falhar, o cron periódico reenvia. */
   CREATE TABLE IF NOT EXISTS email_outbox (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     kind            TEXT NOT NULL,
@@ -155,13 +117,6 @@ db.exec(`
     created_at   INTEGER NOT NULL
   );
 
-  -- Produtos criados pelo painel administrativo (botão "Adicionar produto"),
-  -- em vez de editados no catálogo fixo PRODUCTS (server.js). Diferente de
-  -- product_overrides (que só sobrepõe nome/preço/foto por cima de uma base
-  -- fixa), esta tabela é a base inteira: também guarda peso/dimensões,
-  -- porque não existe entrada em PRODUCTS para herdar isso. O id é atribuído
-  -- pelo código (ver nextCustomProductId), a partir de 1000, para nunca
-  -- colidir com os ids 1-8 do catálogo fixo.
   CREATE TABLE IF NOT EXISTS custom_products (
     id          INTEGER PRIMARY KEY,
     name        TEXT NOT NULL,
@@ -177,59 +132,25 @@ db.exec(`
     updated_at  INTEGER NOT NULL
   );
 
-  -- Categorias criadas pelo painel administrativo (botão "Nova categoria"),
-  -- além das 5 fixas em PRODUCT_CATEGORIES (server.js). O slug é o valor
-  -- salvo em product_overrides.category/custom_products.category e usado
-  -- nos chips de filtro da vitrine; o label é só o texto exibido.
   CREATE TABLE IF NOT EXISTS custom_categories (
     slug        TEXT PRIMARY KEY,
     label       TEXT NOT NULL,
     created_at  INTEGER NOT NULL
   );
 
-  -- Cores de laço criadas pelo painel administrativo ("+ Nova cor"), além
-  -- das 6 fixas em js/colors.js (RIBBON_COLORS). Mesmo papel de
-  -- custom_categories: o hex é o valor salvo em
-  -- product_overrides.available_colors/custom_products.available_colors e
-  -- escolhido pela cliente no Quick View; o label é só o texto exibido.
   CREATE TABLE IF NOT EXISTS custom_colors (
     hex         TEXT PRIMARY KEY,
     label       TEXT NOT NULL,
     created_at  INTEGER NOT NULL
   );
 
-  /* Índices. Sem eles o SQLite varre a tabela inteira a cada consulta —
-     imperceptível com centenas de pedidos, caro com dezenas de milhares.
-     Só entram colunas que aparecem de fato em WHERE/ORDER BY das queries
-     deste arquivo; índice que ninguém usa não acelera leitura nenhuma e
-     ainda encarece toda escrita.
-
-     Não estão aqui, de propósito: as colunas com UNIQUE ou PRIMARY KEY
-     (users.email, orders.external_reference, coupons.code,
-     sessions.token_hash, ...), porque o SQLite já cria um índice
-     implícito para elas — declarar de novo seria duplicar. */
   CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
   CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
 
-  /* Painel filtrando por status e ordenando por data. As duas colunas
-     no mesmo índice, nesta ordem: com um índice só de status o SQLite
-     achava as linhas mas ainda ordenava tudo à parte (USE TEMP B-TREE);
-     incluindo created_at DESC a ordem já sai pronta do índice.
-
-     Não há índice de coupon_code: medindo com 20 mil pedidos, o
-     otimizador sempre prefere user_id ou customer_phone na validação de
-     cupom (são bem mais seletivos que um código repetido em milhares de
-     pedidos). Um índice que nunca é escolhido não acelera leitura e
-     encarece toda escrita. */
   CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at DESC);
-  -- Histórico do cliente e listagens sem filtro, do mais recente ao mais antigo.
   CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at DESC);
-  -- Limpeza de sessões/tokens vencidos (WHERE expires_at < agora).
-  -- O webhook do Mercado Pago reenvia notificação: sem esta trava a cliente
-  -- receberia o mesmo recibo duas vezes.
   CREATE UNIQUE INDEX IF NOT EXISTS idx_outbox_unico
     ON email_outbox(kind, order_reference) WHERE order_reference IS NOT NULL;
-  -- Varredura do cron: só o que ainda não saiu e já pode ser tentado.
   CREATE INDEX IF NOT EXISTS idx_outbox_pendentes
     ON email_outbox(next_attempt_at) WHERE sent_at IS NULL;
   CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
@@ -340,10 +261,6 @@ db.exec(`
     created_at  INTEGER NOT NULL
   );
 
-  -- Tamanhos reduzidos (160/640) das fotos de avaliação. É cache: apagar
-  -- custa só um sharp no próximo pedido. CASCADE: excluir a foto (recusa da
-  -- lojista) leva as variantes junto — foto recusada não sobra em tamanho
-  -- nenhum.
   CREATE TABLE IF NOT EXISTS review_photo_variants (
     photo_id    TEXT NOT NULL REFERENCES review_photos(id) ON DELETE CASCADE,
     width       INTEGER NOT NULL,
@@ -375,18 +292,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_reviews_publicadas
     ON reviews(status, published_at DESC);
 
-  -- Fotos do carrossel do topo da home, trocadas pelo painel. A coluna data
-  -- guarda o original recebido (só reorientado e limitado a 1600px); o recorte
-  -- 4:5 que a home usa é feito na variante, para a lojista poder mudar o
-  -- enquadramento sem reenviar o arquivo.
-  --
-  -- Tabela própria, e não product_photos: a rota pública de foto de produto
-  -- serve qualquer id no tamanho do catálogo, e aqui o que sai é sempre
-  -- recortado em 4:5 — misturar os dois faria uma foto de topo aparecer
-  -- esticada como se fosse de produto.
-  --
-  -- Zero linhas é um estado normal, não um erro: a home volta para as fotos
-  -- fixas de img/hero-*, que é como o site nasceu.
   CREATE TABLE IF NOT EXISTS hero_photos (
     id          TEXT PRIMARY KEY,
     position    INTEGER NOT NULL,
@@ -401,10 +306,6 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_hero_photos_ordem ON hero_photos(position);
 
-  -- Recortes 4:5 (480/960, webp e jpeg) gerados no primeiro acesso. É cache:
-  -- CASCADE porque trocar a foto ou o enquadramento tem de invalidar todos
-  -- os tamanhos — variante velha sobrevivendo seria a foto antiga servida
-  -- para quem pedisse aquela largura.
   CREATE TABLE IF NOT EXISTS hero_photo_variants (
     photo_id    TEXT NOT NULL REFERENCES hero_photos(id) ON DELETE CASCADE,
     width       INTEGER NOT NULL,
@@ -415,20 +316,6 @@ db.exec(`
     PRIMARY KEY (photo_id, width, format)
   );
 
-  -- Elogios que a cliente mandou POR FORA do site (WhatsApp, Instagram) e
-  -- autorizou publicar. Tabela separada de reviews de propósito, e o motivo
-  -- não é o formato: é que toda linha de reviews hoje é compra verificada, e
-  -- o site afirma isso em cada card ("Compra verificada"). Guardar aqui o que
-  -- não passou por pedido mantém aquela afirmação verdadeira por construção,
-  -- e mantém notaMedia() contando só o que pode virar nota.
-  --
-  -- Não tem coluna de nota, e isso é deliberado: mensagem de WhatsApp não vem
-  -- com estrela. Atribuir uma seria inventar exatamente o dado que separar as
-  -- duas tabelas existe para não inventar. No lugar das estrelas o card mostra
-  -- de onde a mensagem veio.
-  --
-  -- consentimento_em é obrigatório: sem a lojista confirmar que a cliente
-  -- autorizou, a rota recusa. É a linha entre publicar elogio real e inventar.
   CREATE TABLE IF NOT EXISTS depoimentos (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     texto            TEXT NOT NULL,
@@ -445,10 +332,6 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_depoimentos_ordem ON depoimentos(status, posicao);
 
-  -- Campanhas de novidades para quem deixou o e-mail no bloco dos 10%.
-  -- O corpo é TEXTO, nunca HTML: quem escreve é a lojista, o HTML é montado
-  -- por lib/email.js a partir dele, e assim não existe a pergunta "e se ela
-  -- colar um <script>".
   CREATE TABLE IF NOT EXISTS campanhas (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     assunto      TEXT NOT NULL,
@@ -463,9 +346,6 @@ db.exec(`
     concluida_em INTEGER
   );
 
-  -- Retrato da lista no momento do disparo: quem se inscrever depois não
-  -- recebe esta campanha, e quem se descadastrar entre o disparo e o envio
-  -- é checado de novo na hora de enfileirar (é a checagem que importa).
   CREATE TABLE IF NOT EXISTS campanha_destinatarios (
     campanha_id  INTEGER NOT NULL REFERENCES campanhas(id) ON DELETE CASCADE,
     email        TEXT NOT NULL,
@@ -476,9 +356,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_campanha_fila
     ON campanha_destinatarios(campanha_id) WHERE enfileirado_em IS NULL;
 
-  -- Uma linha por chave. Hoje só guarda a última rodada do cron
-  -- (tarefas_periodicas_em), para o painel denunciar quando o agendamento
-  -- no hPanel não existe ou parou.
   CREATE TABLE IF NOT EXISTS app_state (
     chave       TEXT PRIMARY KEY,
     valor       TEXT,

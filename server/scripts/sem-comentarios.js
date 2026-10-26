@@ -9,6 +9,32 @@ const SCRIPT_NAO_JS = /^(application\/(ld\+)?json|importmap|speculationrules|tex
 const ABRE_HTML = "<!" + "--";
 const FECHA_HTML = "--" + ">";
 
+const PARECE_SQL = /\b(CREATE|SELECT|INSERT|UPDATE|DELETE|ALTER|PRAGMA)\b/;
+const COMENTARIO_SQL = /(^|\s)--\s|\/\*/;
+
+function percorrer(no, visitar){
+  if(!no || typeof no.type !== "string") return;
+  visitar(no);
+  for(const chave of Object.keys(no)){
+    const valor = no[chave];
+    if(Array.isArray(valor)) valor.forEach(filho => percorrer(filho, visitar));
+    else if(valor && typeof valor.type === "string") percorrer(valor, visitar);
+  }
+}
+
+function comentariosSql(codigo, arvore){
+  const achados = [];
+  percorrer(arvore, no => {
+    if(no.type !== "TemplateLiteral" || !PARECE_SQL.test(codigo.slice(no.start, no.end))) return;
+    for(const parte of no.quasis){
+      const texto = codigo.slice(parte.start, parte.end);
+      const casou = COMENTARIO_SQL.exec(texto);
+      if(casou) achados.push({ tipo: "sql-em-js", indice: parte.start + casou.index, texto: trecho(codigo, parte.start + casou.index) });
+    }
+  });
+  return achados;
+}
+
 function trecho(texto, i){
   return texto.slice(Math.max(0, i - 20), i + 60).replace(/\s+/g, " ");
 }
@@ -17,7 +43,7 @@ function comentariosJs(codigo){
   for(const sourceType of ["script", "module"]){
     try{
       const achados = [];
-      acorn.parse(codigo, {
+      const arvore = acorn.parse(codigo, {
         ecmaVersion: "latest",
         sourceType,
         allowHashBang: true,
@@ -25,6 +51,7 @@ function comentariosJs(codigo){
         allowAwaitOutsideFunction: true,
         onComment: (bloco, texto, inicio) => achados.push({ tipo: "js", indice: inicio, texto: trecho(codigo, inicio) }),
       });
+      achados.push(...comentariosSql(codigo, arvore));
       for(let i = codigo.indexOf(ABRE_HTML); i !== -1; i = codigo.indexOf(ABRE_HTML, i + 1)) achados.push({ tipo: "html-em-js", indice: i, texto: trecho(codigo, i) });
       return achados;
     }catch(erro){
