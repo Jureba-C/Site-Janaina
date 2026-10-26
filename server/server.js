@@ -39,6 +39,7 @@ const pricing = require("./js/pricing.js");
 const produtoUrl = require("./js/produto-url.js");
 const lojaDados = require("./lib/loja-dados.js");
 const lojaSsr = require("./lib/loja-ssr.js");
+const producao = require("./lib/producao.js");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -1552,7 +1553,7 @@ function orderRowFrom(draft, orderRef, user){
     customerEmail: user?.email ?? null,
     status: "pendente",
     items: draft.validatedItems.map(({ id, qty, product, unitPrice, escolhas, resumo }) => ({
-      id, qty, price: unitPrice, nome: product.name, escolhas, resumo,
+      id, qty, price: unitPrice, nome: product.name, escolhas, resumo, config: product.config,
     })),
     address: { ...draft.address, cep: draft.cep },
     shipping: draft.chosenShipping,
@@ -3239,7 +3240,10 @@ app.get("/api/admin/orders", auth.requireAdmin, auth.requireAdminTwoFactor, (req
     const overridesMap = getProductOverridesMap();
     const notas = db.notasPorPedido();
     const orders = rows.map(row => {
-      const items = JSON.parse(row.items_json).map(item => itemParaExibir(item, overridesMap));
+      const items = JSON.parse(row.items_json).map(item => {
+        const { config, ...resto } = itemParaExibir(item, overridesMap);
+        return { ...resto, temArte: Boolean(config?.personalizacao?.ativa && item.escolhas), temVerso: Boolean(config?.personalizacao?.verso && item.escolhas?.personalizacao?.frase) };
+      });
       const address = JSON.parse(row.address_json);
       const shipping = JSON.parse(row.shipping_json);
       const account = row.user_id ? db.getUserById(row.user_id) : null;
@@ -3953,6 +3957,67 @@ app.get("/api/personalizacao/fotos/:id", (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename="foto-${linha.id.slice(0, 8)}.jpg"`);
   }
   res.send(Buffer.from(original ? linha.data : linha.miniatura));
+});
+
+app.get("/api/admin/pedidos/:reference/itens/:indice/:tipo.svg", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res, next) => {
+  const tipo = req.params.tipo === "arte" ? "arte" : req.params.tipo === "previa" ? "previa" : null;
+  if(!tipo) return next();
+  const pedido = db.getOrderByExternalReference(String(req.params.reference || ""));
+  if(!pedido) return res.status(404).json({ error: "Pedido não encontrado." });
+  const itens = JSON.parse(pedido.items_json);
+  const bruto = itens[Number(req.params.indice)];
+  if(!bruto) return res.status(404).json({ error: "Item não encontrado." });
+  const item = itemParaExibir(bruto, getProductOverridesMap());
+  if(!item.config || !item.escolhas) return res.status(404).json({ error: "Este item não tem personalização." });
+  const fotos = {};
+  for(const id of item.fotos){
+    const linha = db.lerFotoPersonalizacao(id);
+    if(!linha) continue;
+    fotos[id] = tipo === "arte"
+      ? `data:${linha.mime_type};base64,${Buffer.from(linha.data).toString("base64")}`
+      : `data:image/webp;base64,${Buffer.from(linha.miniatura).toString("base64")}`;
+  }
+  try {
+    const svg = lojaSsr.svgDoItem({ tipo, config: item.config, escolhas: item.escolhas, lado: req.query.lado, fotos });
+    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Content-Security-Policy", "default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'");
+    res.send(svg);
+  } catch (err) {
+    console.error("Erro ao montar a arte do pedido:", err);
+    res.status(500).json({ error: "Não foi possível montar a arte agora." });
+  }
+});
+
+app.get("/api/admin/pedidos/:reference/itens/:indice/producao.svg", auth.requireAdmin, auth.requireAdminTwoFactor, async (req, res) => {
+  const pedido = db.getOrderByExternalReference(String(req.params.reference || ""));
+  if(!pedido) return res.status(404).json({ error: "Pedido não encontrado." });
+  const indice = Number(req.params.indice);
+  const bruto = JSON.parse(pedido.items_json)[indice];
+  if(!bruto) return res.status(404).json({ error: "Item não encontrado." });
+  const item = itemParaExibir(bruto, getProductOverridesMap());
+  if(!item.config || !item.escolhas || !item.config.personalizacao?.ativa) return res.status(404).json({ error: "Este item não tem personalização." });
+  try {
+    const svg = await producao.arquivoDeProducao({
+      config: item.config,
+      escolhas: item.escolhas,
+      lerFoto: id => {
+        const linha = db.lerFotoPersonalizacao(id);
+        return linha && linha.pedido === pedido.external_reference ? Buffer.from(linha.data) : null;
+      },
+      svgDaArte: lojaSsr.svgDaArteSemFontes,
+      titulo: `${item.name} — pedido ${pedido.external_reference.slice(0, 8)}`,
+    });
+    const apelido = produtoUrl.apelido(item.name);
+    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="arte-${pedido.external_reference.slice(0, 8)}-item${indice + 1}-${apelido}.svg"`);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'");
+    res.send(svg);
+  } catch (err) {
+    console.error("Erro ao gerar o arquivo de produção:", err);
+    res.status(500).json({ error: "Não foi possível gerar o arquivo agora." });
+  }
 });
 
 app.get("/api/admin/pedidos/:reference/fotos", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {

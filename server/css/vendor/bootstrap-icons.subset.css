@@ -1,7 +1,7 @@
 /* GERADO por scripts/subset-icones.js — não editar à mão.
-   70 de 2050 ícones do Bootstrap Icons v1.11.3 (MIT).
+   71 de 2050 ícones do Bootstrap Icons v1.11.3 (MIT).
    Para adicionar um ícone: use a classe no HTML/JS e rode o script de novo. */
-@font-face{font-display:block;font-family:bootstrap-icons;src:url("fonts/bootstrap-icons.subset-98d5adfd.woff2") format("woff2")}
+@font-face{font-display:block;font-family:bootstrap-icons;src:url("fonts/bootstrap-icons.subset-ee25ba60.woff2") format("woff2")}
 .bi::before,[class*=" bi-"]::before,[class^=bi-]::before{display:inline-block;font-family:bootstrap-icons!important;font-style:normal;font-weight:400!important;font-variant:normal;text-transform:none;line-height:1;vertical-align:-.125em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .bi-arrow-down-short::before{content:"\f124"}
 .bi-arrow-left::before{content:"\f12f"}
@@ -67,6 +67,7 @@
 .bi-ticket-perforated::before{content:"\f6ca"}
 .bi-trash3::before{content:"\f78b"}
 .bi-truck::before{content:"\f5ea"}
+.bi-vector-pen::before{content:"\f604"}
 .bi-wallet2::before{content:"\f615"}
 .bi-whatsapp::before{content:"\f618"}
 .bi-x-circle::before{content:"\f623"}

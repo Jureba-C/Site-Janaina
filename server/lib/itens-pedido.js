@@ -15,6 +15,7 @@ function itemParaExibir(item, overridesMap){
     photoUrl: produto?.photoUrl || null,
     resumo: Array.isArray(item.resumo) ? item.resumo : [],
     escolhas: item.escolhas || null,
+    config: item.config || produto?.config || null,
     fotos: fotosDaPersonalizacao(item.escolhas),
   };
 }

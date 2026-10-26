@@ -96,4 +96,32 @@ ${jsonLd}
 </html>`;
 }
 
-module.exports = { montarDocumento, escapar, arquivosDoCliente };
+const FONTES_EMBUTIDAS = [
+  { familia: "Fraunces", estilo: "normal", peso: "500 800", arquivo: "fraunces-500-800-latin.woff2" },
+  { familia: "Fraunces", estilo: "italic", peso: "500", arquivo: "fraunces-italico-500-latin.woff2" },
+  { familia: "Josefin Sans", estilo: "normal", peso: "300 700", arquivo: "josefin-300-700-latin.woff2" },
+  { familia: "Allura", estilo: "normal", peso: "400", arquivo: "allura-400-latin.woff2" },
+];
+let cssDasFontes = null;
+
+function fontesEmbutidas(){
+  if(!cssDasFontes){
+    cssDasFontes = FONTES_EMBUTIDAS.map(f => {
+      const dados = fs.readFileSync(path.join(RAIZ, "css", "fonts", f.arquivo)).toString("base64");
+      return `@font-face{font-family:"${f.familia}";font-style:${f.estilo};font-weight:${f.peso};src:url(data:font/woff2;base64,${dados}) format("woff2");}`;
+    }).join("");
+  }
+  return cssDasFontes;
+}
+
+function svgDoItem({ tipo, config, escolhas, lado, fotos }){
+  const r = renderizador();
+  const pedido = { config, escolhas, lado: lado === "verso" ? "verso" : "frente", fotos, estilo: fontesEmbutidas() };
+  return tipo === "arte" ? r.renderizarSvgDaArte(pedido) : r.renderizarSvgDaPeca(pedido);
+}
+
+function svgDaArteSemFontes({ config, escolhas, lado, fotos }){
+  return renderizador().renderizarSvgDaArte({ config, escolhas, lado, fotos, estilo: "" });
+}
+
+module.exports = { montarDocumento, escapar, arquivosDoCliente, svgDoItem, svgDaArteSemFontes };

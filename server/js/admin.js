@@ -1685,15 +1685,29 @@
 
     const contactUrl = isPaid ? whatsappContactUrl(order) : null;
 
-    const itemsHtml = order.items.map(item => `
-      <li class="d-flex align-items-center justify-content-between gap-3">
-        <span class="d-flex align-items-center gap-2">
-          ${item.photoUrl
-            ? `<img class="admin-product-thumb" src="${escapeHTML(item.photoUrl)}" alt="${escapeHTML(item.name)}" width="44" height="44" loading="lazy">`
-            : BOW_PLACEHOLDER}
-          <span>${item.qty}x ${escapeHTML(item.name)}</span>
-        </span>
-        <span class="flex-shrink-0">${item.unitPrice != null ? formatMoney(item.unitPrice * item.qty) : "—"}</span>
+    const itemsHtml = order.items.map((item, indice) => `
+      <li class="pedido-item">
+        <div class="d-flex align-items-center justify-content-between gap-3">
+          <span class="d-flex align-items-center gap-2">
+            ${item.photoUrl
+              ? `<img class="admin-product-thumb" src="${escapeHTML(item.photoUrl)}" alt="${escapeHTML(item.name)}" width="44" height="44" loading="lazy">`
+              : BOW_PLACEHOLDER}
+            <span>${item.qty}x ${escapeHTML(item.name)}</span>
+          </span>
+          <span class="flex-shrink-0">${item.unitPrice != null ? formatMoney(item.unitPrice * item.qty) : "—"}</span>
+        </div>
+        ${Array.isArray(item.resumo) && item.resumo.length ? `<dl class="pedido-personalizacao">${item.resumo.map(l => `<div><dt>${escapeHTML(l.rotulo)}</dt><dd>${escapeHTML(l.valor)}</dd></div>`).join("")}</dl>` : ""}
+        ${Array.isArray(item.fotos) && item.fotos.length ? `<div class="pedido-fotos">${item.fotos.map((id, n) => `
+          <a href="/api/personalizacao/fotos/${escapeHTML(id)}?tamanho=original&amp;baixar=1" class="pedido-foto" title="Baixar a foto ${n + 1} original">
+            <img src="/api/personalizacao/fotos/${escapeHTML(id)}" alt="Foto ${n + 1} enviada pela cliente" width="56" height="56" loading="lazy">
+            <span><i class="bi bi-download" aria-hidden="true"></i> original</span>
+          </a>`).join("")}</div>` : ""}
+        ${item.temArte ? `<div class="pedido-arte-acoes">
+          <button type="button" class="btn-outline-blush btn-sm-blush ver-previa-btn" data-ref="${escapeHTML(ref)}" data-indice="${indice}" data-verso="${item.temVerso ? "1" : ""}"><i class="bi bi-eye me-1" aria-hidden="true"></i>Ver prévia</button>
+          <button type="button" class="btn-outline-blush btn-sm-blush baixar-arte-btn" data-ref="${escapeHTML(ref)}" data-indice="${indice}" data-lado="frente"><i class="bi bi-download me-1" aria-hidden="true"></i>Arte da frente (PNG)</button>
+          ${item.temVerso ? `<button type="button" class="btn-outline-blush btn-sm-blush baixar-arte-btn" data-ref="${escapeHTML(ref)}" data-indice="${indice}" data-lado="verso"><i class="bi bi-download me-1" aria-hidden="true"></i>Arte do verso (PNG)</button>` : ""}
+          <a class="btn-blush btn-sm-blush" href="/api/admin/pedidos/${encodeURIComponent(ref)}/itens/${indice}/producao.svg" download><i class="bi bi-vector-pen me-1" aria-hidden="true"></i>Arquivo para Corel / Illustrator (SVG)</a>
+        </div>` : ""}
       </li>
     `).join("");
 
@@ -2063,6 +2077,80 @@
       btn.classList.remove("is-copied");
     }, 2000);
   }
+
+  const LARGURA_DA_ARTE_PNG = 3000;
+
+  async function baixarArtePng(ref, indice, lado){
+    const res = await fetch(`/api/admin/pedidos/${encodeURIComponent(ref)}/itens/${indice}/arte.svg?lado=${lado}`);
+    if(!res.ok) throw new Error("Não foi possível montar a arte.");
+    const svg = await res.text();
+    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    try{
+      const imagem = new Image();
+      await new Promise((resolver, rejeitar) => { imagem.onload = resolver; imagem.onerror = rejeitar; imagem.src = url; });
+      const escala = LARGURA_DA_ARTE_PNG / imagem.width;
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(imagem.width * escala);
+      canvas.height = Math.round(imagem.height * escala);
+      canvas.getContext("2d").drawImage(imagem, 0, 0, canvas.width, canvas.height);
+      const png = await new Promise(resolver => canvas.toBlob(resolver, "image/png"));
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(png);
+      link.download = `arte-${ref.slice(0, 8)}-item${Number(indice) + 1}-${lado}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+    }finally{
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function abrirPreviaDoPedido(ref, indice, temVerso){
+    let dialogo = document.getElementById("previaDoPedido");
+    if(!dialogo){
+      dialogo = document.createElement("dialog");
+      dialogo.id = "previaDoPedido";
+      dialogo.className = "previa-pedido";
+      dialogo.setAttribute("aria-label", "Prévia da arte do pedido");
+      dialogo.addEventListener("click", (e) => { if(e.target === dialogo || e.target.closest(".previa-pedido-fechar")) dialogo.close(); });
+      document.body.appendChild(dialogo);
+    }
+    const base = `/api/admin/pedidos/${encodeURIComponent(ref)}/itens/${indice}/previa.svg`;
+    dialogo.innerHTML = `
+      <div class="previa-pedido-conteudo">
+        <div class="previa-pedido-imagens">
+          <figure><img src="${base}?lado=frente" alt="Prévia da frente" width="360" height="380"><figcaption>Frente</figcaption></figure>
+          ${temVerso ? `<figure><img src="${base}?lado=verso" alt="Prévia do verso" width="360" height="380"><figcaption>Verso</figcaption></figure>` : ""}
+        </div>
+        <p class="small text-muted mb-2">Prévia como a cliente viu. Os PNGs da arte saem em ${LARGURA_DA_ARTE_PNG} px de largura, com fundo transparente.</p>
+        <button type="button" class="btn-blush previa-pedido-fechar">Fechar</button>
+      </div>`;
+    dialogo.showModal();
+  }
+
+  listEl.addEventListener("click", async (e) => {
+    const previaBtn = e.target.closest(".ver-previa-btn");
+    if(previaBtn){
+      abrirPreviaDoPedido(previaBtn.dataset.ref, previaBtn.dataset.indice, Boolean(previaBtn.dataset.verso));
+      return;
+    }
+    const arteBtn = e.target.closest(".baixar-arte-btn");
+    if(arteBtn){
+      const texto = arteBtn.innerHTML;
+      arteBtn.disabled = true;
+      arteBtn.textContent = "Gerando PNG…";
+      try{
+        await baixarArtePng(arteBtn.dataset.ref, arteBtn.dataset.indice, arteBtn.dataset.lado);
+      }catch(err){
+        alert(err.message || "Não foi possível baixar a arte.");
+      }finally{
+        arteBtn.disabled = false;
+        arteBtn.innerHTML = texto;
+      }
+      return;
+    }
+  });
 
   listEl.addEventListener("click", (e) => {
     const trackBtn = e.target.closest(".save-tracking-btn");
