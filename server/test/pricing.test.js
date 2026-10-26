@@ -13,10 +13,10 @@ test("formatMoney formata em reais com vírgula", () => {
   assert.equal(pricing.formatMoney(0).replace(/\u00a0/g, " "), "R$ 0,00");
 });
 
-test("desconto Pix é 5% do valor", () => {
-  assert.equal(pricing.pixDiscountFor(100), 5);
-  assert.equal(pricing.pixPriceFor(100), 95);
-  assert.equal(pricing.pixDiscountFor(34.9), 1.75);
+test("desconto Pix é 10% do valor", () => {
+  assert.equal(pricing.pixDiscountFor(100), 10);
+  assert.equal(pricing.pixPriceFor(100), 90);
+  assert.equal(pricing.pixDiscountFor(34.9), 3.49);
 });
 
 test("parcelamento respeita máximo e valor mínimo por parcela", () => {

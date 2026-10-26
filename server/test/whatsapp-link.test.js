@@ -12,7 +12,7 @@ function arquivosDoSite() {
       if (item.name === "node_modules" || item.name === "vendor" || item.name === "test") continue;
       const caminho = path.join(dir, item.name);
       if (item.isDirectory()) anda(caminho);
-      else if (/\.(js|html)$/.test(item.name)) saida.push(caminho);
+      else if (/\.(js|cjs|ts|tsx|html)$/.test(item.name)) saida.push(caminho);
     }
   })(RAIZ);
   return saida;

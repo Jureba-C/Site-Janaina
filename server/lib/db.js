@@ -363,6 +363,25 @@ db.exec(`
   );
 `);
 ensureColumn("orders", "review_token", "TEXT");
+ensureColumn("product_overrides", "config_json", "TEXT");
+ensureColumn("custom_products", "config_json", "TEXT");
+ensureColumn("custom_categories", "grupo", "TEXT");
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS personalizacao_fotos (
+    id           TEXT PRIMARY KEY,
+    chave_hash   TEXT NOT NULL,
+    mime_type    TEXT NOT NULL,
+    data         BLOB NOT NULL,
+    miniatura    BLOB NOT NULL,
+    largura      INTEGER NOT NULL,
+    altura       INTEGER NOT NULL,
+    pedido       TEXT,
+    apagar_em    INTEGER,
+    created_at   INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_personalizacao_fotos_pedido ON personalizacao_fotos(pedido);
+`);
 
 function seedDefaultCoupon() {
   const { count } = db.prepare(`SELECT COUNT(*) AS count FROM coupons`).get();
@@ -804,6 +823,7 @@ function markOrderInProduction(ref) {
 function markOrderDelivered(ref, quando) {
   const now = Date.now();
   stmtMarkOrderDelivered.run(quando || now, now, ref);
+  stmtAgendarApagarFotos.run((quando || now) + DIAS_FOTOS_APOS_ENTREGA * 86400000, ref);
 }
 function setMelhorEnvioShipmentId(ref, shipmentId) {
   stmtSetMelhorEnvioShipmentId.run(shipmentId, Date.now(), ref);
@@ -1012,6 +1032,13 @@ const stmtUpsertProductOverride = db.prepare(`
     hidden = excluded.hidden, sold_out = excluded.sold_out, updated_at = excluded.updated_at
 `);
 
+const stmtSetOverrideConfig = db.prepare(
+  `UPDATE product_overrides SET config_json = ?, updated_at = ? WHERE product_id = ?`
+);
+const stmtSetCustomConfig = db.prepare(
+  `UPDATE custom_products SET config_json = ?, updated_at = ? WHERE id = ?`
+);
+
 const stmtSetOverrideSortOrder = db.prepare(`
   INSERT INTO product_overrides (product_id, sort_order, updated_at) VALUES (?, ?, ?)
   ON CONFLICT(product_id) DO UPDATE SET sort_order = excluded.sort_order, updated_at = excluded.updated_at
@@ -1064,6 +1091,7 @@ function upsertProductOverride(productId, fields) {
   const hidden = "hidden" in fields ? (fields.hidden ? 1 : 0) : (current.hidden ?? 0);
   const soldOut = "soldOut" in fields ? (fields.soldOut ? 1 : 0) : (current.sold_out ?? 0);
   stmtUpsertProductOverride.run(productId, name, price, photoUrl, category, badges, availableColors, photos, allowSecondColor, description, ncm, hidden, soldOut, Date.now());
+  if ("config" in fields) stmtSetOverrideConfig.run(fields.config ? JSON.stringify(fields.config) : null, Date.now(), productId);
   return getProductOverride(productId);
 }
 
@@ -1092,7 +1120,7 @@ function nextCustomProductId(startAt) {
   const { maxId } = stmtMaxCustomProductId.get();
   return Math.max(startAt - 1, maxId || 0) + 1;
 }
-function insertCustomProduct({ startAt, name, price, weight, width, height, length, category, badges, description, caixa }) {
+function insertCustomProduct({ startAt, name, price, weight, width, height, length, category, badges, description, caixa, config }) {
   const id = nextCustomProductId(startAt);
   const now = Date.now();
   stmtInsertCustomProduct.run(
@@ -1108,6 +1136,7 @@ function insertCustomProduct({ startAt, name, price, weight, width, height, leng
     caixa || null,
     now, now
   );
+  if (config) stmtSetCustomConfig.run(JSON.stringify(config), now, id);
   return getCustomProduct(id);
 }
 function updateCustomProduct(id, fields) {
@@ -1134,6 +1163,7 @@ function updateCustomProduct(id, fields) {
   const hidden = "hidden" in fields ? (fields.hidden ? 1 : 0) : (current.hidden ?? 0);
   const soldOut = "soldOut" in fields ? (fields.soldOut ? 1 : 0) : (current.sold_out ?? 0);
   stmtUpdateCustomProduct.run(name, price, category, photoUrl, badges, availableColors, photos, allowSecondColor, description, ncm, hidden, soldOut, Date.now(), id);
+  if ("config" in fields) stmtSetCustomConfig.run(fields.config ? JSON.stringify(fields.config) : null, Date.now(), id);
   return getCustomProduct(id);
 }
 function deleteCustomProduct(id) {
@@ -1142,7 +1172,7 @@ function deleteCustomProduct(id) {
 
 const stmtListCustomCategories = db.prepare(`SELECT * FROM custom_categories ORDER BY created_at`);
 const stmtInsertCustomCategory = db.prepare(
-  `INSERT INTO custom_categories (slug, label, created_at) VALUES (?, ?, ?)`
+  `INSERT INTO custom_categories (slug, label, created_at, grupo) VALUES (?, ?, ?, ?)`
 );
 const stmtUpdateCustomCategoryLabel = db.prepare(
   `UPDATE custom_categories SET label = ? WHERE slug = ?`
@@ -1157,9 +1187,10 @@ const stmtCountProductsUsingCategory = db.prepare(`
 function listCustomCategories() {
   return stmtListCustomCategories.all();
 }
-function insertCustomCategory({ slug, label }) {
-  stmtInsertCustomCategory.run(slug, label, Date.now());
-  return { slug, label };
+function insertCustomCategory({ slug, label, grupo }) {
+  const g = grupo === "ocasiao" ? "ocasiao" : "tipo";
+  stmtInsertCustomCategory.run(slug, label, Date.now(), g);
+  return { slug, label, grupo: g };
 }
 function updateCustomCategoryLabel(slug, label) {
   stmtUpdateCustomCategoryLabel.run(label, slug);
@@ -1435,6 +1466,19 @@ const stmtAvaliacoesPublicadas = db.prepare(`
 `);
 function avaliacoesPublicadas(limite = 6){ return stmtAvaliacoesPublicadas.all(limite); }
 
+const stmtAvaliacoesDoProduto = db.prepare(`
+  SELECT rating, comment, customer_first_name, customer_city
+    FROM reviews WHERE status = 'publicada' AND product_id = ?
+   ORDER BY published_at DESC LIMIT ?
+`);
+const stmtNotaDoProduto = db.prepare(
+  `SELECT COUNT(*) AS total, AVG(rating) AS media FROM reviews WHERE status = 'publicada' AND product_id = ?`
+);
+function avaliacoesDoProduto(productId, limite = 6){
+  const r = stmtNotaDoProduto.get(productId);
+  return { total: r?.total || 0, media: r?.total ? r.media : 0, itens: stmtAvaliacoesDoProduto.all(productId, limite) };
+}
+
 const stmtNotaMedia = db.prepare(
   `SELECT COUNT(*) AS total, AVG(rating) AS media FROM reviews WHERE status = 'publicada'`
 );
@@ -1530,7 +1574,11 @@ function itensDoCarrinhoEsquecido(referencia, agora = Date.now(), janelaDias = 1
   if(!linha) return null;
   try{
     return JSON.parse(linha.items_json)
-      .map(i => ({ id: Number(i.id), qty: Number(i.qty) }))
+      .map(i => ({
+        id: Number(i.id),
+        qty: Number(i.qty),
+        ...(i.escolhas ? { escolhas: { ...i.escolhas, personalizacao: { ...(i.escolhas.personalizacao || {}), fotos: [] } } } : {}),
+      }))
       .filter(i => Number.isInteger(i.id) && Number.isInteger(i.qty) && i.qty > 0);
   }catch{
     return null;
@@ -1773,6 +1821,55 @@ function markEmailFailed(id, erro){
   stmtEmailFalhou.run(Date.now() + espera, String(erro).slice(0, 500), id);
 }
 
+const DIAS_FOTOS_APOS_ENTREGA = 60;
+const HORAS_FOTO_SEM_PEDIDO = 48;
+const DIAS_FOTO_PEDIDO_NAO_PAGO = 15;
+const stmtInsereFotoPersonalizacao = db.prepare(`
+  INSERT INTO personalizacao_fotos (id, chave_hash, mime_type, data, miniatura, largura, altura, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`);
+const stmtLeFotoPersonalizacao = db.prepare(`SELECT * FROM personalizacao_fotos WHERE id = ?`);
+const stmtFotosDoPedido = db.prepare(`SELECT id, mime_type, largura, altura, created_at FROM personalizacao_fotos WHERE pedido = ? ORDER BY created_at`);
+const stmtVinculaFoto = db.prepare(`UPDATE personalizacao_fotos SET pedido = ? WHERE id = ? AND (pedido IS NULL OR pedido = ?)`);
+const stmtAgendarApagarFotos = db.prepare(`UPDATE personalizacao_fotos SET apagar_em = ? WHERE pedido = ?`);
+const stmtApagaFotosVencidas = db.prepare(`
+  DELETE FROM personalizacao_fotos
+   WHERE (pedido IS NULL AND created_at < ?)
+      OR (apagar_em IS NOT NULL AND apagar_em < ?)
+      OR (pedido IS NOT NULL AND apagar_em IS NULL AND created_at < ?
+          AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.external_reference = personalizacao_fotos.pedido AND o.status = 'pago'))
+`);
+function inserirFotoPersonalizacao({ id, chaveHash, mimeType, data, miniatura, largura, altura }){
+  stmtInsereFotoPersonalizacao.run(id, chaveHash, mimeType, data, miniatura, largura, altura, Date.now());
+}
+function lerFotoPersonalizacao(id){
+  return stmtLeFotoPersonalizacao.get(id) || null;
+}
+function fotosPersonalizacaoDoPedido(pedido){
+  return stmtFotosDoPedido.all(pedido);
+}
+function vincularFotosAoPedido(ids, pedido){
+  let vinculadas = 0;
+  for(const id of ids) vinculadas += Number(stmtVinculaFoto.run(pedido, id, pedido).changes || 0);
+  return vinculadas;
+}
+function apagarFotosPersonalizacaoVencidas(agora = Date.now()){
+  return Number(stmtApagaFotosVencidas.run(
+    agora - HORAS_FOTO_SEM_PEDIDO * 3600000,
+    agora,
+    agora - DIAS_FOTO_PEDIDO_NAO_PAGO * 86400000,
+  ).changes || 0);
+}
+
+function prazoDeProducao(){
+  const linha = lerEstado("prazo_producao");
+  const dias = linha ? Number(linha.valor) : NaN;
+  return Number.isInteger(dias) && dias > 0 ? dias : null;
+}
+function definirPrazoDeProducao(dias){
+  gravarEstado("prazo_producao", Number.isInteger(dias) && dias > 0 ? dias : null);
+}
+
 function catalogVersion(){
   const p = db.prepare("SELECT COUNT(*) AS n, IFNULL(MAX(updated_at), 0) AS t FROM product_overrides").get();
   const c = db.prepare("SELECT COUNT(*) AS n, IFNULL(MAX(updated_at), 0) AS t FROM custom_products").get();
@@ -1787,6 +1884,15 @@ function hashCurto(texto){
 }
 
 module.exports = {
+  avaliacoesDoProduto,
+  DIAS_FOTOS_APOS_ENTREGA,
+  inserirFotoPersonalizacao,
+  lerFotoPersonalizacao,
+  fotosPersonalizacaoDoPedido,
+  vincularFotosAoPedido,
+  apagarFotosPersonalizacaoVencidas,
+  prazoDeProducao,
+  definirPrazoDeProducao,
   garantirTokenDeAvaliacao,
   tokenDeAvaliacaoConfere,
   salvarAvaliacao,

@@ -245,7 +245,14 @@ function enfileirarCuponsDeAniversario(agora = Date.now()){
   return novos;
 }
 
+function apagarFotosDePersonalizacaoVencidas(){
+  const apagadas = db.apagarFotosPersonalizacaoVencidas();
+  console.log(`Fotos de personalização: ${apagadas} apagada(s) pelo prazo.`);
+  return { apagadas };
+}
+
 async function main(){
+  apagarFotosDePersonalizacaoVencidas();
   await fecharEntregasConfirmadas();
   enfileirarConfirmacoesDeRecebimento();
   enfileirarPedidosDeAvaliacao();
@@ -263,4 +270,4 @@ if(require.main === module){
   });
 }
 
-module.exports = { main, reenviarFilaDeEmail, fecharEntregasConfirmadas, enfileirarConfirmacoesDeRecebimento, enfileirarPedidosDeAvaliacao, enfileirarLembretesDeCarrinho, enfileirarCuponsDeAniversario, enfileirarLotesDeCampanha };
+module.exports = { main, apagarFotosDePersonalizacaoVencidas, reenviarFilaDeEmail, fecharEntregasConfirmadas, enfileirarConfirmacoesDeRecebimento, enfileirarPedidosDeAvaliacao, enfileirarLembretesDeCarrinho, enfileirarCuponsDeAniversario, enfileirarLotesDeCampanha };

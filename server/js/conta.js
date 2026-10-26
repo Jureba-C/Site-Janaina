@@ -38,7 +38,7 @@
     if(user?.isAdmin) return "admin.html";
 
     const retorno = new URLSearchParams(location.search).get("retorno");
-    return retorno === "carrinho" ? "index.html?carrinho=1" : "pedidos.html";
+    return retorno === "carrinho" ? "/?carrinho=1" : "pedidos.html";
   }
 
   const blocosGoogle = [...document.querySelectorAll("[data-auth-google]")];

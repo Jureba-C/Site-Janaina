@@ -77,7 +77,7 @@
     sessionStorage.removeItem(STORAGE_KEY);
 
     try{
-      localStorage.removeItem("plc_cart_v1");
+      localStorage.removeItem("arte_carrinho_v1");
     }catch(err){
       console.warn("Não foi possível limpar o carrinho salvo:", err);
     }

@@ -7,7 +7,7 @@ const { spawn } = require("node:child_process");
 
 const PORT = 39585;
 const ORIGIN = `http://localhost:${PORT}`;
-const TMP_DB = path.join(os.tmpdir(), `plc-laco-${process.pid}-${Date.now()}.db`);
+const TMP_DB = path.join(os.tmpdir(), `arte-produto-${process.pid}-${Date.now()}.db`);
 
 process.env.DB_PATH = TMP_DB;
 const db = require("../lib/db.js");
@@ -41,107 +41,126 @@ after(() => {
   limpar();
 });
 
-test("o link canônico do produto responde 200 com a prévia daquele laço", async () => {
-  const res = await fetch(`${ORIGIN}/laco/2-laco-duquesa`);
+test("o link canônico do produto responde 200 com a página daquele produto", async () => {
+  const res = await fetch(`${ORIGIN}/produto/2-caneca-alca-e-dentro-colorida`);
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /<meta property="og:title" content="Laço Duquesa — Arte Canecas">/);
-  assert.match(html, /<meta property="og:url" content="[^"]*\/laco\/2-laco-duquesa">/);
-  assert.match(html, /<link rel="canonical" href="[^"]*\/laco\/2-laco-duquesa">/);
-  assert.match(html, /<meta property="product:price:amount" content="49\.90">/);
-  assert.match(html, /<title>Laço Duquesa — Arte Canecas<\/title>/);
+  assert.match(html, /<meta property="og:title" content="Caneca alça e dentro colorida 325 ml — Arte Canecas">/);
+  assert.match(html, /<meta property="og:url" content="[^"]*\/produto\/2-caneca-alca-e-dentro-colorida">/);
+  assert.match(html, /<link rel="canonical" href="[^"]*\/produto\/2-caneca-alca-e-dentro-colorida">/);
+  assert.match(html, /<meta property="product:price:amount" content="45\.00">/);
+  assert.match(html, /<title>Caneca alça e dentro colorida 325 ml — Arte Canecas<\/title>/);
+  assert.match(html, /<div id="loja">[\s\S]*Caneca alça e dentro colorida[\s\S]*<\/div>/, "o HTML já vem montado do servidor");
 });
 
-test("a espiada rápida abre sozinha: data-produto sai no body", async () => {
-  const html = await (await fetch(`${ORIGIN}/laco/2-laco-duquesa`)).text();
-  assert.match(html, /<body data-produto="2"/);
+test("o endereço antigo /laco/ leva para /produto/ com 301 e a query intacta", async () => {
+  const res = await fetch(`${ORIGIN}/laco/2-qualquer-coisa?utm_source=whatsapp`, { redirect: "manual" });
+  assert.equal(res.status, 301);
+  assert.equal(res.headers.get("location"), "/produto/2-caneca-alca-e-dentro-colorida?utm_source=whatsapp");
 });
 
 test("a home continua com a prévia da loja, não a de um produto", async () => {
   const html = await (await fetch(`${ORIGIN}/`)).text();
   assert.match(html, /<meta property="og:type" content="website">/);
   assert.match(html, /<link rel="canonical" href="https:\/\/nomedaloja\.com\.br\/">/);
-  assert.doesNotMatch(html, /data-produto=/);
-  assert.doesNotMatch(html, /<template data-marca=META-SOCIAL><\/template>/);
+  assert.doesNotMatch(html, /product:price/);
 });
 
 test("produto renomeado: o link velho leva ao produto, com a query intacta", async () => {
-  db.upsertProductOverride(2, { name: "Laço Duquesa Luxo" });
-  const res = await fetch(`${ORIGIN}/laco/2-laco-duquesa?utm_source=whatsapp`, { redirect: "manual" });
+  db.upsertProductOverride(2, { name: "Caneca Colorida Luxo" });
+  const res = await fetch(`${ORIGIN}/produto/2-caneca-alca-e-dentro-colorida?utm_source=whatsapp`, { redirect: "manual" });
   assert.equal(res.status, 301);
-  assert.equal(res.headers.get("location"), "/laco/2-laco-duquesa-luxo?utm_source=whatsapp");
+  assert.equal(res.headers.get("location"), "/produto/2-caneca-colorida-luxo?utm_source=whatsapp");
 
-  const seguido = await fetch(`${ORIGIN}/laco/2-laco-duquesa?utm_source=whatsapp`);
+  const seguido = await fetch(`${ORIGIN}/produto/2-caneca-alca-e-dentro-colorida?utm_source=whatsapp`);
   assert.equal(seguido.status, 200);
-  assert.match(await seguido.text(), /og:title" content="Laço Duquesa Luxo/);
-  db.upsertProductOverride(2, { name: "Laço Duquesa" });
+  assert.match(await seguido.text(), /og:title" content="Caneca Colorida Luxo/);
+  db.upsertProductOverride(2, { name: "Caneca alça e dentro colorida" });
 });
 
 test("endereço que não existe é 404, não desvio para a vitrine", async () => {
-  for(const caminho of ["/laco/999999-nao-existe", "/laco/sem-id", "/laco/0-zero"]){
+  for(const caminho of ["/produto/999999-nao-existe", "/produto/sem-id", "/produto/0-zero", "/laco/999999-x", "/categoria/nao-existe"]){
     const res = await fetch(ORIGIN + caminho, { redirect: "manual" });
     assert.equal(res.status, 404, caminho);
   }
 });
 
-test("produto escondido pelo painel leva à vitrine, porque pode voltar", async () => {
+test("produto escondido pelo painel leva a todos os produtos, porque pode voltar", async () => {
   db.upsertProductOverride(3, { hidden: true });
-  const res = await fetch(`${ORIGIN}/laco/3-laco-recem-nascida`, { redirect: "manual" });
+  const res = await fetch(`${ORIGIN}/produto/3-caneca-100-preta`, { redirect: "manual" });
   assert.equal(res.status, 302);
-  assert.equal(res.headers.get("location"), "/#colecoes");
+  assert.equal(res.headers.get("location"), "/busca");
   db.upsertProductOverride(3, { hidden: false });
 });
 
 test("nome de produto com aspas ou HTML não escapa para dentro da tag", async () => {
-  db.upsertProductOverride(4, { name: 'Laço "Pérola" <script>alert(1)</script>' });
-  const html = await (await fetch(`${ORIGIN}/laco/4-laco-perola-script-alert-1-script`)).text();
+  db.upsertProductOverride(4, { name: 'Caneca "Mini" <script>alert(1)</script>' });
+  const html = await (await fetch(`${ORIGIN}/produto/4-caneca-mini-script-alert-1-script`)).text();
   assert.doesNotMatch(html, /<meta property="og:title" content="[^"]*<script>/);
-  assert.match(html, /&quot;Pérola&quot;/);
-  db.upsertProductOverride(4, { name: "Laço Pérola" });
+  assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
+  assert.match(html, /&quot;Mini&quot;/);
+  db.upsertProductOverride(4, { name: "Caneca mini branca" });
 });
 
 test("esgotado continua com página, só muda a disponibilidade anunciada", async () => {
   db.upsertProductOverride(5, { soldOut: true });
-  const html = await (await fetch(`${ORIGIN}/laco/5-laco-borboleta`)).text();
+  const html = await (await fetch(`${ORIGIN}/produto/5-caneca-imperial`)).text();
   assert.match(html, /<meta property="product:availability" content="out of stock">/);
   db.upsertProductOverride(5, { soldOut: false });
 });
 
-test("o sitemap lista cada laço visível e some com o escondido", async () => {
+test("o sitemap lista categorias e produtos visíveis e some com o escondido", async () => {
   const xml = await (await fetch(`${ORIGIN}/sitemap.xml`)).text();
   assert.match(xml, /<loc>https:\/\/nomedaloja\.com\.br\/<\/loc>/);
-  assert.match(xml, /<loc>[^<]*\/laco\/2-laco-duquesa<\/loc>/);
+  assert.match(xml, /<loc>[^<]*\/produto\/2-caneca-alca-e-dentro-colorida<\/loc>/);
+  assert.match(xml, /<loc>[^<]*\/categoria\/canecas<\/loc>/);
 
   db.upsertProductOverride(7, { hidden: true });
   const depois = await (await fetch(`${ORIGIN}/sitemap.xml`)).text();
-  assert.doesNotMatch(depois, /\/laco\/7-/);
+  assert.doesNotMatch(depois, /\/produto\/7-/);
   db.upsertProductOverride(7, { hidden: false });
 });
 
-test("a página do laço tem dados estruturados de produto, sem nota inventada", async () => {
-  const html = await (await fetch(`${ORIGIN}/laco/2-laco-duquesa`)).text();
-  const blocos = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
-    .map(m => JSON.parse(m[1].replace(/\\u003c/g, "<")));
+function blocosLd(html){
+  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m => JSON.parse(m[1].replace(/\\u003c/g, "<")));
+}
+
+test("a página do produto tem dados estruturados de produto e trilha, sem nota inventada", async () => {
+  const html = await (await fetch(`${ORIGIN}/produto/2-caneca-alca-e-dentro-colorida`)).text();
+  const blocos = blocosLd(html);
   const produto = blocos.find(b => b["@type"] === "Product");
   assert.ok(produto, "faltou o bloco Product");
-  assert.equal(produto.name, "Laço Duquesa");
-  assert.equal(produto.offers.price, "49.90");
+  assert.equal(produto.name, "Caneca alça e dentro colorida");
+  assert.equal(produto.offers.price, "45.00");
   assert.equal(produto.offers.availability, "https://schema.org/InStock");
-  assert.match(produto.url, /\/laco\/2-laco-duquesa$/);
+  assert.match(produto.url, /\/produto\/2-caneca-alca-e-dentro-colorida$/);
+  assert.ok(blocos.some(b => b["@type"] === "BreadcrumbList"));
   assert.doesNotMatch(html, /aggregateRating/);
 });
 
-test("a home não carrega dados de um produto só", async () => {
+test("a home tem dados da loja e do site, sem produto solto", async () => {
   const html = await (await fetch(`${ORIGIN}/`)).text();
-  assert.doesNotMatch(html, /<template data-marca=DADOS-PRODUTO><\/template>/);
-  const blocos = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+  const blocos = blocosLd(html);
   assert.equal(blocos.length, 1);
+  const tipos = blocos[0]["@graph"].map(n => n["@type"]);
+  assert.deepEqual(tipos, ["Store", "WebSite"]);
 });
 
-test("oferta do catálogo aponta para o endereço do laço, não para a vitrine", async () => {
-  const html = await (await fetch(`${ORIGIN}/`)).text();
-  const grafo = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1].replace(/\\u003c/g, "<"));
-  const lista = grafo["@graph"].find(n => n["@type"] === "ItemList");
-  assert.match(lista.itemListElement[0].item.offers.url, /\/laco\/\d+-/);
-  assert.deepEqual(lista.itemListElement.map(l => l.position), lista.itemListElement.map((_, i) => i + 1));
+test("página de categoria vem montada do servidor, com filtros e lista estruturada", async () => {
+  const res = await fetch(`${ORIGIN}/categoria/canecas?ordem=menor-preco`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.match(html, /<h1>Canecas<\/h1>/);
+  assert.match(html, /<meta name="robots" content="noindex, follow">/, "página filtrada não disputa com a principal");
+  const lista = blocosLd(html).find(b => b["@type"] === "ItemList");
+  assert.ok(lista.itemListElement.length > 0);
+  assert.match(lista.itemListElement[0].url, /\/produto\//);
+});
+
+test("a busca acha pelo nome sem acento e sugere pelo /api/busca", async () => {
+  const html = await (await fetch(`${ORIGIN}/busca?q=xicara`)).text();
+  assert.match(html, /Xícara Ipês Brasília/);
+  const sugestoes = await (await fetch(`${ORIGIN}/api/busca?q=garrafa&limite=3`)).json();
+  assert.equal(sugestoes.produtos.length, 3);
+  assert.ok(sugestoes.produtos.every(p => /garrafa|copo|caneca inox/i.test(p.nome)));
 });

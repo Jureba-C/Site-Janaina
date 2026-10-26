@@ -225,8 +225,8 @@ const DIVERGENCIAS_ACEITAS = {
 const SEM_META_DE_PROPOSITO = ["manutencao.html"];
 
 test("nenhuma página começou a divergir da CSP padrão sem registro", () => {
-  const base = metaDaPagina("index.html");
-  assert.ok(base, "index.html perdeu o <meta> de CSP");
+  const base = metaDaPagina("politica.html");
+  assert.ok(base, "politica.html perdeu o <meta> de CSP");
 
   const semMeta = [];
   for(const pagina of paginasHtml()){

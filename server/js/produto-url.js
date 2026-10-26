@@ -13,11 +13,11 @@
       .replace(/^-+|-+$/g, "")
       .slice(0, 60)
       .replace(/-+$/g, "");
-    return limpo || "laco";
+    return limpo || "produto";
   }
 
   function caminhoDoProduto(id, nome) {
-    return "/laco/" + id + "-" + apelido(nome);
+    return "/produto/" + id + "-" + apelido(nome);
   }
 
   function idDoApelido(trecho) {

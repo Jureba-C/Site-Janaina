@@ -1,55 +1,60 @@
-const CAIXA_PADRAO = { weight: 0.2, width: 16, height: 7, length: 20 };
-const PESO_EMBALAGEM_KG = 0.04;
-const PESO_LACO_KG = 0.02;
+const PESO_EMBALAGEM_KG = 0.15;
+const FOLGA_DE_ENCHIMENTO = 1.25;
+const LADO_MINIMO_CM = 11;
+const LADO_MAXIMO_CM = 100;
+const CAIXA_PADRAO = { largura: 12, altura: 12, comprimento: 12 };
+const PESO_PADRAO_KG = 0.45;
 
-const CATEGORIAS_FORA_DA_CAIXA = new Set(["cabide"]);
-
-const CAIXAS = new Set(["padrao", "maior"]);
-
-function vaiNaCaixaPadrao(product) {
-  if (product.caixa === "maior") return false;
-  if (product.caixa === "padrao") return true;
-  return !CATEGORIAS_FORA_DA_CAIXA.has(String(product.category || "").trim());
+function medidasDe(product){
+  const config = product.config || {};
+  const caixa = config.caixa || CAIXA_PADRAO;
+  return {
+    peso: Number(config.peso) > 0 ? Number(config.peso) : PESO_PADRAO_KG,
+    largura: Number(caixa.largura) > 0 ? Number(caixa.largura) : CAIXA_PADRAO.largura,
+    altura: Number(caixa.altura) > 0 ? Number(caixa.altura) : CAIXA_PADRAO.altura,
+    comprimento: Number(caixa.comprimento) > 0 ? Number(caixa.comprimento) : CAIXA_PADRAO.comprimento,
+  };
 }
 
-function buildPackage(validatedItems) {
-  let width = 0, length = 0, insurance = 0;
-  let qtdNaCaixa = 0;
-  let pesoForaDaCaixa = 0, alturaForaDaCaixa = 0;
+function arredondar(n, casas){
+  const f = Math.pow(10, casas);
+  return Math.round(n * f) / f;
+}
 
-  for (const { qty, product } of validatedItems) {
-    insurance += product.price * qty;
+function buildPackage(validatedItems){
+  let peso = 0, volume = 0, seguro = 0;
+  let maiorLado = 0, segundoLado = 0, menorLado = 0;
 
-    if (vaiNaCaixaPadrao(product)) {
-      qtdNaCaixa += qty;
-    } else {
-      width = Math.max(width, product.width);
-      length = Math.max(length, product.length);
-      pesoForaDaCaixa += product.weight * qty;
-      alturaForaDaCaixa += product.height * qty;
-    }
+  for(const { qty, product, unitPrice } of validatedItems){
+    const m = medidasDe(product);
+    peso += m.peso * qty;
+    volume += m.largura * m.altura * m.comprimento * qty;
+    seguro += (unitPrice != null ? unitPrice : product.price) * qty;
+    const lados = [m.largura, m.altura, m.comprimento].sort((a, b) => b - a);
+    maiorLado = Math.max(maiorLado, lados[0]);
+    segundoLado = Math.max(segundoLado, lados[1]);
+    menorLado = Math.max(menorLado, lados[2]);
   }
 
-  const pesoDaCaixaPadrao = qtdNaCaixa > 0
-    ? PESO_EMBALAGEM_KG + qtdNaCaixa * PESO_LACO_KG
-    : 0;
-  const alturaTotal = (qtdNaCaixa > 0 ? CAIXA_PADRAO.height : 0) + alturaForaDaCaixa;
+  const volumeComFolga = volume * FOLGA_DE_ENCHIMENTO;
+  const ladoDoCubo = Math.ceil(Math.cbrt(volumeComFolga));
+  const comprimento = Math.min(LADO_MAXIMO_CM, Math.max(maiorLado, ladoDoCubo, LADO_MINIMO_CM));
+  const largura = Math.min(LADO_MAXIMO_CM, Math.max(segundoLado, ladoDoCubo, LADO_MINIMO_CM));
+  const altura = Math.max(menorLado, LADO_MINIMO_CM, Math.ceil(volumeComFolga / (comprimento * largura)));
 
   return {
-    weight: pesoDaCaixaPadrao + pesoForaDaCaixa,
-    width: Math.max(width, CAIXA_PADRAO.width),
-    length: Math.max(length, CAIXA_PADRAO.length),
-    height: Math.max(alturaTotal, CAIXA_PADRAO.height),
-    insurance_value: Math.round(insurance * 100) / 100,
+    weight: arredondar(peso + PESO_EMBALAGEM_KG, 3),
+    width: Math.ceil(largura),
+    length: Math.ceil(comprimento),
+    height: Math.min(LADO_MAXIMO_CM, Math.ceil(altura)),
+    insurance_value: arredondar(seguro, 2),
   };
 }
 
 module.exports = {
-  CAIXA_PADRAO,
   PESO_EMBALAGEM_KG,
-  PESO_LACO_KG,
-  CATEGORIAS_FORA_DA_CAIXA,
-  CAIXAS,
-  vaiNaCaixaPadrao,
+  CAIXA_PADRAO,
+  PESO_PADRAO_KG,
+  medidasDe,
   buildPackage,
 };

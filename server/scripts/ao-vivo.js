@@ -9,8 +9,10 @@ const PORTA_AO_VIVO = Number(process.env.PORTA_AO_VIVO) || 3000;
 const ALVO = `http://localhost:${PORTA_SITE}`;
 const ROTA_EVENTOS = "/__ao-vivo/eventos";
 const ROTA_SCRIPT = "/__ao-vivo/recarregar.js";
-const IGNORAR = /(^|\/)(node_modules|backups|\.conferencia|\.git)(\/|$)|\.db(-wal|-shm|-journal)?$|(^|\/)img\/products\//;
-const DO_SERVIDOR = /^(server\.js|lib\/|js\/pricing\.js|js\/colors\.js|js\/produto-url\.js|marca\.json|\.env)/;
+const IGNORAR = /(^|\/)(node_modules|backups|\.conferencia|\.git)(\/|$)|\.db(-wal|-shm|-journal)?$|(^|\/)img\/products\/|^loja\/|^js\/loja\/(?!manifesto\.json$)/;
+const DO_SERVIDOR = /^(server\.js|lib\/|loja-ssr\/|js\/pricing\.js|js\/regras-produto\.js|js\/produto-url\.js|marca\.json|\.env)/;
+const VITE = path.join(RAIZ, "node_modules", "vite", "bin", "vite.js");
+const CONFIG_LOJA = path.join(RAIZ, "loja", "vite.config.mts");
 
 const SCRIPT_CLIENTE = `(() => {
   const fonte = new EventSource("${ROTA_EVENTOS}");
@@ -127,7 +129,16 @@ function abrirNavegador(endereco){
   exec(`${comando} ${endereco}`, () => {});
 }
 
+function vigiarLoja(){
+  const comum = ["build", "--config", CONFIG_LOJA, "--watch", "--logLevel", "warn"];
+  for(const extra of [[], ["--ssr", "src/entrada-servidor.tsx"]]){
+    const filho = spawn(process.execPath, [VITE, ...comum, ...extra], { cwd: RAIZ, stdio: "inherit" });
+    process.on("exit", () => filho.kill());
+  }
+}
+
 (async () => {
+  vigiarLoja();
   iniciarSite();
   if(!(await esperarSite())){
     console.error("O site não subiu. Veja as mensagens acima.");

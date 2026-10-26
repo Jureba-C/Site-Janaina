@@ -31,11 +31,14 @@ const campanhas = require("./lib/campanhas.js");
 const googleAuth = require("./lib/googleAuth.js");
 const tarefasPeriodicas = require("./scripts/tarefas-periodicas.js");
 const rastreio = require("./lib/rastreio.js");
-const { CAIXAS, CATEGORIAS_FORA_DA_CAIXA, vaiNaCaixaPadrao } = require("./lib/empacotamento.js");
+const regras = require("./js/regras-produto.js");
+const { itemParaExibir, textoDoResumo, fotosDaPersonalizacao } = require("./lib/itens-pedido.js");
 const { prazoDaCotacao } = require("./lib/prazoFrete.js");
 const { meFetch, rastreioDoPedido } = require("./lib/melhorEnvio.js");
 const pricing = require("./js/pricing.js");
 const produtoUrl = require("./js/produto-url.js");
+const lojaDados = require("./lib/loja-dados.js");
+const lojaSsr = require("./lib/loja-ssr.js");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -89,10 +92,10 @@ const mpClient = new MercadoPagoConfig({
 });
 
 const {
-  CAIXA_PADRAO, buildPackage,
+  buildPackage,
   PRODUCTS, BUILTIN_CATEGORIES, PRODUCT_CATEGORIES, PRODUCT_BADGES,
-  CUSTOM_PRODUCT_ID_START, CATEGORIAS_APOSENTADAS,
-  categoriasEmUso, getAllCategories, isValidCategorySlug,
+  CUSTOM_PRODUCT_ID_START,
+  getAllCategories, isValidCategorySlug,
   getProductOverridesMap, getAllProductIds, photosFromRow, effectiveProduct,
 } = require("./lib/catalogo.js");
 
@@ -289,7 +292,7 @@ const PUBLIC_TOP_LEVEL = new Set([
   "manutencao.html",
   "robots.txt", "sitemap.xml", "favicon.ico", "apple-touch-icon.png",
   "llms.txt",
-  "laco",
+  "laco", "produto", "categoria", "busca",
 ]);
 function sendNotFound(req, res){
   if (req.originalUrl.startsWith("/api/")) {
@@ -944,6 +947,15 @@ function sitemapXml(){
     `  <url>\n    <loc>${SITE_URL}/</loc>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>`,
     `  <url>\n    <loc>${SITE_URL}/politica.html</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.3</priority>\n  </url>`,
   ];
+  const categoriasUsadas = new Set();
+  for(const id of getAllProductIds()){
+    const p = effectiveProduct(id, overridesMap);
+    if(p && !p.hidden) p.config.categorias.forEach(slug => categoriasUsadas.add(slug));
+  }
+  for(const c of getAllCategories()){
+    if(!categoriasUsadas.has(c.slug)) continue;
+    linhas.push(`  <url>\n    <loc>${SITE_URL}/categoria/${c.slug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>`);
+  }
   for(const id of getAllProductIds()){
     const p = effectiveProduct(id, overridesMap);
     if(!p || p.hidden) continue;
@@ -961,22 +973,193 @@ app.get("/sitemap.xml", (req, res) => {
   res.send(sitemapXml());
 });
 
-app.get("/laco/:apelido", (req, res, next) => {
+function invalidarPaginasDaLoja(){
+  CACHE_SITEMAP = null;
+}
+
+function enviarPaginaDaLoja(res, montar){
+  let documento;
+  try {
+    documento = lojaSsr.montarDocumento(montar());
+  } catch (err) {
+    console.error("Erro ao montar a página da loja:", err);
+    res.status(500).setHeader("Cache-Control", "no-store");
+    return res.send("<!DOCTYPE html><meta charset=\"utf-8\"><title>Arte Canecas</title><p style=\"font-family:sans-serif;padding:24px\">A loja está atualizando. Recarregue a página em instantes.</p>");
+  }
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache");
+  return res.send(documento);
+}
+
+function imagemAbsoluta(foto){
+  if(!foto) return OG_IMAGEM_PADRAO;
+  if(foto.startsWith("http")) return foto;
+  if(foto.startsWith("/api/products/photos/")) return `${SITE_URL}${foto}?w=900`;
+  return `${SITE_URL}${foto.startsWith("/") ? "" : "/"}${foto}`;
+}
+
+function dadosDaLojaLd(){
+  return {
+    "@type": "Store",
+    "@id": `${SITE_URL}/#loja`,
+    name: "Arte Canecas",
+    description: "Canecas, xícaras, garrafas e lembranças personalizadas em Brasília, com envio para todo o Brasil.",
+    url: SITE_URL,
+    logo: `${SITE_URL}/img/logo-loja.png`,
+    image: `${SITE_URL}/img/og-loja.jpg`,
+    telephone: "+5561996927401",
+    email: "arte.canecasbsb@gmail.com",
+    currenciesAccepted: "BRL",
+    paymentAccepted: "Pix, Cartão de crédito, Boleto",
+    address: { "@type": "PostalAddress", addressLocality: "Brasília", addressRegion: "DF", addressCountry: "BR" },
+    areaServed: { "@type": "Country", name: "Brasil" },
+    sameAs: ["https://www.instagram.com/arte.canecasbsb"],
+  };
+}
+
+function trilhaLd(itens){
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: itens.map((item, i) => ({ "@type": "ListItem", position: i + 1, name: item.nome, item: `${SITE_URL}${item.caminho}` })),
+  };
+}
+
+function preloadDoDestaque(dados){
+  const primeira = dados.pagina.destaques[0]?.src;
+  if(!primeira) return null;
+  return /\.jpe?g$/.test(primeira) ? { href: primeira.replace(/\.jpe?g$/, ".webp"), tipo: "image/webp" } : { href: primeira };
+}
+
+app.get("/", (req, res) => enviarPaginaDaLoja(res, () => {
+  const dados = lojaDados.paginaInicio();
+  return {
+  dados,
+  meta: {
+    titulo: "Arte Canecas — Canecas e presentes personalizados em Brasília",
+    descricao: "Canecas, xícaras, garrafas e lembranças personalizadas com nome, frase ou fotos. Veja a prévia antes de comprar. Pix com desconto e envio para todo o Brasil.",
+    canonico: `${SITE_URL}/`,
+    imagem: OG_IMAGEM_PADRAO,
+    preloadImagem: preloadDoDestaque(dados),
+    jsonLd: [{
+      "@context": "https://schema.org",
+      "@graph": [dadosDaLojaLd(), { "@type": "WebSite", "@id": `${SITE_URL}/#site`, url: SITE_URL, name: "Arte Canecas", inLanguage: "pt-BR", publisher: { "@id": `${SITE_URL}/#loja` }, potentialAction: { "@type": "SearchAction", target: `${SITE_URL}/busca?q={busca}`, "query-input": "required name=busca" } }],
+    }],
+  },
+  };
+}));
+
+app.get("/index.html", (req, res) => res.redirect(301, "/" + req.originalUrl.slice(req.path.length)));
+
+app.get("/categoria/:slug", (req, res) => {
+  const slug = String(req.params.slug || "").toLowerCase();
+  const dados = /^[a-z0-9-]{1,40}$/.test(slug) ? lojaDados.paginaCategoria(slug, req.query || {}) : null;
+  if(!dados) return sendNotFound(req, res);
+  const { categoria, filtros, pagina, produtos } = dados.pagina;
+  const filtrada = Boolean(filtros.outra || filtros.preco || filtros.ordem !== "destaque");
+  const titulo = categoria.grupo === "ocasiao"
+    ? `Presentes para ${categoria.nome} personalizados — Arte Canecas`
+    : `${categoria.nome} personalizados — Arte Canecas`;
+  return enviarPaginaDaLoja(res, () => ({
+    dados,
+    meta: {
+      titulo: pagina > 1 ? `${titulo} · página ${pagina}` : titulo,
+      descricao: `${categoria.nome}: ${dados.pagina.total} ${dados.pagina.total === 1 ? "peça personalizada" : "peças personalizadas"} com nome, frase ou fotos, feitas em Brasília pela Arte Canecas. Pix com desconto e envio para todo o Brasil.`,
+      canonico: `${SITE_URL}/categoria/${categoria.slug}${pagina > 1 && !filtrada ? `?pagina=${pagina}` : ""}`,
+      indexar: !filtrada,
+      imagem: imagemAbsoluta(produtos.find(p => p.foto)?.foto),
+      jsonLd: [
+        trilhaLd([{ nome: "Início", caminho: "/" }, { nome: categoria.nome, caminho: `/categoria/${categoria.slug}` }]),
+        { "@context": "https://schema.org", "@type": "ItemList", name: categoria.nome, itemListElement: produtos.map((p, i) => ({ "@type": "ListItem", position: i + 1, url: `${SITE_URL}${p.endereco}`, name: p.nome })) },
+      ],
+    },
+  }));
+});
+
+app.get("/busca", (req, res) => {
+  const termo = typeof req.query.q === "string" ? req.query.q : "";
+  const favoritos = req.query.favoritos !== undefined;
+  return enviarPaginaDaLoja(res, () => ({
+    dados: lojaDados.paginaBusca(termo, favoritos),
+    meta: {
+      titulo: favoritos ? "Favoritos — Arte Canecas" : termo.trim() ? `Busca: ${termo.trim().slice(0, 60)} — Arte Canecas` : "Todos os produtos — Arte Canecas",
+      descricao: "Canecas, xícaras, garrafas, vidros e lembranças personalizadas da Arte Canecas.",
+      canonico: `${SITE_URL}/busca`,
+      indexar: !termo.trim() && !favoritos,
+      imagem: OG_IMAGEM_PADRAO,
+    },
+  }));
+});
+
+const buscaLimiter = rateLimit({ windowMs: 60 * 1000, max: 120, handler: sendTooManyRequests });
+app.get("/api/busca", buscaLimiter, (req, res) => {
+  res.setHeader("Cache-Control", "no-cache");
+  if(typeof req.query.ids === "string"){
+    const ids = req.query.ids.split(",").map(Number).filter(Number.isInteger).slice(0, 100);
+    return res.json({ produtos: lojaDados.porIds(ids) });
+  }
+  const termo = typeof req.query.q === "string" ? req.query.q.slice(0, 80) : "";
+  const limite = Math.min(24, Math.max(1, Number(req.query.limite) || 8));
+  res.json({ produtos: termo.trim().length >= 2 ? lojaDados.sugestoes(termo, limite) : [] });
+});
+
+function enviarProduto(req, res, prefixo){
   const id = produtoUrl.idDoApelido(req.params.apelido);
   const produto = id == null ? null : effectiveProduct(id, getProductOverridesMap());
   if(!produto) return sendNotFound(req, res);
-  if(produto.hidden) return res.redirect(302, "/#colecoes");
-
+  if(produto.hidden) return res.redirect(302, "/busca");
   const canonico = produtoUrl.caminhoDoProduto(id, produto.name);
-  if(`/laco/${req.params.apelido}` !== canonico){
+  if(`${prefixo}${req.params.apelido}` !== canonico){
     return res.redirect(301, canonico + req.originalUrl.slice(req.path.length));
   }
+  const dados = lojaDados.paginaProduto(id);
+  if(!dados) return sendNotFound(req, res);
+  const p = dados.pagina.produto;
+  const cats = p.categoriaPrincipal ? [{ nome: p.categoriaPrincipal.nome, caminho: `/categoria/${p.categoriaPrincipal.slug}` }] : [];
+  const descricao = p.descricao || `${p.nome}${p.medida ? ` (${p.medida})` : ""} personalizada com nome, frase ou fotos pela Arte Canecas, em Brasília. Veja a prévia da arte antes de comprar.`;
+  const ofertas = {
+    "@type": "Offer",
+    price: p.precoMinimo.toFixed(2),
+    priceCurrency: "BRL",
+    availability: p.esgotado ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+    itemCondition: "https://schema.org/NewCondition",
+    url: SITE_URL + canonico,
+    seller: { "@type": "Organization", name: "Arte Canecas" },
+    hasMerchantReturnPolicy: { "@id": POLITICA_TROCA_ID },
+  };
+  const produtoLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: p.nome,
+    description: descricao,
+    url: SITE_URL + canonico,
+    image: (p.fotos.length ? p.fotos : [null]).map(imagemAbsoluta),
+    brand: { "@type": "Brand", name: "Arte Canecas" },
+    ...(p.config.codigo ? { sku: p.config.codigo } : {}),
+    category: p.categoriaPrincipal?.nome,
+    offers: ofertas,
+    ...(dados.pagina.avaliacoes.total > 0 ? { aggregateRating: { "@type": "AggregateRating", ratingValue: dados.pagina.avaliacoes.media.toFixed(1), reviewCount: dados.pagina.avaliacoes.total } } : {}),
+  };
+  return enviarPaginaDaLoja(res, () => ({
+    dados,
+    meta: {
+      titulo: `${p.nome}${p.medida && /\d/.test(p.medida) && !/\d/.test(p.nome) ? ` ${p.medida}` : ""} — Arte Canecas`,
+      descricao,
+      canonico: SITE_URL + canonico,
+      ogTipo: "product",
+      produto: { preco: p.precoMinimo.toFixed(2), esgotado: p.esgotado },
+      imagem: imagemAbsoluta(p.fotos[0]),
+      jsonLd: [produtoLd, { "@context": "https://schema.org", ...politicaTroca }, trilhaLd([{ nome: "Início", caminho: "/" }, ...cats, { nome: p.nome, caminho: canonico }])],
+    },
+  }));
+}
 
-  let html;
-  try { html = htmlVersionado(path.join(SITE_ROOT, "index.html")); } catch { return next(); }
-  res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.setHeader("Cache-Control", "no-cache");
-  return res.send(comMetaSocial(html, { id, produto }));
+app.get("/produto/:apelido", (req, res) => enviarProduto(req, res, "/produto/"));
+app.get("/laco/:apelido", (req, res) => {
+  const id = produtoUrl.idDoApelido(req.params.apelido);
+  const produto = id == null ? null : effectiveProduct(id, getProductOverridesMap());
+  if(!produto) return sendNotFound(req, res);
+  return res.redirect(301, produtoUrl.caminhoDoProduto(id, produto.name) + req.originalUrl.slice(req.path.length));
 });
 
 app.use((req, res, next) => {
@@ -1044,11 +1227,26 @@ function deleteOldLocalPhoto(oldPhotoUrl){
   });
 }
 
-function buildValidatedItems(items){
+function hashDaChave(chave){
+  return crypto.createHash("sha256").update(String(chave)).digest("hex");
+}
+
+function conferirFotosDaPersonalizacao(escolhas, nomeDoProduto, pedidoAtual){
+  for(const foto of escolhas?.personalizacao?.fotos || []){
+    const linha = db.lerFotoPersonalizacao(foto.id);
+    const confere = linha && linha.chave_hash === hashDaChave(foto.chave)
+      && (!linha.pedido || linha.pedido === pedidoAtual);
+    if(!confere){
+      throw { status:409, message:`Uma das fotos de "${nomeDoProduto}" expirou. Envie a foto de novo no produto.` };
+    }
+  }
+}
+
+function buildValidatedItems(items, opcoes = {}){
   if(!Array.isArray(items) || items.length === 0){
     throw { status:400, message:"Carrinho vazio ou inválido." };
   }
-  if(items.length > 50){
+  if(items.length > 30){
     throw { status:400, message:"Carrinho excede o limite de itens." };
   }
   const overridesMap = getProductOverridesMap();
@@ -1065,10 +1263,18 @@ function buildValidatedItems(items){
     if(product.soldOut){
       throw { status:409, message:`"${product.name}" está esgotado no momento.` };
     }
-    if(!Number.isInteger(qty) || qty < 1 || qty > 10){
-      throw { status:400, message:`Quantidade inválida para o produto ${id}.` };
+    const brutas = opcoes.paraFrete ? regras.escolhasPadrao(product) : (raw?.escolhas ?? regras.escolhasPadrao(product));
+    const validado = regras.validarEscolhas(product, brutas, qty);
+    const { escolhas } = validado;
+    const ok = opcoes.paraFrete ? !validado.erros.some(e => e.startsWith("Quantidade")) : validado.ok;
+    const erros = opcoes.paraFrete ? validado.erros.filter(e => e.startsWith("Quantidade")) : validado.erros;
+    if(!ok){
+      throw { status:400, message:`${product.name}: ${erros[0]}` };
     }
-    return { id, qty, product };
+    if(opcoes.conferirFotos !== false && !opcoes.paraFrete) conferirFotosDaPersonalizacao(escolhas, product.name, opcoes.pedidoAtual);
+    const unitPrice = regras.precoUnitario(product, escolhas, qty);
+    const resumo = regras.resumoDasEscolhas(product, escolhas);
+    return { id, qty, product, escolhas, unitPrice, resumo };
   });
 }
 
@@ -1134,23 +1340,52 @@ async function quoteShipping(cepDestino, validatedItems){
     .sort((a, b) => a.price - b.price);
 }
 
+const RETIRADA_ATIVA = String(process.env.RETIRADA_ATIVA || "true").toLowerCase() !== "false";
+const LOCAL_DE_RETIRADA = process.env.RETIRADA_LOCAL || "Asa Norte, Brasília";
+const OPCAO_RETIRADA = {
+  service_id: "retirada",
+  name: `Retirar na ${LOCAL_DE_RETIRADA.split(",")[0]} (grátis)`,
+  price: 0,
+  delivery_time: "combinamos o dia pelo WhatsApp quando o pedido ficar pronto",
+  delivery_days: null,
+  retirada: true,
+};
+
+async function opcoesDeEntrega(cep, validatedItems){
+  let doMelhorEnvio = [];
+  let aviso = null;
+  if(!process.env.ORIGIN_CEP || !process.env.MELHOR_ENVIO_TOKEN){
+    console.warn("Frete: ORIGIN_CEP ou MELHOR_ENVIO_TOKEN faltando no .env; só a retirada aparece.");
+    return { opcoes: [OPCAO_RETIRADA], aviso: "O envio pelos Correios ainda não está ligado nesta loja. Por enquanto, só a retirada." };
+  }
+  try {
+    doMelhorEnvio = await quoteShipping(cep, validatedItems);
+  } catch (err) {
+    if(!RETIRADA_ATIVA) throw err;
+    if(err.status === 422 && err.data?.errors?.postal_code) throw err;
+    console.error("Melhor Envio fora do ar ou sem token; oferecendo só a retirada:", err.message || err);
+    aviso = "O cálculo dos Correios não respondeu agora. Tente de novo em instantes ou escolha a retirada.";
+  }
+  return { opcoes: RETIRADA_ATIVA ? [...doMelhorEnvio, OPCAO_RETIRADA] : doMelhorEnvio, aviso };
+}
+
 app.post("/api/calculate-shipping", freteLimiter, async (req, res) => {
   try {
     const cep = String(req.body?.cep || "").replace(/\D/g, "");
     if(!/^\d{8}$/.test(cep)){
       return res.status(400).json({ error: "CEP inválido." });
     }
-    if(!process.env.ORIGIN_CEP){
+    if(!process.env.ORIGIN_CEP && !RETIRADA_ATIVA){
       return res.status(500).json({ error: "Servidor sem CEP de origem configurado (ORIGIN_CEP no .env)." });
     }
 
-    const validatedItems = buildValidatedItems(req.body?.items);
-    const options = await quoteShipping(cep, validatedItems);
+    const validatedItems = buildValidatedItems(req.body?.items, { paraFrete: true });
+    const { opcoes: options, aviso } = await opcoesDeEntrega(cep, validatedItems);
 
     if(options.length === 0){
       return res.status(200).json({ options: [], warning: "Nenhuma transportadora disponível para esse CEP." });
     }
-    res.json({ options });
+    res.json({ options, ...(aviso ? { warning: aviso } : {}) });
   } catch (err) {
     if(!(err instanceof Error) && err.status && err.message){
       console.error("Erro de validação/frete:", err.message);
@@ -1165,6 +1400,20 @@ app.post("/api/calculate-shipping", freteLimiter, async (req, res) => {
   }
 });
 
+app.post("/api/carrinho/conferir", freteLimiter, (req, res) => {
+  const brutos = Array.isArray(req.body?.items) ? req.body.items.slice(0, 30) : [];
+  const itens = brutos.map(item => {
+    try {
+      const [validado] = buildValidatedItems([item]);
+      return { preco: validado.unitPrice, resumo: validado.resumo };
+    } catch (erro) {
+      return { erro: erro?.message || "Este item precisa de ajuste." };
+    }
+  });
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ itens });
+});
+
 app.post("/api/validate-coupon", strictLimiter, (req, res) => {
   try {
     const coupon = findCoupon(req.body?.code);
@@ -1176,8 +1425,8 @@ app.post("/api/validate-coupon", strictLimiter, (req, res) => {
     }
     const recusaAniversario = regraDoCupomDeAniversario(coupon, req.user?.id);
     if(recusaAniversario) return res.status(409).json({ error: recusaAniversario });
-    const validatedItems = buildValidatedItems(req.body?.items);
-    const subtotal = validatedItems.reduce((sum, { qty, product }) => sum + product.price * qty, 0);
+    const validatedItems = buildValidatedItems(req.body?.items, { conferirFotos: false });
+    const subtotal = validatedItems.reduce((sum, { qty, unitPrice }) => sum + unitPrice * qty, 0);
     const discount = Math.round(subtotal * (coupon.percentOff / 100) * 100) / 100;
     res.json({ code: coupon.code, percentOff: coupon.percentOff, discount });
   } catch (err) {
@@ -1190,7 +1439,15 @@ app.post("/api/validate-coupon", strictLimiter, (req, res) => {
 });
 
 async function buildCheckoutDraft(req){
-  const { cep: rawCep, shipping_service_id, address } = req.body || {};
+  const { cep: rawCep, shipping_service_id } = req.body || {};
+  const ehRetirada = String(shipping_service_id) === "retirada";
+  const address = ehRetirada && req.body?.address
+    ? {
+        ...req.body.address,
+        rua: "Retirada na loja", numero: "-", complemento: "",
+        bairro: "Asa Norte", cidade: "Brasília", uf: "DF",
+      }
+    : req.body?.address;
   const cep = String(rawCep || "").replace(/\D/g, "");
   if(!/^\d{8}$/.test(cep)){
     throw { status: 400, message: "CEP inválido." };
@@ -1206,7 +1463,7 @@ async function buildCheckoutDraft(req){
     throw { status: 400, message: "Endereço de entrega incompleto." };
   }
 
-  if(req.body?.saveAddress !== false){
+  if(req.body?.saveAddress !== false && !ehRetirada){
     try{
       db.saveAddress(req.user.id, { ...address, cep });
     }catch(err){
@@ -1214,7 +1471,7 @@ async function buildCheckoutDraft(req){
     }
   }
 
-  const validatedItems = buildValidatedItems(req.body?.items);
+  const validatedItems = buildValidatedItems(req.body?.items, { pedidoAtual: req.pedidoAtual });
 
   const coupon = req.body?.coupon ? findCoupon(req.body.coupon) : null;
   if(req.body?.coupon && !coupon){
@@ -1239,22 +1496,24 @@ async function buildCheckoutDraft(req){
   const couponFactor = coupon ? (1 - coupon.percentOff / 100) : 1;
 
   let subtotal = 0, couponDiscount = 0;
-  const itensComCupom = validatedItems.map(({ id, qty, product }) => {
-    const afterCoupon = pricing.round2(product.price * couponFactor);
-    subtotal += product.price * qty;
-    couponDiscount += (product.price - afterCoupon) * qty;
-    return { id, qty, product, afterCoupon };
+  const itensComCupom = validatedItems.map(({ id, qty, product, unitPrice, resumo }) => {
+    const afterCoupon = pricing.round2(unitPrice * couponFactor);
+    subtotal += unitPrice * qty;
+    couponDiscount += (unitPrice - afterCoupon) * qty;
+    return { id, qty, product, afterCoupon, resumo };
   });
   subtotal = pricing.round2(subtotal);
   const discount = pricing.round2(couponDiscount);
 
   let pixDiscount = 0;
-  const preferenceItems = itensComCupom.map(({ id, qty, product, afterCoupon }) => {
+  const preferenceItems = itensComCupom.map(({ id, qty, product, afterCoupon, resumo }) => {
     const unitPrice = paymentMethod === "pix" ? pricing.pixPriceFor(afterCoupon) : afterCoupon;
     pixDiscount += (afterCoupon - unitPrice) * qty;
+    const descricao = textoDoResumo(resumo);
     return {
       id: String(id),
-      title: product.name,
+      title: product.name.slice(0, 120),
+      ...(descricao ? { description: descricao.slice(0, 250) } : {}),
       quantity: qty,
       unit_price: unitPrice,
       currency_id: "BRL",
@@ -1262,18 +1521,22 @@ async function buildCheckoutDraft(req){
   });
   pixDiscount = pricing.round2(pixDiscount);
 
-  const shippingOptions = await quoteShipping(cep, validatedItems);
+  const shippingOptions = String(shipping_service_id) === OPCAO_RETIRADA.service_id && RETIRADA_ATIVA
+    ? [OPCAO_RETIRADA]
+    : await quoteShipping(cep, validatedItems);
   const chosenShipping = shippingOptions.find(o => String(o.service_id) === String(shipping_service_id));
   if(!chosenShipping){
     throw { status: 409, message: "Essa opção de frete expirou ou não está mais disponível. Recalcule o frete e tente de novo." };
   }
-  preferenceItems.push({
-    id: "frete",
-    title: `Frete — ${chosenShipping.name}`,
-    quantity: 1,
-    unit_price: chosenShipping.price,
-    currency_id: "BRL",
-  });
+  if(chosenShipping.price > 0){
+    preferenceItems.push({
+      id: "frete",
+      title: `Frete — ${chosenShipping.name}`,
+      quantity: 1,
+      unit_price: chosenShipping.price,
+      currency_id: "BRL",
+    });
+  }
 
   return {
     cep, address, paymentMethod, validatedItems, preferenceItems,
@@ -1288,8 +1551,8 @@ function orderRowFrom(draft, orderRef, user){
     userId: user?.id ?? null,
     customerEmail: user?.email ?? null,
     status: "pendente",
-    items: draft.validatedItems.map(({ id, qty, product }) => ({
-      id, qty, price: product.price,
+    items: draft.validatedItems.map(({ id, qty, product, unitPrice, escolhas, resumo }) => ({
+      id, qty, price: unitPrice, nome: product.name, escolhas, resumo,
     })),
     address: { ...draft.address, cep: draft.cep },
     shipping: draft.chosenShipping,
@@ -1302,6 +1565,11 @@ function orderRowFrom(draft, orderRef, user){
     shippingPrice: draft.chosenShipping.price,
     total: draft.total,
   };
+}
+
+function vincularFotosDoRascunho(draft, orderRef){
+  const ids = draft.validatedItems.flatMap(({ escolhas }) => fotosDaPersonalizacao(escolhas));
+  if(ids.length) db.vincularFotosAoPedido(ids, orderRef);
 }
 
 app.post("/api/create-preference", strictLimiter, auth.requireAuth, async (req, res) => {
@@ -1338,6 +1606,7 @@ app.post("/api/create-preference", strictLimiter, auth.requireAuth, async (req, 
     });
 
     db.createOrder(orderRowFrom(draft, orderRef, req.user));
+    vincularFotosDoRascunho(draft, orderRef);
 
     res.json({ id: result.id, init_point: result.init_point });
   } catch (err) {
@@ -1380,6 +1649,7 @@ app.post("/api/create-pix-payment", strictLimiter, auth.requireAuth, async (req,
     }
 
     db.createOrder(orderRowFrom(draft, orderRef, req.user));
+    vincularFotosDoRascunho(draft, orderRef);
     db.updateOrderStatus(orderRef, "pendente", String(result.id));
 
     res.json({
@@ -1414,8 +1684,9 @@ app.post("/api/orders/:reference/resume-payment", strictLimiter, auth.requireAut
 
     const draft = await buildCheckoutDraft({
       user: req.user,
+      pedidoAtual: order.external_reference,
       body: {
-        items: items.map(({ id, qty, color, secondColor }) => ({ id, qty, color, secondColor })),
+        items: items.map(({ id, qty, escolhas }) => ({ id, qty, escolhas })),
         cep: address.cep,
         address,
         shipping_service_id: shipping.service_id,
@@ -1534,10 +1805,10 @@ app.get("/api/orders/:reference", statusPollLimiter, auth.requireAuth, async (re
       return res.status(404).json({ error: "Pedido não encontrado." });
     }
     const overridesMap = getProductOverridesMap();
-    const items = JSON.parse(order.items_json).map(item => ({
-      id: item.id, qty: item.qty,
-      name: effectiveProduct(item.id, overridesMap)?.name || `Produto #${item.id}`,
-    }));
+    const items = JSON.parse(order.items_json).map(item => {
+      const { id, qty, name, resumo, fotos } = itemParaExibir(item, overridesMap);
+      return { id, qty, name, resumo, fotos };
+    });
     const shipping = JSON.parse(order.shipping_json);
     const trackingCode = order.tracking_code || "";
     const { live, shipmentId, descoberto } = await rastreioDoPedido({
@@ -1819,6 +2090,9 @@ app.get("/api/depoimentos/fotos/:id", async (req, res) => {
 
 
 async function purchaseShippingLabel(order, externalReference){
+  if(order.shipping?.service_id === OPCAO_RETIRADA.service_id){
+    throw { status: 409, message: "Este pedido é para retirada na loja: não precisa de etiqueta." };
+  }
   const seller = {
     name: process.env.SELLER_NAME,
     phone: process.env.SELLER_PHONE,
@@ -1836,13 +2110,13 @@ async function purchaseShippingLabel(order, externalReference){
 
   const labelOverridesMap = getProductOverridesMap();
   const labelItems = order.items
-    .map(({ id, qty }) => ({ qty, product: effectiveProduct(id, labelOverridesMap) }))
+    .map(({ id, qty, price }) => ({ qty, product: effectiveProduct(id, labelOverridesMap), unitPrice: price }))
     .filter(({ product }) => product);
   if(labelItems.length === 0){
     throw new Error("Nenhum item válido no pedido para gerar a etiqueta.");
   }
-  const items = labelItems.map(({ qty, product }) => ({
-    name: product.name, quantity: qty, unitary_value: product.price,
+  const items = labelItems.map(({ qty, product, unitPrice }) => ({
+    name: product.name, quantity: qty, unitary_value: unitPrice ?? product.price,
   }));
   const pkg = buildPackage(labelItems);
 
@@ -2009,11 +2283,10 @@ async function runApprovedOrderSideEffects(orderRow, info){
   const notifyOverridesMap = getProductOverridesMap();
   const notificationOrder = {
     externalReference: info.external_reference,
-    items: order.items.map(({ id, qty }) => ({
-      id, qty,
-      name: effectiveProduct(id, notifyOverridesMap)?.name || `Produto #${id}`,
-      photoUrl: effectiveProduct(id, notifyOverridesMap)?.photoUrl || null,
-    })),
+    items: order.items.map(item => {
+      const { id, qty, name, photoUrl, resumo, fotos } = itemParaExibir(item, notifyOverridesMap);
+      return { id, qty, name, photoUrl, resumo, fotos: fotos.length };
+    }),
     address: order.address,
     total: orderRow.total,
     paidAt: info.date_approved || info.date_created || Date.now(),
@@ -2045,12 +2318,10 @@ async function runApprovedOrderSideEffects(orderRow, info){
   if(orderRow.customer_email){
     const conteudo = email.formatOrderConfirmationEmail({
       externalReference: info.external_reference,
-      items: order.items.map(item => ({
-        qty: item.qty,
-        price: item.price,
-        name: effectiveProduct(item.id, notifyOverridesMap)?.name || `Produto #${item.id}`,
-        photoUrl: effectiveProduct(item.id, notifyOverridesMap)?.photoUrl || null,
-      })),
+      items: order.items.map(item => {
+        const { qty, unitPrice, name, photoUrl, resumo } = itemParaExibir(item, notifyOverridesMap);
+        return { qty, price: unitPrice, name, photoUrl, resumo };
+      }),
       subtotal: orderRow.subtotal,
       discount: orderRow.discount,
       pixDiscount: orderRow.pix_discount,
@@ -2613,6 +2884,11 @@ app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
   }
 });
 
+app.get("/api/auth/sessao", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ user: req.user || null });
+});
+
 app.get("/api/auth/me", (req, res) => {
   if(!req.user) return res.status(401).json({ error: "Não autenticado." });
   res.json(req.user);
@@ -2762,11 +3038,10 @@ app.get("/api/orders", auth.requireAuth, (req, res) => {
     const rows = db.listOrdersByUser(req.user.id);
     const overridesMap = getProductOverridesMap();
     const orders = rows.map(row => {
-      const items = JSON.parse(row.items_json).map(item => ({
-        id: item.id, qty: item.qty,
-        name: effectiveProduct(item.id, overridesMap)?.name || `Produto #${item.id}`,
-        unitPrice: item.price ?? effectiveProduct(item.id, overridesMap)?.price ?? null,
-      }));
+      const items = JSON.parse(row.items_json).map(item => {
+        const { id, qty, name, unitPrice, resumo, fotos } = itemParaExibir(item, overridesMap);
+        return { id, qty, name, unitPrice, resumo, fotos };
+      });
       const shipping = JSON.parse(row.shipping_json);
       return {
         reference: row.external_reference,
@@ -2964,12 +3239,7 @@ app.get("/api/admin/orders", auth.requireAdmin, auth.requireAdminTwoFactor, (req
     const overridesMap = getProductOverridesMap();
     const notas = db.notasPorPedido();
     const orders = rows.map(row => {
-      const items = JSON.parse(row.items_json).map(item => ({
-        id: item.id, qty: item.qty,
-        name: effectiveProduct(item.id, overridesMap)?.name || `Produto #${item.id}`,
-        photoUrl: effectiveProduct(item.id, overridesMap)?.photoUrl || null,
-        unitPrice: item.price ?? effectiveProduct(item.id, overridesMap)?.price ?? null,
-      }));
+      const items = JSON.parse(row.items_json).map(item => itemParaExibir(item, overridesMap));
       const address = JSON.parse(row.address_json);
       const shipping = JSON.parse(row.shipping_json);
       const account = row.user_id ? db.getUserById(row.user_id) : null;
@@ -3294,24 +3564,53 @@ app.post("/api/admin/instagram/reconnect", auth.requireAdmin, auth.requireAdminT
   res.json(resultado);
 });
 
+function produtoParaApi(id, p){
+  return {
+    id, name: p.name, price: p.price, photoUrl: p.photoUrl, photos: p.photos,
+    category: p.category, badges: p.badges, soldOut: p.soldOut, description: p.description,
+    hidden: p.hidden, config: p.config, slug: produtoUrl.caminhoDoProduto(id, p.name),
+  };
+}
+
 app.get("/api/products", (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   const overridesMap = getProductOverridesMap();
   const products = getAllProductIds()
     .map(id => ({ id, p: effectiveProduct(id, overridesMap) }))
     .filter(({ p }) => !p.hidden)
-    .map(({ id, p }) => ({ id, name: p.name, price: p.price, photoUrl: p.photoUrl, photos: p.photos, category: p.category, badges: p.badges, soldOut: p.soldOut, description: p.description, slug: produtoUrl.caminhoDoProduto(id, p.name) }));
-  res.json({ products, categories: getAllCategories(), paymentRules: pricing.PAYMENT_RULES });
+    .map(({ id, p }) => produtoParaApi(id, p));
+  res.json({ products, categories: getAllCategories(), paymentRules: pricing.PAYMENT_RULES, prazoProducao: db.prazoDeProducao() });
 });
 
 app.get("/api/admin/products", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
   const overridesMap = getProductOverridesMap();
-  const products = getAllProductIds().map(id => {
-    const p = effectiveProduct(id, overridesMap);
-    return { id, name: p.name, price: p.price, photoUrl: p.photoUrl, photos: p.photos, category: p.category, badges: p.badges, description: p.description, hidden: p.hidden, soldOut: p.soldOut };
+  const products = getAllProductIds().map(id => produtoParaApi(id, effectiveProduct(id, overridesMap)));
+  res.json({
+    products, categories: getAllCategories(), availableBadges: PRODUCT_BADGES,
+    moldes: regras.MOLDES, letras: regras.LETRAS, artes: regras.ARTES, camposTexto: regras.CAMPOS_TEXTO,
+    prazoProducao: db.prazoDeProducao(),
   });
-  res.json({ products, categories: getAllCategories(), availableBadges: PRODUCT_BADGES });
 });
+
+app.put("/api/admin/prazo-producao", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  const bruto = req.body?.dias;
+  const dias = bruto === null || bruto === "" ? null : Number(bruto);
+  if(dias !== null && (!Number.isInteger(dias) || dias < 1 || dias > 90)){
+    return res.status(400).json({ error: "Prazo de produção: use um número de 1 a 90 dias úteis, ou deixe em branco." });
+  }
+  db.definirPrazoDeProducao(dias);
+  invalidarPaginasDaLoja();
+  res.json({ prazoProducao: db.prazoDeProducao() });
+});
+
+function configDoPainel(bruta){
+  if(!bruta || typeof bruta !== "object") throw { status: 400, message: "Configuração do produto inválida." };
+  const config = regras.normalizarConfig(bruta);
+  const invalidas = config.categorias.filter(slug => !isValidCategorySlug(slug));
+  if(invalidas.length) throw { status: 400, message: `Categoria inválida: ${invalidas[0]}.` };
+  if(config.moldeFoto?.foto && !isValidPhotoUrl(config.moldeFoto.foto)) throw { status: 400, message: "Foto do molde inválida." };
+  return config;
+}
 
 app.put("/api/admin/products/order", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
   try {
@@ -3373,18 +3672,6 @@ function productExists(id){
   if(!Number.isInteger(id)) return false;
   return id >= CUSTOM_PRODUCT_ID_START ? Boolean(db.getCustomProduct(id)) : Boolean(PRODUCTS[id]);
 }
-function isValidDimension(v, max){
-  return typeof v === "number" && Number.isFinite(v) && v > 0 && v <= max;
-}
-
-function medidasPadraoParaNovo(caixa){
-  if(caixa === "maior"){
-    const maiores = db.listCustomProducts().filter(p => !vaiNaCaixaPadrao(p));
-    const ultimo = maiores[maiores.length - 1];
-    if(ultimo) return { weight: ultimo.weight, width: ultimo.width, height: ultimo.height, length: ultimo.length };
-  }
-  return { ...CAIXA_PADRAO };
-}
 
 app.post("/api/admin/products", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
   try {
@@ -3402,25 +3689,14 @@ app.post("/api/admin/products", auth.requireAdmin, auth.requireAdminTwoFactor, (
     if(category && !isValidCategorySlug(category)){
       return res.status(400).json({ error: "Categoria inválida." });
     }
-    const caixa = body.caixa
-      ? String(body.caixa)
-      : (CATEGORIAS_FORA_DA_CAIXA.has(category) ? "maior" : "padrao");
-    if(!CAIXAS.has(caixa)){
-      return res.status(400).json({ error: "Embalagem inválida." });
+    let config;
+    try {
+      config = configDoPainel(body.config || { categorias: category ? [category] : [], molde: "caneca", personalizacao: { ativa: false } });
+    } catch (erro) {
+      return res.status(erro.status || 400).json({ error: erro.message });
     }
-    const informouMedidas = ["weight", "width", "height", "length"]
-      .some(k => body[k] !== undefined && body[k] !== null && body[k] !== "");
-    const padrao = informouMedidas ? null : medidasPadraoParaNovo(caixa);
-    const weight = padrao ? padrao.weight : Number(body.weight);
-    if(!isValidDimension(weight, 20)){
-      return res.status(400).json({ error: "Peso inválido. Use um valor entre 0,01 e 20 kg." });
-    }
-    const width = padrao ? padrao.width : Number(body.width);
-    const height = padrao ? padrao.height : Number(body.height);
-    const length = padrao ? padrao.length : Number(body.length);
-    if(![width, height, length].every(v => isValidDimension(v, 100))){
-      return res.status(400).json({ error: "Dimensões inválidas. Use valores entre 0,01 e 100 cm." });
-    }
+    const weight = config.peso;
+    const width = config.caixa.largura, height = config.caixa.altura, length = config.caixa.comprimento;
     const badges = "badges" in body ? body.badges : [];
     if(!isValidBadges(badges)){
       return res.status(400).json({ error: "Selo de destaque inválido." });
@@ -3432,13 +3708,10 @@ app.post("/api/admin/products", auth.requireAdmin, auth.requireAdminTwoFactor, (
 
     const created = db.insertCustomProduct({
       startAt: CUSTOM_PRODUCT_ID_START, name, price: Math.round(price * 100) / 100,
-      weight, width, height, length, category: category || null, badges, description: description || null, caixa,
+      weight, width, height, length, category: config.categorias[0] || null, badges, description: description || null, caixa: "padrao", config,
     });
-    res.status(201).json({
-      id: created.id, name: created.name, price: created.price, photoUrl: null, photos: [],
-      category: created.category, badges: created.badges ? JSON.parse(created.badges) : [],
-      description: created.description || null,
-    });
+    invalidarPaginasDaLoja();
+    res.status(201).json(produtoParaApi(created.id, effectiveProduct(created.id, getProductOverridesMap())));
   } catch (err) {
     console.error("Erro ao criar produto:", err);
     res.status(500).json({ error: "Não foi possível criar o produto agora." });
@@ -3486,6 +3759,10 @@ app.patch("/api/admin/products/:id", auth.requireAdmin, auth.requireAdminTwoFact
         return res.status(400).json({ error: "Categoria inválida." });
       }
       fields.category = category || null;
+      if(!("config" in body)){
+        const atual = effectiveProduct(id, getProductOverridesMap()).config;
+        fields.config = regras.normalizarConfig({ ...atual, categorias: category ? [category, ...atual.categorias.filter(c => c !== category)] : atual.categorias.slice(1) });
+      }
     }
     if("badges" in body){
       if(!isValidBadges(body.badges)){
@@ -3514,6 +3791,14 @@ app.patch("/api/admin/products/:id", auth.requireAdmin, auth.requireAdminTwoFact
     if("hidden" in body){
       fields.hidden = Boolean(body.hidden);
     }
+    if("config" in body){
+      try {
+        fields.config = configDoPainel(body.config);
+      } catch (erro) {
+        return res.status(erro.status || 400).json({ error: erro.message });
+      }
+      fields.category = fields.config.categorias[0] || null;
+    }
     if("soldOut" in body){
       fields.soldOut = Boolean(body.soldOut);
     }
@@ -3525,8 +3810,8 @@ app.patch("/api/admin/products/:id", auth.requireAdmin, auth.requireAdminTwoFact
     if(id >= CUSTOM_PRODUCT_ID_START) db.updateCustomProduct(id, fields);
     else db.upsertProductOverride(id, fields);
 
-    const updated = effectiveProduct(id, getProductOverridesMap());
-    res.json({ id, name: updated.name, price: updated.price, photoUrl: updated.photoUrl, photos: updated.photos, category: updated.category, badges: updated.badges, description: updated.description, hidden: updated.hidden, soldOut: updated.soldOut });
+    invalidarPaginasDaLoja();
+    res.json(produtoParaApi(id, effectiveProduct(id, getProductOverridesMap())));
   } catch (err) {
     console.error("Erro ao atualizar produto:", err);
     res.status(500).json({ error: "Não foi possível salvar o produto agora." });
@@ -3587,6 +3872,92 @@ app.post("/api/admin/products/:id/photo", auth.requireAdmin, auth.requireAdminTw
       res.status(500).json({ error: "Não foi possível processar a imagem enviada." });
     }
   });
+});
+
+const FORMATOS_DE_FOTO_ACEITOS = new Set(["jpeg", "png", "webp", "gif", "avif", "tiff", "heif"]);
+const LIMITE_FOTO_PERSONALIZACAO = 15 * 1024 * 1024;
+const uploadPersonalizacao = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: LIMITE_FOTO_PERSONALIZACAO, files: 1 },
+});
+const uploadPersonalizacaoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 80, handler: sendTooManyRequests });
+const ID_FOTO_PERSONALIZACAO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+app.post("/api/personalizacao/fotos", uploadPersonalizacaoLimiter, (req, res) => {
+  uploadPersonalizacao.single("foto")(req, res, async (err) => {
+    if(err instanceof multer.MulterError){
+      if(err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "Foto muito grande. O limite é 15 MB por foto." });
+      return res.status(400).json({ error: "Não foi possível enviar a foto." });
+    }
+    if(err){
+      console.error("Erro no envio de foto de personalização:", err);
+      return res.status(500).json({ error: "Não foi possível enviar a foto agora." });
+    }
+    if(!req.file) return res.status(400).json({ error: "Escolha uma foto para enviar." });
+    let meta;
+    try {
+      meta = await sharp(req.file.buffer, { failOn: "error" }).metadata();
+    } catch {
+      return res.status(415).json({ error: "Esse arquivo não é uma foto que a gente consiga abrir. Envie JPG ou PNG." });
+    }
+    if(!FORMATOS_DE_FOTO_ACEITOS.has(meta.format)){
+      return res.status(415).json({ error: "Formato não aceito. Envie JPG, PNG ou WEBP." });
+    }
+    if(!meta.width || !meta.height || meta.width * meta.height > 60000000){
+      return res.status(415).json({ error: "Foto com tamanho fora do comum. Envie outra." });
+    }
+    try {
+      const original = await sharp(req.file.buffer, { failOn: "error" })
+        .rotate()
+        .resize({ width: 3000, height: 3000, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 90, mozjpeg: true })
+        .toBuffer({ resolveWithObject: true });
+      const miniatura = await sharp(original.data)
+        .resize({ width: 600, height: 600, fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer();
+      const id = randomUUID();
+      const chave = crypto.randomBytes(16).toString("hex");
+      db.inserirFotoPersonalizacao({
+        id, chaveHash: hashDaChave(chave), mimeType: "image/jpeg",
+        data: original.data, miniatura, largura: original.info.width, altura: original.info.height,
+      });
+      res.status(201).json({ id, chave, largura: original.info.width, altura: original.info.height });
+    } catch (procErr) {
+      console.error("Erro ao processar foto de personalização:", procErr);
+      res.status(500).json({ error: "Não foi possível preparar a foto. Tente outra." });
+    }
+  });
+});
+
+function podeVerFotoDePersonalizacao(req, linha){
+  if(req.user?.isAdmin) return true;
+  const chave = String(req.query.chave || "");
+  if(/^[0-9a-f]{32}$/.test(chave) && hashDaChave(chave) === linha.chave_hash) return true;
+  if(req.user && linha.pedido){
+    const pedido = db.getOrderByExternalReference(linha.pedido);
+    if(pedido && pedido.user_id === req.user.id) return true;
+  }
+  return false;
+}
+
+app.get("/api/personalizacao/fotos/:id", (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  if(!ID_FOTO_PERSONALIZACAO.test(req.params.id)) return res.status(404).json({ error: "Foto não encontrada." });
+  const linha = db.lerFotoPersonalizacao(req.params.id);
+  if(!linha || !podeVerFotoDePersonalizacao(req, linha)) return res.status(404).json({ error: "Foto não encontrada." });
+  const original = req.query.tamanho === "original";
+  res.setHeader("Content-Type", original ? linha.mime_type : "image/webp");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  if(original && req.query.baixar === "1"){
+    res.setHeader("Content-Disposition", `attachment; filename="foto-${linha.id.slice(0, 8)}.jpg"`);
+  }
+  res.send(Buffer.from(original ? linha.data : linha.miniatura));
+});
+
+app.get("/api/admin/pedidos/:reference/fotos", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  res.json({ fotos: db.fotosPersonalizacaoDoPedido(String(req.params.reference || "")), diasAposEntrega: db.DIAS_FOTOS_APOS_ENTREGA });
 });
 
 const LARGURAS_DE_FOTO = new Set([160, 400, 600, 900]);
@@ -4087,7 +4458,8 @@ app.post("/api/admin/categories", auth.requireAdmin, auth.requireAdminTwoFactor,
     if(isValidCategorySlug(slug)){
       return res.status(409).json({ error: "Já existe uma categoria parecida com essa." });
     }
-    const created = db.insertCustomCategory({ slug, label });
+    const created = db.insertCustomCategory({ slug, label, grupo: req.body?.grupo });
+    invalidarPaginasDaLoja();
     res.status(201).json({ ...created, builtin: false });
   } catch (err) {
     console.error("Erro ao criar categoria:", err);
@@ -4127,7 +4499,9 @@ app.delete("/api/admin/categories/:slug", auth.requireAdmin, auth.requireAdminTw
       }
       return res.status(404).json({ error: "Categoria não encontrada." });
     }
-    const emUso = db.countProductsUsingCategory(slug);
+    const overridesDaContagem = getProductOverridesMap();
+    const emUso = getAllProductIds()
+      .filter(id => effectiveProduct(id, overridesDaContagem)?.config?.categorias?.includes(slug)).length;
     if(emUso > 0){
       return res.status(409).json({
         error: `${emUso} produto${emUso === 1 ? "" : "s"} ainda usa${emUso === 1 ? "" : "m"} essa categoria — mude a categoria del${emUso === 1 ? "e" : "es"} antes de excluir.`,

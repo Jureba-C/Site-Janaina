@@ -6,7 +6,7 @@
   "use strict";
 
   const PAYMENT_RULES = {
-    pixDiscountPercent: 5,
+    pixDiscountPercent: 10,
     maxInstallments: 3,
     interestFreeInstallments: 3,
     monthlyInterestRate: 0,

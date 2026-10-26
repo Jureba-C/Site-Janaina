@@ -35,7 +35,7 @@ after(() => {
   for(const s of ["", "-wal", "-shm"]) { try { fs.unlinkSync(TMP_DB + s); } catch {} }
 });
 
-const ARQUIVOS = ["/css/style.css", "/js/main.js", "/js/animacoes.js", "/css/fonts.css"];
+const ARQUIVOS = ["/css/style.css", "/js/admin.js", "/js/auth.js", "/css/fonts.css"];
 
 function pegar(caminho, headers){
   return fetch(ORIGIN + caminho, { headers: { "Accept-Encoding": "identity", ...headers } });
@@ -103,12 +103,12 @@ test("o ETag é o mesmo com e sem brotli", async () => {
 });
 
 test("If-None-Match responde 304 sem corpo", async () => {
-  const marca = (await comCacheQuente("/js/main.js")).headers.etag;
-  const denovo = await pegar("/js/main.js", { "Accept-Encoding": "br", "If-None-Match": marca });
+  const marca = (await comCacheQuente("/js/admin.js")).headers.etag;
+  const denovo = await pegar("/js/admin.js", { "Accept-Encoding": "br", "If-None-Match": marca });
   assert.equal(denovo.status, 304);
   assert.equal((await denovo.arrayBuffer()).byteLength, 0);
 
-  const forte = await pegar("/js/main.js", {
+  const forte = await pegar("/js/admin.js", {
     "Accept-Encoding": "br", "If-None-Match": marca.replace(/^W\//, ""),
   });
   assert.equal(forte.status, 304, "comparação de ETag deixou de ser fraca");

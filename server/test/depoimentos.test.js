@@ -96,8 +96,6 @@ test("depoimento não vira nota em lugar nenhum", async () => {
   const home = await (await fetch(ORIGIN + "/")).text();
 
   assert.equal(db.notaMedia().total, 0, "depoimento não pode entrar na média");
-  assert.ok(!home.includes("hero-stat-nota"), "sem avaliação real, nenhuma nota no topo");
-  assert.ok(home.includes("envio com rastreio"), "a etiqueta do topo segue mostrando um fato real");
   assert.ok(!/\d+ avaliações? verificadas?/.test(home),
     "o resumo com a nota não pode aparecer quando só há depoimento");
 });
@@ -111,7 +109,6 @@ test("avaliação de quem comprou entra na frente do depoimento", async () => {
   assert.ok(home.indexOf("avaliacao de quem comprou") < home.indexOf("depoimento que veio do whatsapp"),
     "a avaliação verificada tem de vir primeiro");
   assert.match(home, /1 avaliação verificada/);
-  assert.match(home, /hero-stat-nota/);
 });
 
 test("com 6 avaliações reais, os depoimentos saem sozinhos", async () => {
@@ -143,13 +140,11 @@ test("texto de depoimento não vira HTML na home", async () => {
   assert.match(home, /&lt;script&gt;/);
 });
 
-test("sem avaliação e sem depoimento, a home convida em vez de sumir", async () => {
+test("sem avaliação e sem depoimento, a home não mostra a seção nem nota", async () => {
   await limpar();
   const home = await (await fetch(ORIGIN + "/")).text();
-  assert.match(home, /Seja a primeira a contar/);
   assert.ok(!home.includes("O que dizem as clientes"));
-  assert.ok(!home.includes("hero-stat-nota"));
-  assert.ok(home.includes("envio com rastreio"));
+  assert.ok(!/avaliaç(ão|ões) verificadas?/.test(home));
 });
 
 test("campos obrigatórios e limites", async () => {

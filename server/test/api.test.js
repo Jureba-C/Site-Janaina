@@ -139,7 +139,7 @@ test("path traversal: '../' e formas escapadas nunca vazam arquivo de fora da pa
     "/js/%2e%2e/server.js",
     "/img/..%2fadmin.html",
     "/js/../../server/data.db",
-    "/js/./main.js",
+    "/js/./auth.js",
   ];
   for(const a of ataques){
     const r = await rawGet(a);
@@ -147,9 +147,10 @@ test("path traversal: '../' e formas escapadas nunca vazam arquivo de fora da pa
     assert.ok(r.status === 404 || r.status === 301, `${a} devia ser 404/301, veio ${r.status}`);
   }
 
-  assert.equal((await rawGet("/js/main.js")).status, 200);
+  assert.equal((await rawGet("/js/auth.js")).status, 200);
   assert.equal((await rawGet("/css/style.css")).status, 200);
-  assert.equal((await rawGet("/index.html")).status, 200);
+  assert.equal((await rawGet("/")).status, 200);
+  assert.equal((await rawGet("/index.html")).status, 301);
 });
 
 test("rotas protegidas exigem sessão (401 sem cookie)", async () => {
@@ -257,7 +258,7 @@ test("esgotado: PATCH admin reflete no catálogo e bloqueia o checkout (incl. a 
 
   const corrida = await post("/api/create-preference", checkoutBody(), clienteCookie);
   assert.equal(corrida.status, 409, "produto esgotado entre a escolha e o checkout é rejeitado");
-  assert.match((await corrida.json()).error, /Bailarina/);
+  assert.match((await corrida.json()).error, /Caneca porcelana branca/);
 
   const voltou = await patch("/api/admin/products/1", { soldOut: false }, adminCookie);
   assert.equal(voltou.status, 200);
@@ -422,34 +423,25 @@ test("descrição do produto: PATCH edita, GET /api/products reflete, POST /api/
   assert.equal((await created.json()).description, "Feito sob encomenda.");
 });
 
-test("produto novo escolhe a embalagem: caixa padrão ou caixa maior (copia as medidas do último que vai na maior)", async () => {
+test("produto novo grava peso, caixa e categorias da configuração; categoria inventada é recusada", async () => {
   const adminCookie = sharedAdminCookie;
   assert.ok(adminCookie);
-  const { CAIXA_PADRAO } = require("../lib/empacotamento.js");
-  const medidas = p => ({ weight: p.weight, width: p.width, height: p.height, length: p.length });
-  const criar = async body => {
-    const res = await post("/api/admin/products", { price: 29, badges: [], ...body }, adminCookie);
-    assert.equal(res.status, 201);
-    return db.getCustomProduct((await res.json()).id);
-  };
+  const res = await post("/api/admin/products", {
+    name: "Caneca de Teste", price: 49, badges: [],
+    config: { categorias: ["canecas", "casamento"], molde: "caneca", peso: 0.5, caixa: { largura: 13, altura: 12, comprimento: 14 }, personalizacao: { ativa: false } },
+  }, adminCookie);
+  assert.equal(res.status, 201);
+  const criado = await res.json();
+  assert.deepEqual(criado.config.categorias, ["canecas", "casamento"]);
+  const linha = db.getCustomProduct(criado.id);
+  assert.deepEqual({ weight: linha.weight, width: linha.width, height: linha.height, length: linha.length }, { weight: 0.5, width: 13, height: 12, length: 14 });
 
-  const laco = await criar({ name: "Laço Caixa Padrão", category: "parzinho", caixa: "padrao" });
-  assert.deepEqual(medidas(laco), CAIXA_PADRAO);
-  assert.equal(laco.caixa, "padrao");
+  const semConfig = await post("/api/admin/products", { name: "Sem Config", price: 30, category: "garrafas-e-termicos", badges: [] }, adminCookie);
+  assert.equal(semConfig.status, 201);
+  assert.deepEqual((await semConfig.json()).config.categorias, ["garrafas-e-termicos"]);
 
-  const cabideMedido = await criar({ name: "Cabide Medido", category: "cabide", weight: 0.35, width: 30, height: 2, length: 40 });
-  assert.equal(cabideMedido.caixa, "maior", "sem escolha, cabide vai na caixa maior");
-
-  const outroGrande = await criar({ name: "Peça Grande", category: "parzinho", caixa: "maior" });
-  assert.deepEqual(medidas(outroGrande), { weight: 0.35, width: 30, height: 2, length: 40 });
-
-  const semEscolha = await criar({ name: "Laço Sem Escolha", category: "parzinho" });
-  assert.equal(semEscolha.caixa, "padrao");
-
-  const invalida = await post("/api/admin/products", { name: "Caixa Inventada", price: 10, caixa: "gigante", badges: [] }, adminCookie);
-  assert.equal(invalida.status, 400);
-  const medidaErrada = await post("/api/admin/products", { name: "Medida Errada", price: 10, weight: 0, badges: [] }, adminCookie);
-  assert.equal(medidaErrada.status, 400, "quem manda medida continua sendo validado");
+  const inventada = await post("/api/admin/products", { name: "Categoria Inventada", price: 10, badges: [], config: { categorias: ["nao-existe"] } }, adminCookie);
+  assert.equal(inventada.status, 400);
 });
 
 test("continuar pagamento: 404 se não existe/não é da cliente, 409 se já não está pendente", async () => {
@@ -609,8 +601,8 @@ test("categorias: cria, renomeia (slug não muda), bloqueia excluir em uso, excl
 
   assert.equal((await post("/api/admin/categories", { label: "Outra" }, sharedClienteCookie)).status, 403);
 
-  assert.equal((await patch("/api/admin/categories/tiara", { label: "Tiara Nova" }, adminCookie)).status, 400);
-  assert.equal((await fetch(ORIGIN + `/api/admin/categories/tiara`, {
+  assert.equal((await patch("/api/admin/categories/canecas", { label: "Canecas Novas" }, adminCookie)).status, 400);
+  assert.equal((await fetch(ORIGIN + `/api/admin/categories/canecas`, {
     method: "DELETE", headers: { Origin: ORIGIN, Cookie: adminCookie },
   })).status, 400);
 
@@ -631,7 +623,8 @@ test("categorias: cria, renomeia (slug não muda), bloqueia excluir em uso, excl
   assert.equal(bloqueada.status, 409);
   assert.match((await bloqueada.json()).error, /produto/);
 
-  await patch("/api/admin/products/5", { category: "laco-unico" }, adminCookie);
+  await patch("/api/admin/products/5", { category: "canecas" }, adminCookie);
+  await patch("/api/admin/products/5", { config: { ...(await (await fetch(ORIGIN + "/api/products")).json()).products.find(p => p.id === 5).config, categorias: ["canecas"] } }, adminCookie);
   const excluida = await fetch(ORIGIN + `/api/admin/categories/${slug}`, {
     method: "DELETE", headers: { Origin: ORIGIN, Cookie: adminCookie },
   });

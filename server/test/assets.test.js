@@ -43,25 +43,3 @@ test("nenhum preload aponta para a faixa latin-ext, que o português não usa", 
   }
   assert.deepEqual(erradas, [], `preload inútil para português:\n${erradas.join("\n")}`);
 });
-
-
-test("os plugins de rolagem do GSAP entram sob demanda, não por <script> na página", () => {
-  const animacoes = fs.readFileSync(path.join(RAIZ, "js/animacoes.js"), "utf8");
-
-  for(const plugin of ["ScrollTrigger", "SplitText"]){
-    const comoScript = PAGINAS.filter(p =>
-      new RegExp(`<script[^>]*${plugin}\\.min\\.js`).test(fs.readFileSync(path.join(RAIZ, p), "utf8")));
-    assert.deepEqual(comoScript, [],
-      `${plugin}.min.js voltou a ser <script> — some com o ganho do carregamento sob demanda`);
-  }
-
-  const home = fs.readFileSync(path.join(RAIZ, "index.html"), "utf8");
-  for(const id of ["assetScrollTrigger", "assetSplitText"]){
-    assert.match(home, new RegExp(`<link[^>]*rel="preload"[^>]*id="${id}"`),
-      `sem o <link rel=preload id=${id}>, o carregador cai no caminho de reserva`);
-    assert.ok(animacoes.includes(`"${id}"`), `js/animacoes.js não procura mais por ${id}`);
-  }
-
-  assert.match(animacoes, /Promise\.all\(\[[\s\S]{0,200}carregarPlugin\("ScrollTrigger"[\s\S]{0,200}carregarPlugin\("SplitText"/,
-    "os dois plugins precisam ser aguardados juntos antes de animar (ver o aviso acima)");
-});

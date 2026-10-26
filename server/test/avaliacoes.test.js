@@ -99,8 +99,6 @@ test("sem nenhuma avaliação publicada, a home não mostra nota nem seção —
   const home = await (await fetch(ORIGIN + "/")).text();
   assert.ok(!home.includes("O que dizem as clientes"));
   assert.ok(!home.includes("avaliação média"), "o 4,9 fixo antigo não pode voltar");
-  assert.ok(home.includes("envio com rastreio"), "sem avaliações, a terceira célula da etiqueta mostra um fato real da loja");
-  assert.ok(!home.includes("hero-stat-nota"), "sem avaliação publicada, nenhuma nota no topo");
   assert.ok(!/de \d+ avaliaç/.test(home));
   assert.ok(!home.includes("<template data-marca=NOTA-MEDIA></template>") && !home.includes("<template data-marca=AVALIACOES></template>"), "marcador não pode vazar cru");
 });
@@ -243,7 +241,7 @@ test("publicar pelo painel mostra na home com texto escapado, média real e foto
   assert.ok(home.includes("Maria · Brasília/DF"), "só primeiro nome e cidade");
   assert.ok(!home.includes("Souza"), "sobrenome nunca aparece");
   assert.match(home, /avaliação|avaliações/);
-  assert.match(home, /hero-stat-nota[\s\S]*?data-casas="1">\d,\d<[\s\S]*?de \d+ avaliaç/, "com avaliação publicada, a média real entra na etiqueta do topo");
+  assert.match(home, /\d,\d de 5 · \d+ avaliaç(ão|ões) verificadas?/, "com avaliação publicada, a média real aparece na seção");
 
   assert.ok(home.includes("Compra verificada"), "selo de compra verificada no card");
   assert.ok(home.includes(`/api/avaliacoes/fotos/${avaliacao.photo_id}?w=160`), "card usa a miniatura, não a foto inteira");

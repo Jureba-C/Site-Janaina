@@ -29,6 +29,8 @@ const TELAS = [
 const PAGINAS = [
   ["inicio", "/"],
   ["produto", null],
+  ["categoria", "/categoria/canecas"],
+  ["busca", "/busca?q=caneca"],
   ["conta", "/conta.html"],
   ["minha-conta", "/pedidos.html"],
   ["acompanhar", "/acompanhar-pedido.html"],
@@ -106,21 +108,21 @@ async function conferirCarrinho(contexto, tela, problemas){
   const anotar = (texto) => problemas.push(`[${tela.nome}] carrinho: ${texto}`);
   pagina.on("pageerror", erro => anotar(`erro de JavaScript — ${erro.message}`));
   await pagina.goto(ORIGEM + "/", { waitUntil: "networkidle" });
-  const botao = pagina.locator(".btn-add").first();
-  if(!(await botao.count())){ anotar("nenhum botão de adicionar (.btn-add) na vitrine"); await pagina.close(); return; }
-  await botao.scrollIntoViewIfNeeded();
+  const cartao = pagina.locator(".cartao-produto-acao").first();
+  if(!(await cartao.count())){ anotar("nenhum produto com botão na vitrine"); await pagina.close(); return; }
+  await cartao.scrollIntoViewIfNeeded();
+  await cartao.click();
+  await pagina.waitForLoadState("networkidle");
+  const nome = pagina.locator("#pers-nome");
+  if(await nome.count()) await nome.fill("Teste");
+  const botao = pagina.locator(".botao-comprar");
+  if(!(await botao.count())){ anotar("a página do produto não tem o botão de adicionar"); await pagina.close(); return; }
   await botao.click();
-  await pagina.waitForTimeout(800);
-  const aberto = await pagina.locator("#cartOffcanvas.show, #cartOffcanvas.showing").count();
-  if(!aberto){
-    const abrir = pagina.locator(".cart-pill").first();
-    if(await abrir.count()) await abrir.click();
-    await pagina.waitForTimeout(600);
-  }
+  await pagina.waitForTimeout(700);
   const itens = await pagina.evaluate(() => {
-    try{ return JSON.parse(localStorage.getItem("plc_cart_v1") || "[]").length; }catch{ return -1; }
+    try{ return JSON.parse(localStorage.getItem("arte_carrinho_v1") || "[]").length; }catch{ return -1; }
   });
-  const visivel = await pagina.locator("#cartOffcanvas").isVisible().catch(() => false);
+  const visivel = await pagina.locator("dialog.carrinho[open]").isVisible().catch(() => false);
   if(!visivel) anotar("o carrinho não abriu");
   fs.mkdirSync(path.join(SAIDA, tela.nome), { recursive: true });
   await pagina.screenshot({ path: path.join(SAIDA, tela.nome, "carrinho.png") });

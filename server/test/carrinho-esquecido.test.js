@@ -87,7 +87,7 @@ test("o lembrete sai uma vez só por carrinho, e com o link que reenche o carrin
 
   const fila = db.getOutboxEntry("carrinho_esquecido", ref);
   assert.ok(fila.html_body.includes(`?recuperar=${ref}`), "o link precisa trazer o carrinho de volta");
-  assert.match(fila.text_body, /Laço Duquesa/, "o e-mail precisa dizer QUAL laço ficou esperando");
+  assert.match(fila.text_body, /Caneca alça e dentro colorida/, "o e-mail precisa dizer QUAL produto ficou esperando");
   assert.doesNotMatch(fila.text_body, /undefined/, "nunca pode chegar 'undefined' na cliente");
   assert.doesNotMatch(fila.html_body, /undefined/);
   assert.ok(fila.html_body.includes("Não quero mais receber"), "e-mail promocional sem descadastro é spam");

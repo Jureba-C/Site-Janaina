@@ -13,9 +13,10 @@
     "ao-vivo": "node scripts/ao-vivo.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
     "sem-comentarios": "node scripts/sem-comentarios.js",
-    "verificar": "node scripts/sem-comentarios.js && node --disable-warning=ExperimentalWarning --test test/*.test.js",
+    "verificar": "node scripts/sem-comentarios.js && npm run construir --silent && node --disable-warning=ExperimentalWarning --test test/*.test.js",
     "conferir": "node --disable-warning=ExperimentalWarning scripts/conferir-site.js",
-    "aplicar-marca": "node scripts/aplicar-marca.js"
+    "aplicar-marca": "node scripts/aplicar-marca.js",
+    "construir": "tsc -p loja/tsconfig.json && vite build --config loja/vite.config.mts && vite build --config loja/vite.config.mts --ssr src/entrada-servidor.tsx"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
