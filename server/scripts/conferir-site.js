@@ -34,6 +34,8 @@ const TELAS_SEM_CAPTURA = [
 
 const PAGINAS_SEM_CAPTURA = ["inicio", "produto", "categoria", "busca", "conta", "minha-conta", "acompanhar", "politica"];
 
+const LOJA_SEM_ROLAGEM_LATERAL = ["inicio", "produto", "categoria", "busca"];
+
 const BARRAS_FIXAS = /\b(cabecalho|simple-header|comprar|aviso-cookies|whatsapp-flutuante)\b/;
 
 const PAGINAS = [
@@ -159,6 +161,12 @@ async function conferirPagina(contexto, tela, [nome, rota, esperado], problemas)
   if(medidas.largura > medidas.janela + 1) anotar(`rolagem para o lado (${medidas.largura}px numa tela de ${medidas.janela}px)`);
   for(const src of medidas.imagens) anotar(`imagem quebrada ${src}`);
   for(const texto of await elementosCobertos(pagina)) anotar(texto);
+  if((tela.viewport?.width ?? 1440) < 700 && LOJA_SEM_ROLAGEM_LATERAL.includes(nome)){
+    const rolam = await pagina.evaluate(() => [...document.querySelectorAll("#loja *")]
+      .filter(e => /(auto|scroll)/.test(getComputedStyle(e).overflowX) && e.scrollWidth > e.clientWidth + 2)
+      .map(e => String(e.className).split(" ")[0] || e.tagName.toLowerCase()));
+    for(const classe of new Set(rolam)) anotar(`.${classe} obriga a deslizar para o lado no celular`);
+  }
   if(!tela.semCaptura){
     fs.mkdirSync(path.join(SAIDA, tela.nome), { recursive: true });
     await pagina.screenshot({ path: path.join(SAIDA, tela.nome, `${nome}.png`), fullPage: true });

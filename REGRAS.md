@@ -96,3 +96,6 @@ acumuladas"), com a data.
 - 2026-10-27 — O site tem que funcionar 100% e ser bonito no PC e no
   celular em **qualquer largura** (não só as 5 do `conferir`), com animação
   bonita onde faz sentido e "que dê vontade de comprar".
+- 2026-10-27 — **Nada de deslizar para o lado no celular** (vitrines, vantagens,
+  tipos, momentos, chips): tudo cabe na tela e os produtos vão para baixo.
+  O `npm run conferir` acusa se voltar.

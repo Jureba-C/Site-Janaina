@@ -207,7 +207,7 @@ main:focus { outline: none; }
 
 .so-celular { display: none; }
 
-.chips-categorias { gap: 8px; overflow-x: auto; padding: 0 16px 14px; scrollbar-width: none; }
+.chips-categorias { gap: 8px; flex-wrap: wrap; justify-content: center; padding: 0 16px 14px; }
 .chips-categorias::-webkit-scrollbar { display: none; }
 .chips-categorias a {
   flex: none; display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 999px;
@@ -429,7 +429,7 @@ main:focus { outline: none; }
 .filtros { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .botao-filtrar { display: none; }
 .filtros-contagem { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--terracota-forte); color: var(--branco); font-size: 12px; display: grid; place-items: center; }
-.chips-filtro { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 18px calc(-1 * var(--margem)) 0; padding: 2px var(--margem) 6px; }
+.chips-filtro { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 2px 0 6px; }
 .chips-filtro::-webkit-scrollbar { display: none; }
 .chips-filtro a { flex: none; min-height: 40px; display: inline-flex; align-items: center; padding: 0 16px; border-radius: 999px; border: 1px solid var(--borda-forte); color: var(--tinta); text-decoration: none; font-weight: 600; font-size: 14px; background: var(--branco); }
 .chips-filtro a[aria-current="true"] { background: var(--tinta); border-color: var(--tinta); color: var(--branco); }
@@ -731,28 +731,25 @@ main:focus { outline: none; }
   .destaque-selo svg { width: 96px; height: 96px; }
   .destaque-pontos { left: 14px; bottom: 8px; }
   .vantagens { margin-top: 14px; }
-  .vantagens ul { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 8px; gap: 4px; margin: 0 calc(-1 * var(--margem)); border-radius: 0; border-left: 0; border-right: 0; }
-  .vantagens ul::-webkit-scrollbar { display: none; }
-  .vantagens li { flex: 0 0 auto; scroll-snap-align: start; gap: 10px; padding: 6px 12px; }
+  .vantagens ul { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 12px 4px; gap: 4px; border-radius: 20px; }
+  .vantagens li { flex-direction: column; text-align: center; gap: 6px; padding: 2px 4px; }
   .vantagem-icone { width: 38px; height: 38px; }
-  .vantagens strong { font-size: 14px; }
-  .vantagens li > span:last-child > span { font-size: 12px; }
-  .vantagem-icone { width: 40px; height: 40px; }
+  .vantagens strong { font-size: 13px; line-height: 1.25; }
+  .vantagens li > span:last-child > span { font-size: 11px; line-height: 1.3; }
   .secao { margin-top: 64px; }
   .sobre-titulo { font-size: 28px; }
-  .grade-polaroids { display: grid; justify-content: start; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 150px; overflow-x: auto; gap: 18px; padding: 16px 4px 18px; margin: 24px calc(-1 * var(--margem)) 0; padding-left: var(--margem); padding-right: var(--margem); scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .grade-polaroids::-webkit-scrollbar { display: none; }
-  .polaroid-tipo { scroll-snap-align: start; padding: 8px 8px 10px; }
-  .polaroid-nome { font-size: 12px; letter-spacing: 0.12em; margin-top: 8px; }
-  .momentos { display: flex; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; gap: 6px; margin: 20px calc(-1 * var(--margem)) 0; padding: 4px var(--margem) 8px; }
-  .momentos::-webkit-scrollbar { display: none; }
-  .momentos li { flex: none; }
-  .momentos a { width: 82px; gap: 8px; }
+  .grade-polaroids { gap: 18px 10px; margin-top: 24px; padding-top: 10px; }
+  .grade-polaroids > * { flex: 0 0 calc((100% - 20px) / 3); }
+  .polaroid-tipo { padding: 6px 6px 8px; }
+  .polaroid-tipo .fita { width: 54px; height: 16px; margin-left: -27px; top: -8px; }
+  .polaroid-nome { font-size: 10px; letter-spacing: 0.08em; margin-top: 6px; }
+  .momentos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 4px; margin-top: 20px; }
+  .momentos a { width: auto; gap: 8px; }
   .momento-circulo { width: 72px; height: 72px; }
   .momento-circulo svg { width: 32px; height: 32px; }
   .momento-nome { font-size: 13px; }
-  .abas { flex-wrap: nowrap; overflow-x: auto; margin: 0 calc(-1 * var(--margem)); padding: 0 var(--margem); scrollbar-width: none; }
-  .abas button { flex: none; }
+  .abas { gap: 6px; }
+  .abas button { min-height: 40px; padding: 0 14px; font-size: 14px; }
   .grade-produtos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
   .cartao-ver-todos { grid-column: 1 / -1; flex-direction: row; min-height: 56px; padding: 10px 18px; font-size: 17px; border-style: solid; background: var(--branco); }
   .cartao-ver-todos svg { width: 34px; height: 34px; padding: 7px; }
