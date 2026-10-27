@@ -58,7 +58,7 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: 16px; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 150px; }
 
 body {
   margin: 0;
@@ -132,9 +132,18 @@ main:focus { outline: none; }
   padding: 10px var(--margem); display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 28px; text-align: center;
 }
 
-.cabecalho { background: var(--papel); }
+.cabecalho {
+  position: sticky; top: 0; z-index: 40; background: rgba(251, 248, 243, 0.97);
+  border-bottom: 1px solid transparent; transition: background-color .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .cabecalho { background: rgba(251, 248, 243, 0.82); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+  .cabecalho.rolou { background: rgba(251, 248, 243, 0.68); }
+}
+.cabecalho.rolou { border-bottom-color: rgba(158, 74, 24, 0.12); box-shadow: 0 10px 28px -18px rgba(110, 60, 30, 0.45); }
+.cabecalho .menu-categorias { background: transparent; border-bottom: 0; }
 .cabecalho-grade {
-  max-width: var(--largura); margin: 0 auto; padding: 22px var(--margem);
+  max-width: var(--largura); margin: 0 auto; padding: 8px var(--margem);
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 24px;
 }
 .cabecalho-logo { text-decoration: none; color: var(--tinta); justify-self: center; }
@@ -154,6 +163,8 @@ main:focus { outline: none; }
 }
 
 .logo { display: block; width: 190px; height: auto; }
+.cabecalho-logo .logo { width: 120px; }
+.cabecalho .menu-link { min-height: 42px; padding: 10px 0; }
 .logo-compacto { width: 112px; }
 
 .busca {
@@ -444,7 +455,7 @@ main:focus { outline: none; }
 .galeria { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
 @media (min-width: 1100px) {
   .produto-grade { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; }
-  .galeria { position: sticky; top: 16px; }
+  .galeria { position: sticky; top: 132px; }
 }
 .galeria-palco { position: relative; background: #F5E6E1; border-radius: 32px; height: 560px; overflow: hidden; }
 .galeria-palco.com-foto { background: var(--papel-2); }
@@ -718,12 +729,20 @@ main:focus { outline: none; }
   .so-celular { display: block; }
   .botao-icone.so-celular { display: inline-grid; }
   .chips-categorias.so-celular { display: none; }
-  .cabecalho-grade { grid-template-columns: 44px 1fr 48px; padding: 14px 16px; gap: 12px; }
+  .cabecalho-grade { grid-template-columns: 92px 1fr 92px; padding: 6px 12px; gap: 8px; }
+  .cabecalho-esquerda.so-celular { display: flex; gap: 4px; }
+  .cabecalho-esquerda .botao-icone.ativo { background: var(--rosa-claro); }
   .cabecalho-atalhos { gap: 0; }
-  .cabecalho-busca-celular { padding: 0 16px 12px; }
-  .cabecalho-busca-celular .busca { max-width: none; }
+  .cabecalho-busca-celular { padding: 0 16px 10px; }
+  .cabecalho-busca-celular[hidden] { display: none; }
+  .cabecalho-busca-celular.aberta { animation: desce .2s ease-out; }
+  .cabecalho-busca-celular .busca { max-width: none; padding: 3px 3px 3px 18px; }
+  .cabecalho-busca-celular .busca input { padding: 8px 0; }
+  .cabecalho-busca-celular .busca-botao { width: 40px; height: 40px; }
   .busca-sugestoes { min-width: 0; }
-  .cabecalho-logo .logo { width: 128px; }
+  .cabecalho-logo .logo, .cabecalho.rolou .cabecalho-logo .logo { width: 100px; }
+  .botao-carrinho { width: 44px; height: 44px; }
+  html { scroll-padding-top: 130px; }
   .faixa-opcional { display: none; }
   .faixa-topo { font-size: 11px; padding: 8px 16px; gap: 4px 14px; }
 }

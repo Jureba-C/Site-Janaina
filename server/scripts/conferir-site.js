@@ -242,6 +242,12 @@ async function conferirInteracoes(contexto, tela, rotaProduto, rotaMagica, probl
       await pagina.keyboard.press("Escape");
     }
   }
+  if(celular){
+    const lupa = pagina.locator("button[aria-controls=busca-celular-linha]");
+    if(await clicar(pagina, lupa, anotar, "lupa da busca")){
+      if(!(await pagina.locator("#busca-celular").isVisible().catch(() => false))) anotar("a lupa não abriu a busca no celular");
+    }
+  }
   const busca = pagina.locator("input[role=combobox]:visible").first();
   if(await busca.count()){
     await busca.fill("can");

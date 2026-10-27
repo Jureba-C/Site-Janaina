@@ -189,13 +189,33 @@ export function Cabecalho({ loja, caminho, termo }: { loja: Loja; caminho: strin
     if (antes !== null && itens > antes && carrinhoAberto) setPulou(true);
   }, [itens, carrinhoAberto]);
   const tipos = loja.categorias.filter(c => c.grupo === "tipo" && c.quantidade > 0);
+  const [rolou, setRolou] = useState(false);
+  const [buscaAberta, setBuscaAberta] = useState(Boolean(termo));
+  useEffect(() => {
+    let pedido = 0;
+    const medir = () => {
+      pedido = 0;
+      setRolou(window.scrollY > 24);
+    };
+    const aoRolar = () => { if (!pedido) pedido = requestAnimationFrame(medir); };
+    medir();
+    window.addEventListener("scroll", aoRolar, { passive: true });
+    return () => { window.removeEventListener("scroll", aoRolar); if (pedido) cancelAnimationFrame(pedido); };
+  }, []);
   return (
     <>
       <a className="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
       <FaixaDoTopo loja={loja} />
-      <header className="cabecalho">
+      <header className={`cabecalho${rolou ? " rolou" : ""}`}>
         <div className="cabecalho-grade">
-          <button type="button" className="botao-icone so-celular" onClick={() => setGaveta(true)} aria-label="Abrir menu"><Icone nome="menuCurto" /></button>
+          <div className="cabecalho-esquerda so-celular">
+            <button type="button" className="botao-icone" onClick={() => setGaveta(true)} aria-label="Abrir menu"><Icone nome="menuCurto" /></button>
+            <button type="button" className={`botao-icone${buscaAberta ? " ativo" : ""}`} aria-expanded={buscaAberta} aria-controls="busca-celular-linha" aria-label={buscaAberta ? "Fechar busca" : "Buscar"} onClick={() => {
+              const abrir = !buscaAberta;
+              setBuscaAberta(abrir);
+              if (abrir) requestAnimationFrame(() => document.getElementById("busca-celular")?.focus());
+            }}><Icone nome={buscaAberta ? "fechar" : "busca"} /></button>
+          </div>
           <div className="cabecalho-busca so-computador"><CampoDeBusca id="busca-topo" termoInicial={termo} /></div>
           <a className="cabecalho-logo" href="/" title={`${loja.nome}, página inicial`}><Logo /></a>
           <div className="cabecalho-atalhos">
@@ -213,7 +233,7 @@ export function Cabecalho({ loja, caminho, termo }: { loja: Loja; caminho: strin
             </button>
           </div>
         </div>
-        <div className="so-celular cabecalho-busca-celular"><CampoDeBusca id="busca-celular" termoInicial={termo} /></div>
+        <div id="busca-celular-linha" className={`so-celular cabecalho-busca-celular${buscaAberta ? " aberta" : ""}`} hidden={!buscaAberta}><CampoDeBusca id="busca-celular" termoInicial={termo} /></div>
         <div className="so-computador"><MenuDeCategorias categorias={loja.categorias} caminho={caminho} /></div>
         <nav className="chips-categorias so-celular" aria-label="Categorias">
           {tipos.map(c => <a key={c.slug} href={`/categoria/${c.slug}`} aria-current={caminho === `/categoria/${c.slug}` ? "page" : undefined}>{c.nome}</a>)}
