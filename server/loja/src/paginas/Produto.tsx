@@ -9,7 +9,7 @@ import { FONTES, PecaSvg, coresDaPeca, descricaoDaPrevia, useMedirTexto, type La
 import { CalculoDeFrete } from "../componentes/CalculoDeFrete";
 import { carrinho } from "../estado/carrinho";
 import { enviarFoto, urlDaFotoEnviada, lembrarFotoLocal } from "../estado/fotos";
-import type { Escolhas, FotoEnviada, IdCampo, Loja, PaginaProduto, Personalizacao, Produto as TipoProduto } from "../tipos";
+import type { Escolhas, EstampaPublica, FotoEnviada, IdCampo, Loja, PaginaProduto, Personalizacao, Produto as TipoProduto } from "../tipos";
 
 const Previa3D = lazy(() => import("../componentes/Previa3D"));
 const MOLDES_3D = ["caneca", "xicara", "garrafa", "copo"];
@@ -26,6 +26,47 @@ function usaFotos(produto: TipoProduto, escolhas: Escolhas): boolean {
   if (!pers.ativa || pers.fotos.max === 0) return false;
   if (!pers.artes.includes("fotos")) return true;
   return escolhas.personalizacao.arte === "fotos";
+}
+
+function estampaDe(produto: TipoProduto, escolhas: Escolhas): EstampaPublica | null {
+  const id = escolhas.personalizacao.estampa;
+  return id ? (produto.estampasDisponiveis || []).find(e => e.id === id) ?? null : null;
+}
+
+function SeletorDeEstampa({ produto, escolhas, aoEscolher }: { produto: TipoProduto; escolhas: Escolhas; aoEscolher: (id: string | undefined) => void }) {
+  const [colecao, setColecao] = useState("");
+  const lista = produto.estampasDisponiveis || [];
+  if (!produto.config.estampas?.ativa || !lista.length) return null;
+  const obrigatoria = Boolean(produto.config.estampas.obrigatoria);
+  const colecoes = [...new Set(lista.map(e => e.colecao))];
+  const visiveis = colecao ? lista.filter(e => e.colecao === colecao) : lista;
+  const escolhida = estampaDe(produto, escolhas);
+  return (
+    <fieldset className="grupo-escolha seletor-estampa">
+      <legend>Estampa: <span>{escolhida ? escolhida.nome : "sem estampa"}</span></legend>
+      {colecoes.length > 1 ? (
+        <div className="chips chips-colecao" role="group" aria-label="Coleções de estampa">
+          <button type="button" className={`chip${colecao ? "" : " ativo"}`} aria-pressed={!colecao} onClick={() => setColecao("")}>Todas</button>
+          {colecoes.map(c => <button key={c} type="button" className={`chip${colecao === c ? " ativo" : ""}`} aria-pressed={colecao === c} onClick={() => setColecao(c)}>{c}</button>)}
+        </div>
+      ) : null}
+      <div className="estampas-grade">
+        {obrigatoria ? null : (
+          <button type="button" className={`estampa-opcao estampa-nenhuma${escolhida ? "" : " ativo"}`} aria-pressed={!escolhida} onClick={() => aoEscolher(undefined)}>
+            <span className="estampa-amostra" aria-hidden="true" />
+            <span className="estampa-nome">Sem estampa</span>
+          </button>
+        )}
+        {visiveis.map(e => (
+          <button key={e.id} type="button" className={`estampa-opcao${escolhida?.id === e.id ? " ativo" : ""}`} aria-pressed={escolhida?.id === e.id} onClick={() => aoEscolher(e.id)}>
+            <img className="estampa-amostra" src={e.miniatura} alt="" width={120} height={80} loading="lazy" decoding="async" />
+            <span className="estampa-nome">{e.nome}</span>
+            {e.preco > 0 ? <small>+ {dinheiro(e.preco)}</small> : null}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
 }
 
 function MiniPrevia({ produto, escolhas, lado, aquecida }: { produto: TipoProduto; escolhas: Escolhas; lado: Lado; aquecida: boolean }) {
@@ -58,7 +99,7 @@ function MiniPrevia({ produto, escolhas, lado, aquecida }: { produto: TipoProdut
   return (
     <button type="button" className="mini-previa" onClick={() => document.querySelector(".galeria-palco")?.scrollIntoView({ behavior: "smooth", block: "center" })} aria-label="Ver a prévia grande">
       <svg viewBox="0 0 360 380" aria-hidden="true">
-        <PecaSvg config={produto.config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} medir={medir} fatias={16} />
+        <PecaSvg config={produto.config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} estampa={estampaDe(produto, escolhas)} medir={medir} fatias={16} />
       </svg>
       <span>prévia</span>
     </button>
@@ -95,7 +136,7 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
       <div className={`galeria-palco${mostrandoFoto ? " com-foto" : ""}`}>
         {modo3d && !mostrandoFoto ? (
           <Suspense fallback={<p className="previa-3d-aviso">Preparando o 3D…</p>}>
-            <Previa3D config={config} escolhas={escolhas} aquecida={aquecida} rotulo={`${descricao}, em 3D`} fechar={() => setModo3d(false)} />
+            <Previa3D config={config} escolhas={escolhas} estampa={estampaDe(produto, escolhas)} aquecida={aquecida} rotulo={`${descricao}, em 3D`} fechar={() => setModo3d(false)} />
           </Suspense>
         ) : mostrandoFoto && produto.fotos[indiceFoto] ? (
           <Foto src={produto.fotos[indiceFoto]} alt={`${produto.nome}, foto ${indiceFoto + 1}`} larguras={[600, 900]} sizes="(max-width: 900px) 100vw, 620px" largura={620} altura={620} className="galeria-foto" prioridade />
@@ -111,7 +152,7 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
             ) : null}
             <span className="cursiva galeria-rotulo" aria-hidden="true">prévia ao vivo</span>
             <svg key={`${lado}-${aquecida}`} className={`galeria-previa${efeito.current}`} viewBox="0 0 360 380" role="img" aria-label={descricao}>
-              <PecaSvg config={config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} medir={medir} fotoSelecionada={aoTocarFoto ? fotoSelecionada : undefined} aoTocarFoto={aoTocarFoto} urlDaFotoDoMolde={config.moldeFoto?.foto ? urlDaFotoDoProduto(config.moldeFoto.foto, 900) : null} />
+              <PecaSvg config={config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} estampa={estampaDe(produto, escolhas)} medir={medir} fotoSelecionada={aoTocarFoto ? fotoSelecionada : undefined} aoTocarFoto={aoTocarFoto} urlDaFotoDoMolde={config.moldeFoto?.foto ? urlDaFotoDoProduto(config.moldeFoto.foto, 900) : null} />
             </svg>
             <p className="visualmente-oculto" aria-live="polite">{descricao}</p>
             {pode3d || config.magica ? (
@@ -374,6 +415,7 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
       preco: precoUnitario(produto, resultado.escolhas, qtd), foto: produto.fotos[0] ?? null, molde: config.molde,
       corPeca: cores.peca, corAlca: cores.alca, resumo: resumoDasEscolhas(produto, resultado.escolhas), qtdMinima: config.qtdMinima || 1,
       config,
+      estampa: estampaDe(produto, resultado.escolhas),
     });
     setAdicionado(true);
     setTimeout(() => setAdicionado(false), 2500);
@@ -448,6 +490,8 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
               </fieldset>
             );
           })}
+
+          <SeletorDeEstampa produto={produto} escolhas={escolhas} aoEscolher={id => { setEscolhas(es => ({ ...es, personalizacao: { ...es.personalizacao, estampa: id } })); setLado("frente"); }} />
 
           {config.personalizacao.ativa ? (
             <Personalizar produto={produto} escolhas={escolhas} mudar={mudarPers} fotoSelecionada={fotoSelecionada} setFotoSelecionada={setFotoSelecionada} setLado={setLado} />

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type PointerEvent as EventoPonteiro, type ReactNode } from "react";
-import type { ConfigProduto, Escolhas, FotoEnviada, Molde } from "../tipos";
+import { regras } from "../compartilhado";
+import type { ConfigProduto, Escolhas, EstampaPublica, FotoEnviada, Molde } from "../tipos";
 
 export type Lado = "frente" | "verso";
 
@@ -21,6 +22,13 @@ export const FONTES: Record<string, FonteDaLetra> = {
 
 let contexto: CanvasRenderingContext2D | null = null;
 
+export type MedidorDeTexto = (texto: string, familia: string, peso: number, estilo: string, tamanho: number) => number;
+let medidorDoServidor: MedidorDeTexto | null = null;
+
+export function usarMedidorDoServidor(medidor: MedidorDeTexto | null) {
+  medidorDoServidor = medidor;
+}
+
 function medirTexto(texto: string, fonte: FonteDaLetra, tamanho: number, medir: boolean): number {
   const conteudo = fonte.caixa === "uppercase" ? texto.toUpperCase() : texto;
   if (medir && typeof document !== "undefined") {
@@ -30,6 +38,7 @@ function medirTexto(texto: string, fonte: FonteDaLetra, tamanho: number, medir: 
       return contexto.measureText(conteudo).width + conteudo.length * fonte.espaco * tamanho;
     }
   }
+  if (medidorDoServidor) return medidorDoServidor(conteudo, fonte.familia, fonte.peso, fonte.estilo, tamanho) + conteudo.length * fonte.espaco * tamanho;
   return conteudo.length * tamanho * (fonte.fator + fonte.espaco);
 }
 
@@ -118,6 +127,7 @@ export interface PropsArte {
   fotoSelecionada?: number;
   aoTocarFoto?: (indice: number, evento: EventoPonteiro<SVGElement>) => void;
   exemplos?: boolean;
+  comEtiqueta?: boolean;
 }
 
 function gradeDeFotos(quantidade: number): { colunas: number; linhas: number } {
@@ -128,11 +138,13 @@ function gradeDeFotos(quantidade: number): { colunas: number; linhas: number } {
   return { colunas: 4, linhas: 2 };
 }
 
-export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto, medir, idBase, fotoSelecionada, aoTocarFoto, exemplos = true }: PropsArte) {
+export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto, medir, idBase, fotoSelecionada, aoTocarFoto, exemplos = true, comEtiqueta }: PropsArte) {
   const pers = escolhas.personalizacao;
   const fonte = FONTES[pers.letra || "cursiva"] || FONTES.cursiva;
   const campos = config.personalizacao.campos;
-  const partes: { altura: number; desenhar: (y: number) => ReactNode }[] = [];
+  const partes: { altura: number; largura: number; desenhar: (y: number) => ReactNode }[] = [];
+  const etiqueta = comEtiqueta ?? Boolean(pers.estampa);
+  const maiorLinha = (linhas: string[], f: FonteDaLetra, t: number) => Math.max(...linhas.map(l => medirTexto(l, f, t, medir)));
   const espaco = altura * 0.05;
 
   if (lado === "verso") {
@@ -150,6 +162,7 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
       const alturaTexto = linhas.length * tamanho * 1.15;
       partes.push({
         altura: alturaTexto,
+        largura: Math.min(largura, maiorLinha(linhas, fonte, tamanho)),
         desenhar: y => (
           <text x={0} y={y + tamanho * 0.9} textAnchor="middle" fill={tinta} fontFamily={fonte.familia} fontWeight={fonte.peso} fontStyle={fonte.estilo} fontSize={tamanho} letterSpacing={`${fonte.espaco}em`}>
             {linhas.map((linha, i) => (
@@ -158,7 +171,7 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
           </text>
         ),
       });
-      partes.push({ altura: altura * 0.06, desenhar: y => (
+      partes.push({ altura: altura * 0.06, largura: largura * 0.36, desenhar: y => (
         <g stroke={tinta} strokeWidth={1.2} strokeLinecap="round" fill="none" opacity={0.75}>
           <path d={`M${-largura * 0.18} ${y + altura * 0.03}h${largura * 0.13}M${largura * 0.05} ${y + altura * 0.03}h${largura * 0.13}`} />
           <circle cx={0} cy={y + altura * 0.03} r={altura * 0.012} />
@@ -170,12 +183,12 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
     const fotos = (pers.fotos || []).slice(0, 8);
     if (arte === "flor") {
       const t = altura * 0.2;
-      partes.push({ altura: t, desenhar: y => <Flor x={0} y={y + t / 2} tamanho={t} cor={tinta} /> });
+      partes.push({ altura: t, largura: t, desenhar: y => <Flor x={0} y={y + t / 2} tamanho={t} cor={tinta} /> });
     }
     if (arte === "brasilia") {
       const w = Math.min(largura * 0.7, altura * 0.62 * (150 / 78));
       const h = (w * 78) / 150;
-      partes.push({ altura: h, desenhar: y => (
+      partes.push({ altura: h, largura: w, desenhar: y => (
         <g transform={`translate(${-w / 2} ${y}) scale(${w / 150})`} fill="none" stroke={tinta} strokeWidth={1.4} strokeLinecap="round"><path d={BRASILIA} /></g>
       ) });
     }
@@ -191,6 +204,7 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
       const circulo = config.personalizacao.fotos.formato !== "quadrado";
       partes.push({
         altura: alturaGrade,
+        largura: larguraGrade,
         desenhar: y => (
           <g>
             {Array.from({ length: quantidade }, (_, i) => {
@@ -248,6 +262,7 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
       const entrelinha = fonte.caixa === "uppercase" ? 1.25 : 0.95;
       partes.push({
         altura: tamanho * (1.05 + (linhas.length - 1) * entrelinha),
+        largura: Math.min(largura, maiorLinha(linhas, fonte, tamanho)),
         desenhar: y => (
           <text x={0} y={y + tamanho * 0.88} textAnchor="middle" fill={tinta} fontFamily={fonte.familia} fontWeight={fonte.peso} fontStyle={fonte.estilo} fontSize={tamanho} letterSpacing={`${fonte.espaco}em`}>
             {linhas.map((linha, i) => (
@@ -261,7 +276,7 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
     if (data) {
       const delicada = FONTES.delicada;
       const tamanho = tamanhoQueCabe(data, delicada, altura * 0.06, largura * 0.8, medir);
-      partes.push({ altura: tamanho * 1.2, desenhar: y => (
+      partes.push({ altura: tamanho * 1.2, largura: Math.min(largura, medirTexto(data, delicada, tamanho, medir)), desenhar: y => (
         <text x={0} y={y + tamanho} textAnchor="middle" fill={tinta} fontFamily={delicada.familia} fontWeight={400} fontSize={tamanho} letterSpacing="0.22em">{data.toUpperCase()}</text>
       ) });
     }
@@ -269,13 +284,28 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
 
   const total = partes.reduce((s, p) => s + p.altura, 0) + espaco * Math.max(0, partes.length - 1);
   let y = -total / 2;
+  const reducao = etiqueta && partes.length ? 0.84 : 1;
+  const folgaX = altura * 0.08;
+  const folgaY = altura * 0.05;
+  const larguraEtiqueta = Math.min(largura, Math.max(0, ...partes.map(p => p.largura)) * reducao * 1.08 + 2 * folgaX);
+  const alturaEtiqueta = Math.min(altura, total * reducao + 2 * folgaY);
+  const raioEtiqueta = Math.min(alturaEtiqueta / 2, altura * 0.08);
+  const fundo = tinta === "#F6F1EA" ? "#2E2A28" : "#FFFFFF";
   return (
     <g>
-      {partes.map((parte, i) => {
-        const elemento = <g key={i}>{parte.desenhar(y)}</g>;
-        y += parte.altura + espaco;
-        return elemento;
-      })}
+      {etiqueta && partes.length ? (
+        <g>
+          <rect x={-larguraEtiqueta / 2} y={-alturaEtiqueta / 2} width={larguraEtiqueta} height={alturaEtiqueta} rx={raioEtiqueta} fill={fundo} />
+          <rect x={-larguraEtiqueta / 2 + 4} y={-alturaEtiqueta / 2 + 4} width={larguraEtiqueta - 8} height={alturaEtiqueta - 8} rx={Math.max(0, raioEtiqueta - 4)} fill="none" stroke={tinta} strokeOpacity={0.28} strokeWidth={0.8} />
+        </g>
+      ) : null}
+      <g transform={reducao === 1 ? undefined : `scale(${reducao})`}>
+        {partes.map((parte, i) => {
+          const elemento = <g key={i}>{parte.desenhar(y)}</g>;
+          y += parte.altura + espaco;
+          return elemento;
+        })}
+      </g>
     </g>
   );
 }
@@ -321,10 +351,21 @@ export interface PropsPeca {
   comArte?: boolean;
   exemplos?: boolean;
   fatias?: number;
+  estampa?: EstampaPublica | null;
+}
+
+interface Superficie {
+  forma: string;
+  cx: number;
+  cy: number;
+  raio: number;
+  altura: number;
+  luz: string | null;
 }
 
 interface Geometria {
   corpo: ReactNode;
+  superficie?: Superficie;
   frenteDaArte: { cx: number; cy: number; largura: number; altura: number; raio: number | null };
   sobre?: ReactNode;
   sob?: ReactNode;
@@ -342,6 +383,10 @@ function alcaCaneca(lado: Lado, x: number, y: number, h: number, cor: string, co
     ? `M${x} ${y + h * 0.18}h${largura * 0.35}a${largura * 0.65} ${h * 0.25} 0 0 1 0 ${h * 0.5}h${-largura * 0.35}`
     : `M${x} ${y + h * 0.18}h${-largura * 0.35}a${largura * 0.65} ${h * 0.25} 0 0 0 0 ${h * 0.5}h${largura * 0.35}`;
   return <path d={d} fill="none" stroke={cor} strokeWidth={h * 0.075} strokeLinejoin="round" />;
+}
+
+function caminhoCilindro(x: number, y: number, w: number, h: number, raioBase: number): string {
+  return `M${x} ${y}h${w}v${h - raioBase}q0 ${raioBase} ${-raioBase} ${raioBase}h${-(w - 2 * raioBase)}q${-raioBase} 0 ${-raioBase} ${-raioBase}z`;
 }
 
 function corpoCilindrico(idBase: string, x: number, y: number, w: number, h: number, cor: string, raioBase: number): ReactNode {
@@ -370,6 +415,7 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
     return {
       sob: alcaCaneca(lado, lado === "frente" ? x + w - 4 : x + 4, y, h, cores.alca, formato === "coracao"),
       corpo: corpoCilindrico(idBase, x, y, w, h, cores.peca, 26),
+      superficie: { forma: caminhoCilindro(x, y, w, h, 26), cx: x + w / 2, cy: y + h / 2 + 4, raio: w / 2, altura: h - 8, luz: `${idBase}-luz` },
       sobre: rim,
       frenteDaArte: { cx: x + w / 2, cy: y + h * 0.52, largura: w * 0.86, altura: h * 0.74, raio: w / 2 },
     };
@@ -396,6 +442,7 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
         </g>
       ),
       sobre: <g><ellipse cx={x + w / 2} cy={y} rx={w / 2} ry={16} fill={cores.peca} /><ellipse cx={x + w / 2} cy={y + 1} rx={w / 2 - 7} ry={11} fill={escurecer(cores.interior, 0.12)} /></g>,
+      superficie: { forma: `M${x} ${y}h${w}c0 ${h * 0.7} -30 ${h} -70 ${h}h${-(w - 140)}c-40 0 -70 ${-h * 0.3} -70 ${-h}z`, cx: x + w / 2, cy: y + h * 0.42, raio: w / 2, altura: h * 0.8, luz: `${idBase}-luzx` },
       frenteDaArte: { cx: x + w / 2, cy: y + h * 0.42, largura: w * 0.78, altura: h * 0.62, raio: w / 2 },
     };
   }
@@ -410,6 +457,7 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
           {corpoCilindrico(idBase, x, y + 20, w, h - 20, cores.peca, 22)}
         </g>
       ),
+      superficie: { forma: caminhoCilindro(x, y + 20, w, h - 20, 22), cx: x + w / 2, cy: y + 20 + (h - 20) / 2, raio: w / 2, altura: (h - 20) * 0.92, luz: `${idBase}-luz` },
       frenteDaArte: { cx: x + w / 2, cy: y + 20 + (h - 20) * 0.5, largura: w * 0.92, altura: (h - 20) * 0.6, raio: w / 2 },
     };
   }
@@ -420,6 +468,7 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
       const w = 210, h = 170, x = 75, y = 150;
       return {
         corpo: <g><rect x={x} y={y} width={w} height={h} rx={14} fill={vidro} stroke="rgba(120,140,150,.45)" strokeWidth={2} /><rect x={x + 6} y={y + h - 34} width={w - 12} height={28} rx={10} fill="rgba(200,215,220,.6)" /></g>,
+        superficie: { forma: `M${x + 14} ${y}h${w - 28}a14 14 0 0 1 14 14v${h - 62}h${-w}v${-(h - 62)}a14 14 0 0 1 14 -14z`, cx: x + w / 2, cy: y + (h - 34) / 2, raio: w / 2, altura: h - 40, luz: null },
         frenteDaArte: { cx: x + w / 2, cy: y + h * 0.45, largura: w * 0.82, altura: h * 0.6, raio: w / 2 },
       };
     }
@@ -427,6 +476,7 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
       const w = 170, h = 250, x = 95, y = 100;
       return {
         corpo: <g><rect x={x + 10} y={y - 36} width={w - 20} height={30} rx={6} fill="#C9A26B" /><rect x={x} y={y} width={w} height={h} rx={26} fill={vidro} stroke="rgba(120,140,150,.45)" strokeWidth={2} /><path d={`M${x + w * 0.62} ${y - 70}l-14 ${h * 0.55}`} stroke="#B9C7C9" strokeWidth={8} strokeLinecap="round" /></g>,
+        superficie: { forma: caminhoCilindro(x, y, w, h, 26), cx: x + w / 2, cy: y + h / 2, raio: w / 2, altura: h * 0.9, luz: null },
         frenteDaArte: { cx: x + w / 2, cy: y + h * 0.5, largura: w * 0.84, altura: h * 0.6, raio: w / 2 },
       };
     }
@@ -440,6 +490,7 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
           <path d={`M${x + 16} ${y + 20}v${h - 60}`} stroke="rgba(255,255,255,.7)" strokeWidth={8} strokeLinecap="round" />
         </g>
       ),
+      superficie: { forma: `M${x} ${y}h${w}l-10 ${h}h${-(w - 20)}z`, cx: x + w / 2, cy: y + h / 2, raio: w / 2, altura: h * 0.9, luz: null },
       frenteDaArte: { cx: x + w / 2, cy: y + h * 0.48, largura: w * 0.84, altura: h * 0.56, raio: w / 2 },
     };
   }
@@ -512,7 +563,33 @@ function Sombra({ molde, formato, centro, raio }: { molde: Molde; formato: strin
   return <ellipse cx={centro ?? 180} cy={cy} rx={rx} ry={raio ? 9 : 10} fill="rgba(80, 40, 20, 0.16)" />;
 }
 
-export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fotoSelecionada, aoTocarFoto, urlDaFotoDoMolde = null, comArte = true, exemplos = true, fatias = 28 }: PropsPeca) {
+function EstampaNaPeca({ superficie, estampa, molde, lado, idBase, fatias }: { superficie: Superficie; estampa: EstampaPublica; molde: Molde; lado: Lado; idBase: string; fatias: number }) {
+  const volta = regras.voltaDaPeca(molde);
+  const r = superficie.raio;
+  const larguraDaImagem = volta.cobertura * 2 * Math.PI * r;
+  const alturaDaImagem = Math.min(larguraDaImagem / (estampa.proporcao || 2.105), superficie.altura);
+  const anguloInicial = lado === "frente" ? Math.PI / 2 + (volta.vao * Math.PI) - 2 * Math.PI : -Math.PI / 2 + volta.vao * Math.PI;
+  const inicio = anguloInicial * r;
+  const imagem = (
+    <g>
+      <image href={estampa.textura} x={inicio} y={-alturaDaImagem / 2} width={larguraDaImagem} height={alturaDaImagem} preserveAspectRatio="xMidYMid slice" />
+      <image href={estampa.textura} x={inicio + 2 * Math.PI * r} y={-alturaDaImagem / 2} width={larguraDaImagem} height={alturaDaImagem} preserveAspectRatio="xMidYMid slice" />
+    </g>
+  );
+  return (
+    <g>
+      <defs><clipPath id={`${idBase}-corpo`}><path d={superficie.forma} /></clipPath></defs>
+      <g clipPath={`url(#${idBase}-corpo)`}>
+        <g transform={`translate(${superficie.cx} ${superficie.cy})`}>
+          <ArteCurva id={`${idBase}-estampa`} raio={r} largura={Math.PI * r} fatias={fatias}>{imagem}</ArteCurva>
+        </g>
+        {superficie.luz ? <path d={superficie.forma} fill={`url(#${superficie.luz})`} /> : null}
+      </g>
+    </g>
+  );
+}
+
+export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fotoSelecionada, aoTocarFoto, urlDaFotoDoMolde = null, comArte = true, exemplos = true, fatias = 28, estampa = null }: PropsPeca) {
   const idBase = useId().replace(/[^a-zA-Z0-9]/g, "");
   const cores = coresDaPeca(config, escolhas, aquecida);
   const molde = config.molde;
@@ -521,13 +598,14 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
   const mostrarArte = comArte && config.personalizacao.ativa && area.largura > 0 && !(config.magica && !aquecida);
   const tinta = molde === "copo" ? "#2E2A28" : cores.tinta;
   const arte = mostrarArte ? (
-    <Arte config={config} escolhas={escolhas} lado={lado} largura={area.largura} altura={area.altura} tinta={tinta} urlDaFoto={urlDaFoto} medir={medir} idBase={`${idBase}-a`} fotoSelecionada={fotoSelecionada} aoTocarFoto={aoTocarFoto} exemplos={exemplos} />
+    <Arte config={config} escolhas={escolhas} lado={lado} largura={area.largura} altura={area.altura} tinta={tinta} urlDaFoto={urlDaFoto} medir={medir} idBase={`${idBase}-a`} fotoSelecionada={fotoSelecionada} aoTocarFoto={aoTocarFoto} exemplos={exemplos} comEtiqueta={Boolean(estampa && g.superficie)} />
   ) : null;
   return (
     <g>
       <Sombra molde={molde} formato={config.formato} centro={area.raio ? area.cx : null} raio={area.raio} />
       {g.sob}
       {g.corpo}
+      {estampa && g.superficie && !(config.magica && !aquecida) ? <EstampaNaPeca superficie={g.superficie} estampa={estampa} molde={molde} lado={lado} idBase={`${idBase}-e`} fatias={Math.max(fatias, 24)} /> : null}
       {arte ? (
         <g key={`${escolhas.personalizacao.arte}-${escolhas.personalizacao.letra}`} className="arte-entra" transform={`translate(${area.cx} ${area.cy})`}>
           {area.raio && !aoTocarFoto ? <ArteCurva id={`${idBase}-curva`} raio={area.raio} largura={area.largura} fatias={fatias}>{arte}</ArteCurva> : arte}

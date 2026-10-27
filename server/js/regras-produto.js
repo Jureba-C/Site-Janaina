@@ -34,6 +34,14 @@
   const ID_FOTO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   const ID_ESTAMPA = /^[a-z0-9][a-z0-9-]{2,39}$/;
   const MOLDES_COM_ESTAMPA = ["caneca", "xicara", "garrafa", "copo"];
+  const COBERTURA_DA_VOLTA = { caneca: 0.93, xicara: 0.926, garrafa: 0.95, copo: 0.95 };
+
+  function voltaDaPeca(molde) {
+    const cobertura = COBERTURA_DA_VOLTA[molde] || COBERTURA_DA_VOLTA.caneca;
+    const vao = 1 - cobertura;
+    const centroDaFrente = 1 - (0.25 - vao / 2) / cobertura;
+    return { cobertura, vao, centroDaFrente, centroDoVerso: 1 - centroDaFrente, inicioNaTextura: (vao / 2 - 0.25 + 1) % 1 };
+  }
   const CHAVE_FOTO = /^[0-9a-f]{32}$/;
 
   function round2(n) {
@@ -364,7 +372,7 @@
 
   return {
     MOLDES, LETRAS, ARTES, CAMPOS_TEXTO, MAX_FOTOS, QTD_MAXIMA, QTD_CONDICAO_ESPECIAL, ID_ESTAMPA, MOLDES_COM_ESTAMPA,
-    estampasDoProduto, estampaEscolhida,
+    estampasDoProduto, estampaEscolhida, COBERTURA_DA_VOLTA, voltaDaPeca,
     round2, normalizarConfig, normalizarVariacoes, normalizarPersonalizacao,
     precoBase, precoUnitario, escolhasPadrao, validarEscolhas, resumoDasEscolhas, chaveDaLinha,
     nomeDaLetra, nomeDaArte,

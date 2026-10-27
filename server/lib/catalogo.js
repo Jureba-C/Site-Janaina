@@ -193,7 +193,7 @@ function botton(nome, medida, preco, precoAtacado, extra = {}){
 }
 
 const LISTA = [
-  caneca("Caneca porcelana branca", 325, 40, { codigo: "CAN-BRA-325", fotos: ["/img/provisorias/caneca-rostinhos.jpg", "/img/provisorias/caneca-caixa-presente.jpg"], badges: ["Mais pedida"] }),
+  caneca("Caneca porcelana branca", 325, 40, { codigo: "CAN-BRA-325", fotos: ["/img/provisorias/caneca-rostinhos.jpg", "/img/provisorias/caneca-caixa-presente.jpg"], badges: ["Mais pedida"], estampas: { ativa: true, ids: [], obrigatoria: false } }),
   caneca("Caneca alça e dentro colorida", 325, 45, { codigo: "CAN-COR-325", fotos: ["/img/provisorias/canecas-alca-colorida.jpg"], badges: ["11 cores"], variacoes: [grupoCor("Cor da alça e do interior", CORES_ALCA.map(c => c.nome))] }),
   caneca("Caneca 100% preta", 325, 50, { codigo: "CAN-PRE-325", corPeca: "#232120", corAlca: "#232120" }),
   caneca("Caneca mini branca", 180, 42, { codigo: "CAN-MIN-180" }),

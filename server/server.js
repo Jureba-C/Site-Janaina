@@ -3522,6 +3522,16 @@ app.get("/api/personalizacao/fotos/:id", (req, res) => {
   res.send(Buffer.from(original ? linha.data : linha.miniatura));
 });
 
+function estampaDoItem(escolhas, tamanho, bruta = false){
+  const id = escolhas?.personalizacao?.estampa;
+  if(!id || !ID_DA_ESTAMPA.test(String(id))) return null;
+  const meta = db.lerEstampa(id);
+  const imagem = db.imagemDaEstampa(id, tamanho);
+  if(!meta || !imagem) return null;
+  if(bruta) return imagem;
+  return { ...estampas.estampaPublica(meta), textura: `data:${imagem.mime};base64,${Buffer.from(imagem.data).toString("base64")}` };
+}
+
 app.get("/api/admin/pedidos/:reference/itens/:indice/:tipo.svg", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res, next) => {
   const tipo = req.params.tipo === "arte" ? "arte" : req.params.tipo === "previa" ? "previa" : null;
   if(!tipo) return next();
@@ -3541,7 +3551,7 @@ app.get("/api/admin/pedidos/:reference/itens/:indice/:tipo.svg", auth.requireAdm
       : `data:image/webp;base64,${Buffer.from(linha.miniatura).toString("base64")}`;
   }
   try {
-    const svg = lojaSsr.svgDoItem({ tipo, config: item.config, escolhas: item.escolhas, lado: req.query.lado, fotos });
+    const svg = lojaSsr.svgDoItem({ tipo, config: item.config, escolhas: item.escolhas, lado: req.query.lado, fotos, estampa: tipo === "previa" ? estampaDoItem(item.escolhas, "textura") : null });
     res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("Content-Security-Policy", "default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'");
@@ -3569,6 +3579,7 @@ app.get("/api/admin/pedidos/:reference/itens/:indice/producao.svg", auth.require
         return linha && linha.pedido === pedido.external_reference ? Buffer.from(linha.data) : null;
       },
       svgDaArte: lojaSsr.svgDaArteSemFontes,
+      estampa: estampaDoItem(item.escolhas, "original", true),
       titulo: `${item.name} — pedido ${pedido.external_reference.slice(0, 8)}`,
     });
     const apelido = produtoUrl.apelido(item.name);

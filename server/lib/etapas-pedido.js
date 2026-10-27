@@ -126,13 +126,15 @@ function pecaDoItem(item, overridesMap){
     observacoes: pers.observacoes || "",
     letra: pers.letra ? regras.nomeDaLetra(pers.letra) : "",
     arte: pers.arte ? regras.nomeDaArte(pers.arte) : "",
+    estampa: ((item.resumo || []).find(l => l && l.rotulo === "Estampa") || {}).valor || "",
+    estampaId: pers.estampa || "",
     fotos: exibir.fotos.length,
     aprovarArte: pers.aprovarWhatsApp === true,
   };
 }
 
 function nomeDoLote(peca){
-  return [peca.produto, peca.variacao].filter(Boolean).join(" · ");
+  return [peca.produto, peca.variacao, peca.estampa ? `estampa ${peca.estampa}` : ""].filter(Boolean).join(" · ");
 }
 
 module.exports = {

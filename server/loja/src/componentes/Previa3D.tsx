@@ -3,7 +3,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { svgComoImagem } from "../estado/arteEmImagem";
 import { urlDaFotoEnviada } from "../estado/fotos";
-import type { ConfigProduto, Escolhas } from "../tipos";
+import { regras } from "../compartilhado";
+import type { ConfigProduto, Escolhas, EstampaPublica } from "../tipos";
 import { Arte, coresDaPeca, useMedirTexto, type Lado } from "./Previa";
 
 interface Forma {
@@ -52,9 +53,40 @@ function ArteEscondida({ config, escolhas, lado, forma, tinta, medir, aoMontar }
   );
 }
 
-export default function Previa3D({ config, escolhas, aquecida, rotulo, fechar }: {
+const imagensCarregadas = new Map<string, Promise<HTMLImageElement>>();
+
+function carregarImagem(url: string): Promise<HTMLImageElement> {
+  let pedido = imagensCarregadas.get(url);
+  if (!pedido) {
+    pedido = new Promise((resolver, rejeitar) => {
+      const imagem = new Image();
+      imagem.decoding = "async";
+      imagem.onload = () => resolver(imagem);
+      imagem.onerror = () => rejeitar(new Error("a estampa não carregou"));
+      imagem.src = url;
+    });
+    imagensCarregadas.set(url, pedido);
+  }
+  return pedido;
+}
+
+function desenharEstampa(contexto: CanvasRenderingContext2D, imagem: HTMLImageElement, largura: number, altura: number, estampa: EstampaPublica, molde: string) {
+  const volta = regras.voltaDaPeca(molde as Parameters<typeof regras.voltaDaPeca>[0]);
+  const w = volta.cobertura * largura;
+  const hDesejada = w / (estampa.proporcao || 2.105);
+  const h = Math.min(hDesejada, altura * 0.96);
+  const corteVertical = hDesejada > h ? (1 - h / hDesejada) * imagem.naturalHeight : 0;
+  const x = volta.inicioNaTextura * largura;
+  const y = (altura - h) / 2;
+  for (const deslocamento of [0, -largura]) {
+    contexto.drawImage(imagem, 0, corteVertical / 2, imagem.naturalWidth, imagem.naturalHeight - corteVertical, x + deslocamento, y, w, h);
+  }
+}
+
+export default function Previa3D({ config, escolhas, estampa = null, aquecida, rotulo, fechar }: {
   config: ConfigProduto;
   escolhas: Escolhas;
+  estampa?: EstampaPublica | null;
   aquecida: boolean;
   rotulo: string;
   fechar: () => void;
@@ -246,12 +278,14 @@ export default function Previa3D({ config, escolhas, aquecida, rotulo, fechar }:
         const w = forma.arte.largura * (1 + 2 * FOLGA) * escala;
         const h = forma.arte.altura * (1 + 2 * FOLGA) * escala;
         const cy = forma.altura * forma.arte.cy * escala;
-        const [frente, verso] = await Promise.all([
+        const [imagemDaEstampa, frente, verso] = await Promise.all([
+          estampa && arteVisivel ? carregarImagem(estampa.textura).catch(() => null) : null,
           svgFrente.current && arteVisivel ? svgComoImagem(svgFrente.current, Math.round(w), Math.round(h)) : null,
           svgVerso.current && arteVisivel && config.personalizacao.verso ? svgComoImagem(svgVerso.current, Math.round(w), Math.round(h)) : null,
         ]);
         if (cancelado) return;
         contexto.clearRect(0, 0, atual.canvas.width, atual.canvas.height);
+        if (imagemDaEstampa && estampa) desenharEstampa(contexto, imagemDaEstampa, atual.canvas.width, atual.canvas.height, estampa, config.molde);
         if (frente) contexto.drawImage(frente, LARGURA_TEXTURA / 2 - w / 2, cy - h / 2, w, h);
         if (verso) {
           contexto.drawImage(verso, -w / 2, cy - h / 2, w, h);
@@ -264,7 +298,7 @@ export default function Previa3D({ config, escolhas, aquecida, rotulo, fechar }:
       }
     }, 120);
     return () => { cancelado = true; clearTimeout(espera); };
-  }, [escolhas, aquecida, medir, arteVisivel]);
+  }, [escolhas, aquecida, medir, arteVisivel, estampa]);
 
   return (
     <div className="previa-3d">

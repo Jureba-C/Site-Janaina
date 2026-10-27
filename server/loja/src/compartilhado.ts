@@ -1,10 +1,19 @@
 import precosJs from "../../js/pricing.js";
 import regrasJs from "../../js/regras-produto.js";
-import type { ConfigProduto, Escolhas, LinhaResumo, Produto, RegrasPagamento } from "./tipos";
+import type { ConfigProduto, Escolhas, EstampaPublica, LinhaResumo, Molde, Produto, RegrasPagamento } from "./tipos";
 
 interface ProdutoDasRegras {
   price: number;
   config: ConfigProduto;
+  estampasDisponiveis?: EstampaPublica[];
+}
+
+export interface VoltaDaPeca {
+  cobertura: number;
+  vao: number;
+  centroDaFrente: number;
+  centroDoVerso: number;
+  inicioNaTextura: number;
 }
 
 interface PlanoParcelas {
@@ -37,13 +46,14 @@ interface Regras {
   chaveDaLinha(id: number, escolhas: Escolhas): string;
   nomeDaLetra(id: string): string;
   nomeDaArte(id: string): string;
+  voltaDaPeca(molde: Molde): VoltaDaPeca;
 }
 
 export const precos = precosJs as unknown as Precos;
 export const regras = regrasJs as unknown as Regras;
 
 function paraRegras(produto: Produto): ProdutoDasRegras {
-  return { price: produto.preco, config: produto.config };
+  return { price: produto.preco, config: produto.config, estampasDisponiveis: produto.estampasDisponiveis };
 }
 
 export function precoUnitario(produto: Produto, escolhas: Escolhas, qtd: number): number {

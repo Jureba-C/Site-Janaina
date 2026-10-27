@@ -24,7 +24,7 @@
   function avisoDeProporcao(e){
     if(!e.largura || !e.altura) return "";
     const proporcao = e.largura / e.altura;
-    if(Math.abs(proporcao - 200 / 95) <= 0.12) return "";
+    if(Math.abs(proporcao - 240 / 95) <= 0.12) return "";
     return `<p class="estampa-aviso"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Proporção diferente da caneca (${e.largura} × ${e.altura} px). O site corta pelo centro.</p>`;
   }
 

@@ -96,6 +96,7 @@
       linhaDeDetalhe("Data", peca.data),
       linhaDeDetalhe("Letra", peca.letra),
       linhaDeDetalhe("Arte", peca.arte),
+      linhaDeDetalhe("Estampa", peca.estampa),
       linhaDeDetalhe("Fotos", peca.fotos ? String(peca.fotos) : ""),
       linhaDeDetalhe("Obs.", peca.observacoes),
     ].join("");
@@ -112,6 +113,10 @@
       botoes.push(`<button type="button" class="btn-outline-blush prod-btn-arquivo" data-acao="arte-png" data-ref="${esc(ref)}" data-indice="${indice}" data-lado="frente"><i class="bi bi-download me-1" aria-hidden="true"></i>Arte${item.temVerso ? " frente" : ""} (PNG)</button>`);
       if(item.temVerso) botoes.push(`<button type="button" class="btn-outline-blush prod-btn-arquivo" data-acao="arte-png" data-ref="${esc(ref)}" data-indice="${indice}" data-lado="verso"><i class="bi bi-download me-1" aria-hidden="true"></i>Arte verso (PNG)</button>`);
       botoes.push(`<button type="button" class="btn-outline-blush prod-btn-arquivo" data-acao="previa" data-ref="${esc(ref)}" data-indice="${indice}" data-verso="${item.temVerso ? "1" : ""}"><i class="bi bi-eye me-1" aria-hidden="true"></i>Ver prévia</button>`);
+    }
+    const estampaId = item.escolhas?.personalizacao?.estampa;
+    if(estampaId && etapa !== "enviado"){
+      botoes.push(`<a class="btn-outline-blush prod-btn-arquivo" href="/api/admin/estampas/${encodeURIComponent(estampaId)}/original" download><i class="bi bi-palette me-1" aria-hidden="true"></i>Estampa original</a>`);
     }
     if(etapa === "produzir" && Array.isArray(item.fotos)){
       item.fotos.forEach((id, n) => botoes.push(`<a class="btn-outline-blush prod-btn-arquivo" href="/api/personalizacao/fotos/${encodeURIComponent(id)}?tamanho=original&amp;baixar=1"><i class="bi bi-image me-1" aria-hidden="true"></i>Foto ${n + 1} original</a>`));

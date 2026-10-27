@@ -180,7 +180,7 @@ test("planilha de produção: uma linha por peça com as colunas certas", async 
   const ref = criarPedido({ itens: [COM_ARTE, { ...SEM_APROVAR, qty: 1 }] });
   assert.deepEqual(planilhas.COLUNAS_DE_PRODUCAO.map(c => c.header), [
     "Pedido", "Data", "Prazo", "Cliente", "WhatsApp", "Produto", "Qtd", "Cor/variação", "Nome", "Frase",
-    "Data na peça", "Letra", "Arte", "Nº de fotos", "Aprovar arte?", "Entrega", "Etapa", "Observações",
+    "Data na peça", "Letra", "Arte", "Estampa", "Nº de fotos", "Aprovar arte?", "Entrega", "Etapa", "Observações",
   ]);
   const linhas = planilhas.linhasDeProducao({ overridesMap: new Map(), diasDeProducao: 5 }).filter(l => l.pedido === `#${ref.slice(0, 8)}`);
   assert.equal(linhas.length, 2, "duas peças, duas linhas");

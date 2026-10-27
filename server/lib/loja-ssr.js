@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { larguraDoTexto } = require("./texto-em-curvas.js");
 
 const RAIZ = path.join(__dirname, "..");
 const MANIFESTO = path.join(RAIZ, "js", "loja", "manifesto.json");
@@ -114,14 +115,18 @@ function fontesEmbutidas(){
   return cssDasFontes;
 }
 
-function svgDoItem({ tipo, config, escolhas, lado, fotos }){
+function medidor(texto, familia, peso, estilo, tamanho){
+  return larguraDoTexto(texto, { familia, peso, estilo, tamanho });
+}
+
+function svgDoItem({ tipo, config, escolhas, lado, fotos, estampa = null }){
   const r = renderizador();
-  const pedido = { config, escolhas, lado: lado === "verso" ? "verso" : "frente", fotos, estilo: fontesEmbutidas() };
+  const pedido = { config, escolhas, lado: lado === "verso" ? "verso" : "frente", fotos, estilo: fontesEmbutidas(), estampa, medidor };
   return tipo === "arte" ? r.renderizarSvgDaArte(pedido) : r.renderizarSvgDaPeca(pedido);
 }
 
 function svgDaArteSemFontes({ config, escolhas, lado, fotos }){
-  return renderizador().renderizarSvgDaArte({ config, escolhas, lado, fotos, estilo: "" });
+  return renderizador().renderizarSvgDaArte({ config, escolhas, lado, fotos, estilo: "", medidor });
 }
 
 module.exports = { montarDocumento, escapar, arquivosDoCliente, svgDoItem, svgDaArteSemFontes };

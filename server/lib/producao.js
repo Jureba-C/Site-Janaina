@@ -1,9 +1,10 @@
 const sharp = require("sharp");
 const { textoEmCurvas } = require("./texto-em-curvas.js");
+const regras = require("../js/regras-produto.js");
 
 const GABARITOS = {
-  caneca: { largura: 200, altura: 95, cilindro: 110, alca: true },
-  xicara: { largura: 170, altura: 60, cilindro: 118, alca: true },
+  caneca: { largura: 240, altura: 95, cilindro: 110, alca: true },
+  xicara: { largura: 210, altura: 60, cilindro: 118, alca: true },
   garrafa: { largura: 200, altura: 150, cilindro: 66 },
   copo: { largura: 230, altura: 110, cilindro: 80 },
   azulejo: { largura: 150, altura: 150 },
@@ -68,7 +69,7 @@ function semSvgExterno(svg){
   return svg.slice(inicio, fim).replace(/<style>[\s\S]*?<\/style>/, "");
 }
 
-async function arquivoDeProducao({ config, escolhas, lerFoto, svgDaArte, titulo }){
+async function arquivoDeProducao({ config, escolhas, lerFoto, svgDaArte, titulo, estampa = null }){
   const gabarito = gabaritoDoItem(config, escolhas);
   const fotos = {};
   const escolhasDaProducao = JSON.parse(JSON.stringify(escolhas));
@@ -91,8 +92,9 @@ async function arquivoDeProducao({ config, escolhas, lerFoto, svgDaArte, titulo 
       .replace(/<image\b([^>]*?)\shref="/g, '<image$1 xlink:href="');
     let escala, cx;
     if(gabarito.cilindro){
-      escala = gabarito.largura / (2 * Math.PI * gabarito.cilindro);
-      cx = lado === "frente" ? gabarito.largura * 0.25 : gabarito.largura * 0.75;
+      const volta = regras.voltaDaPeca(config.molde);
+      escala = gabarito.largura / (volta.cobertura * 2 * Math.PI * gabarito.cilindro);
+      cx = gabarito.largura * (lado === "frente" ? volta.centroDaFrente : volta.centroDoVerso);
     } else {
       escala = Math.min(gabarito.largura / area.largura, gabarito.altura / area.altura) * 0.92;
       cx = gabarito.largura / 2;
@@ -116,7 +118,7 @@ async function arquivoDeProducao({ config, escolhas, lerFoto, svgDaArte, titulo 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${largura}mm" height="${altura}mm" viewBox="0 0 ${largura} ${altura}">
 <title>${String(titulo).replace(/[<&>]/g, "")}</title>
-<g id="Arte">${grupos.join("")}</g>
+${estampa ? `<g id="Estampa"><image x="0" y="0" width="${largura}" height="${altura}" preserveAspectRatio="xMidYMid slice" xlink:href="data:${estampa.mime};base64,${Buffer.from(estampa.data).toString("base64")}"/></g>\n` : ""}<g id="Arte">${grupos.join("")}</g>
 <g id="Guias" opacity="0.8">${guias.join("")}</g>
 </svg>
 `;

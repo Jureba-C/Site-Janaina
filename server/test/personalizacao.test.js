@@ -136,7 +136,7 @@ test("o painel gera o arquivo para Corel/Illustrator no tamanho real, com texto 
   assert.equal(res.status, 200);
   assert.match(res.headers.get("content-disposition"), /attachment; filename="arte-.*-item1-caneca-alca-e-dentro-colorida\.svg"/);
   const svg = await res.text();
-  assert.match(svg, /width="200mm" height="95mm" viewBox="0 0 200 95"/, "gabarito de caneca 325 ml em milímetros");
+  assert.match(svg, /width="240mm" height="95mm" viewBox="0 0 240 95"/, "gabarito de caneca 325 ml em milímetros");
   assert.doesNotMatch(svg, /<text\b/, "nenhum texto vivo: tudo em curvas, abre sem as fontes instaladas");
   assert.ok((svg.match(/<path /g) || []).length > 20, "as letras viraram caminhos");
   assert.match(svg, /<g id="Frente"/);

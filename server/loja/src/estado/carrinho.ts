@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { regras } from "../compartilhado";
-import type { ConfigProduto, Escolhas, LinhaResumo, Molde } from "../tipos";
+import type { ConfigProduto, Escolhas, EstampaPublica, LinhaResumo, Molde } from "../tipos";
 
 export interface LinhaCarrinho {
   chave: string;
@@ -17,6 +17,7 @@ export interface LinhaCarrinho {
   resumo: LinhaResumo[];
   qtdMinima: number;
   config: ConfigProduto;
+  estampa?: EstampaPublica | null;
   erro?: string;
 }
 

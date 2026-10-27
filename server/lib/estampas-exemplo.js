@@ -2,7 +2,7 @@ const sharp = require("sharp");
 const db = require("./db");
 const estampas = require("./estampas");
 
-const LARGURA = 2362;
+const LARGURA = 2835;
 const ALTURA = 1122;
 const BRASILIA = "M4 74h142M48 74c4-22 12-44 27-66M102 74c-4-22-12-44-27-66M58 74c3-20 8-42 17-66M92 74c-3-20-8-42-17-66M68 74c2-20 4-42 7-66M82 74c-2-20-4-42-7-66M75 8V2M72 5h6M14 74V54h10v20M118 74V44h4v30M126 74V44h4v30M116 44h16";
 
@@ -28,9 +28,11 @@ function florzinhas() {
   const sorte = aleatorio(7);
   const cores = ["#CD7031", "#DFA1AC", "#9E4A18", "#D4935E"];
   let desenho = "";
+  const colunas = Math.round(LARGURA / 148);
+  const passo = LARGURA / colunas;
   for (let linha = 0; linha < 9; linha++) {
-    for (let coluna = 0; coluna < 17; coluna++) {
-      const x = coluna * 148 + (linha % 2 ? 74 : 0) + (sorte() - 0.5) * 30;
+    for (let coluna = -1; coluna <= colunas; coluna++) {
+      const x = coluna * passo + (linha % 2 ? passo / 2 : 0) + (sorte() - 0.5) * 30;
       const y = linha * 132 + 40 + (sorte() - 0.5) * 30;
       const tamanho = 58 + sorte() * 46;
       desenho += flor(x, y, tamanho, cores[(linha + coluna) % cores.length], { cheia: (linha + coluna) % 3 === 0, giro: sorte() * 72, miolo: (linha + coluna) % 3 === 0 ? "#FBF3EC" : null });
@@ -41,9 +43,11 @@ function florzinhas() {
 
 function brasiliaEmTraco() {
   let desenho = "";
+  const colunas = Math.round(LARGURA / 420);
+  const passo = LARGURA / colunas;
   for (let linha = 0; linha < 4; linha++) {
-    for (let coluna = 0; coluna < 6; coluna++) {
-      const x = coluna * 420 + (linha % 2 ? 210 : 0) - 60;
+    for (let coluna = -1; coluna <= colunas; coluna++) {
+      const x = coluna * passo + (linha % 2 ? passo / 2 : 0) - 60;
       const y = linha * 290 + 40;
       desenho += `<g transform="translate(${x} ${y}) scale(2.3)" fill="none" stroke="#9E4A18" stroke-width="1.3" stroke-linecap="round"><path d="${BRASILIA}"/></g>`;
       desenho += flor(x + 380, y + 120, 40, "#DFA1AC");
@@ -56,9 +60,11 @@ function ipesAmarelos() {
   const sorte = aleatorio(29);
   const amarelos = ["#E9B824", "#F2C94C", "#DDA521"];
   let desenho = "";
-  for (let i = 0; i < 26; i++) {
-    const cx = (i % 13) * 190 + 60 + (sorte() - 0.5) * 60;
-    const cy = i < 13 ? 300 + (sorte() - 0.5) * 120 : 820 + (sorte() - 0.5) * 120;
+  const porLinha = Math.round(LARGURA / 190);
+  const passo = LARGURA / porLinha;
+  for (let i = 0; i < porLinha * 2; i++) {
+    const cx = (i % porLinha) * passo + passo / 2 + (sorte() - 0.5) * 60;
+    const cy = i < porLinha ? 300 + (sorte() - 0.5) * 120 : 820 + (sorte() - 0.5) * 120;
     desenho += `<path d="M${cx} ${cy + 140}C${cx - 10} ${cy + 80} ${cx + 8} ${cy + 40} ${cx} ${cy}" stroke="#7A5638" stroke-width="7" fill="none" stroke-linecap="round"/>`;
     for (let f = 0; f < 9; f++) {
       const angulo = sorte() * Math.PI * 2;

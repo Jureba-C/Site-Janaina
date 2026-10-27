@@ -57,6 +57,17 @@ export interface ConfigProduto {
   faixas: { min: number; preco: number }[];
   qtdMinima: number;
   personalizacao: ConfigPersonalizacao;
+  estampas?: { ativa: boolean; ids: string[]; obrigatoria: boolean };
+}
+
+export interface EstampaPublica {
+  id: string;
+  nome: string;
+  colecao: string;
+  preco: number;
+  proporcao: number;
+  miniatura: string;
+  textura: string;
 }
 
 export interface ProdutoResumo {
@@ -77,12 +88,15 @@ export interface ProdutoResumo {
   formato: string;
   aviso: "ultimas" | "consultar" | null;
   personalizavel: boolean;
+  qtdEstampas: number;
+  estampaVitrine: EstampaPublica | null;
 }
 
 export interface Produto extends ProdutoResumo {
   fotos: string[];
   descricao: string | null;
   config: ConfigProduto;
+  estampasDisponiveis: EstampaPublica[];
   categoriaPrincipal: { slug: string; nome: string } | null;
 }
 
@@ -201,6 +215,7 @@ export interface Personalizacao {
   observacoes?: string;
   letra?: string;
   arte?: string;
+  estampa?: string;
   fotos?: FotoEnviada[];
   aprovarWhatsApp?: boolean;
 }

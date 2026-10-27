@@ -8,8 +8,8 @@ const LIMITE_PIXELS = 120000000;
 const LARGURA_TEXTURA = 2048;
 
 const TAMANHOS_IDEAIS = {
-  caneca: { mm: [200, 95], px: [2362, 1122] },
-  xicara: { mm: [170, 60], px: [2008, 709] },
+  caneca: { mm: [240, 95], px: [2835, 1122] },
+  xicara: { mm: [210, 60], px: [2480, 709] },
   garrafa: { mm: [200, 150], px: [2362, 1772] },
   copo: { mm: [230, 110], px: [2717, 1299] },
 };
@@ -23,7 +23,7 @@ async function prepararImagens(buffer) {
   }
   if (!FORMATOS_ACEITOS.has(meta.format)) throw { status: 415, message: "Formato não aceito. Envie PNG, JPG, WEBP ou TIFF." };
   if (!meta.width || !meta.height || meta.width < 600 || meta.height < 250) {
-    throw { status: 415, message: "Imagem pequena demais para estampa. Use pelo menos 2362 × 1122 px na caneca." };
+    throw { status: 415, message: "Imagem pequena demais para estampa. Use pelo menos 2835 × 1122 px na caneca." };
   }
   const girada = sharp(buffer, { limitInputPixels: LIMITE_PIXELS }).rotate();
   const original = meta.format === "jpeg" || meta.format === "png"

@@ -16,10 +16,11 @@ export function configDeVitrine(p: Pick<ProdutoResumo, "molde" | "corPeca" | "co
 }
 
 export function IlustracaoDaPeca({ produto, rotulo }: { produto: ProdutoResumo; rotulo: string }) {
+  const comEstampa = Boolean(produto.estampaVitrine);
   const config = configDeVitrine(produto);
   return (
     <svg className="ilustracao-peca" viewBox="0 0 360 380" role="img" aria-label={rotulo}>
-      <PecaSvg config={config} escolhas={{ variacoes: {}, adicionais: [], personalizacao: { arte: "flor", letra: "cursiva" } }} lado="frente" aquecida={false} urlDaFoto={() => null} medir={false} exemplos={false} fatias={12} />
+      <PecaSvg config={config} escolhas={{ variacoes: {}, adicionais: [], personalizacao: { arte: "flor", letra: "cursiva" } }} lado="frente" aquecida={false} urlDaFoto={() => null} medir={false} exemplos={false} fatias={comEstampa ? 16 : 12} estampa={produto.estampaVitrine} comArte={!comEstampa} />
     </svg>
   );
 }
@@ -29,7 +30,7 @@ export function CartaoProduto({ produto, prioridade = false }: { produto: Produt
   const [pulso, setPulso] = useState(0);
   const favorito = favoritos.includes(produto.id);
   const pix = precoNoPix(produto.precoMinimo);
-  const selo = produto.esgotado ? "Esgotado" : produto.aviso === "ultimas" ? "Últimas peças" : produto.selos[0];
+  const selo = produto.esgotado ? "Esgotado" : produto.aviso === "ultimas" ? "Últimas peças" : produto.selos[0] || (produto.qtdEstampas > 1 ? `${produto.qtdEstampas} estampas` : undefined);
   return (
     <article className={`cartao-produto${produto.esgotado ? " esgotado" : ""}`}>
       <a className="cartao-produto-foto" href={produto.endereco} tabIndex={-1} aria-hidden="true">

@@ -79,7 +79,7 @@ function MiniaturaDaLinha({ linha }: { linha: LinhaCarrinho }) {
   if (linha.config?.personalizacao?.ativa && linha.config.molde !== "nenhum") {
     return (
       <svg viewBox="0 0 360 380" className="linha-miniatura" role="img" aria-label={`Prévia de ${linha.nome}`}>
-        <PecaSvg config={linha.config} escolhas={linha.escolhas} lado="frente" aquecida urlDaFoto={urlDaFotoEnviada} medir={false} exemplos={false} />
+        <PecaSvg config={linha.config} escolhas={linha.escolhas} lado="frente" aquecida urlDaFoto={urlDaFotoEnviada} estampa={linha.estampa ?? null} medir={false} exemplos={false} />
       </svg>
     );
   }
