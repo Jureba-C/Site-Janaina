@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { linkWhatsApp } from "../compartilhado";
 import { CartaoProduto } from "../componentes/CartaoProduto";
 import { Foto } from "../componentes/Foto";
 import { Icone } from "../componentes/Icone";
-import { SeloPersonalizavel } from "../componentes/Marca";
 import { PecaSvg } from "../componentes/Previa";
 import type { ConfigProduto, Loja, PaginaInicio } from "../tipos";
 
@@ -44,56 +43,36 @@ const CANECA_EXEMPLO: ConfigProduto = {
   personalizacao: { ativa: true, campos: { nome: { ativo: true, obrigatorio: false, limite: 20, rotulo: "Nome" } }, letras: ["cursiva"], artes: ["flor"], fotos: { min: 0, max: 0, formato: "circulo" }, verso: true },
 };
 
+const GIROS_DA_PRATELEIRA = [-2.5, 1.5, -1.2];
+
 function Destaque({ pagina }: { pagina: PaginaInicio }) {
-  const slides = pagina.destaques;
-  const [atual, setAtual] = useState(0);
-  const [pausado, setPausado] = useState(false);
-  const [trocou, setTrocou] = useState(false);
-  useEffect(() => {
-    if (atual !== 0) setTrocou(true);
-  }, [atual]);
-  useEffect(() => {
-    if (slides.length < 2 || pausado) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const relogio = setInterval(() => setAtual(i => (i + 1) % slides.length), 6000);
-    return () => clearInterval(relogio);
-  }, [slides.length, pausado]);
+  const itens = pagina.destaques.slice(0, 3);
   return (
-    <section className="destaque envolve" aria-roledescription="carrossel" aria-label="Destaques" onMouseEnter={() => setPausado(true)} onMouseLeave={() => setPausado(false)} onFocus={() => setPausado(true)}>
-      <div className="destaque-cartao">
-        <div className="destaque-texto">
-          <p className="sobretitulo">Canecas e xícaras personalizadas · Brasília</p>
-          <h1>Presentes que marcam</h1>
-          <p className="cursiva destaque-cursiva">transformando sentimentos em presentes</p>
-          <p className="destaque-apoio">Escolha a peça, escreva o nome ou envie suas fotos e veja como a arte fica na caneca antes de comprar.</p>
-          <div className="destaque-acoes">
-            <a className="botao botao-cheio botao-grande" href="/categoria/canecas">Ver as canecas</a>
-            <a className="botao botao-vazado botao-grande" href="/#previa"><span className="so-largo">Criar a minha e ver a prévia</span><span className="so-curto">Criar a minha</span></a>
-          </div>
+    <section className="destaque envolve" aria-label="Destaques">
+      <div className="destaque-texto">
+        <p className="sobretitulo">Canecas e xícaras personalizadas · Brasília</p>
+        <h1>Presentes que marcam,</h1>
+        <p className="cursiva destaque-cursiva">feitos à mão em Brasília</p>
+        <p className="destaque-apoio">Escolha a peça, escreva o nome ou envie suas fotos e veja como a arte fica na caneca antes de comprar.</p>
+        <div className="destaque-acoes">
+          <a className="botao botao-cheio botao-grande" href="/categoria/canecas">Ver as canecas</a>
+          <a className="botao botao-vazado botao-grande" href="/#previa">Criar a minha</a>
         </div>
-        <div className="destaque-fotos">
-          <div className="faixa-caramelo faixa-caramelo-direita" aria-hidden="true" />
-          <div className={`polaroid destaque-polaroid${trocou ? " trocou" : ""}`}>
-            <span className="fita fita-crepe" aria-hidden="true" />
-            {slides.map((s, i) => (
-              <div key={s.src} className={`destaque-slide${i === atual ? " ativo" : ""}`} aria-hidden={i !== atual} role="group" aria-roledescription="slide" aria-label={`${i + 1} de ${slides.length}`}>
-                <Foto src={s.src} alt={s.alt} sizes="340px" prioridade={i === 0} largura={340} altura={340} className="polaroid-foto" />
-                <p className="cursiva polaroid-legenda">{s.legenda}</p>
-              </div>
-            ))}
-          </div>
-          <div className="destaque-circulo">
-            <Foto src="/img/provisorias/xicara-ipes.jpg" alt="Xícara da coleção Ipês Brasília" sizes="190px" largura={190} altura={190} />
-          </div>
-          <div className="destaque-selo"><SeloPersonalizavel /></div>
-        </div>
-        {slides.length > 1 ? (
-          <div className="destaque-pontos">
-            {slides.map((s, i) => (
-              <button key={s.src} type="button" className={i === atual ? "ativo" : undefined} aria-label={`Destaque ${i + 1} de ${slides.length}`} aria-current={i === atual} onClick={() => setAtual(i)} />
-            ))}
-          </div>
-        ) : null}
+      </div>
+      <div className="prateleira">
+        <ul className="prateleira-itens">
+          {itens.map((item, i) => (
+            <li key={item.src} style={{ ["--giro" as string]: `${GIROS_DA_PRATELEIRA[i % 3]}deg` }}>
+              <a href={item.link || "/categoria/canecas"} className="prateleira-item">
+                <span className="prateleira-quadro">
+                  <Foto src={item.src} alt={item.alt} sizes="(max-width: 640px) 30vw, 200px" larguras={[240, 480]} prioridade={i === 0} largura={240} altura={300} className="prateleira-foto" />
+                </span>
+                <span className="prateleira-bilhete cursiva">{item.legenda}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div className="prateleira-tabua" aria-hidden="true" />
       </div>
     </section>
   );
@@ -185,8 +164,8 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
   return (
     <>
       <Destaque pagina={pagina} />
-      <Vantagens loja={loja} />
       <Vitrine pagina={pagina} />
+      <Vantagens loja={loja} />
 
       <section className="secao envolve" aria-labelledby="tipos">
         <div className="secao-topo">

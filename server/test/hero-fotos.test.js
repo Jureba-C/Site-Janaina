@@ -92,9 +92,9 @@ test("sem foto no painel, a home usa as fotos fixas da loja", async () => {
 test("só a primeira foto do destaque tem prioridade; as outras esperam", async () => {
   await apagarTodas();
   const home = await (await fetch(ORIGIN + "/")).text();
-  const destaque = home.slice(home.indexOf('class="destaque'), home.indexOf('class="vantagens'));
+  const destaque = home.slice(home.indexOf('class="destaque'), home.indexOf('class="secao'));
   assert.equal((destaque.match(/fetchPriority="high"|fetchpriority="high"/g) || []).length, 1);
-  assert.equal((destaque.match(/destaque-slide ativo/g) || []).length, 1);
+  assert.equal((destaque.match(/class="prateleira-item"/g) || []).length, 3, "três fotos na prateleira");
   assert.ok((destaque.match(/loading="lazy"/g) || []).length >= 1);
 });
 
@@ -105,10 +105,10 @@ test("foto enviada pelo painel entra na home no lugar das fixas", async () => {
   const { id } = await res.json();
 
   const home = await (await fetch(ORIGIN + "/")).text();
-  assert.ok(home.includes(`/api/hero/fotos/${id}?w=960`), "a home deve apontar para a foto do banco");
-  const destaque = home.slice(home.indexOf('class="destaque'), home.indexOf('class="vantagens'));
+  assert.ok(home.includes(`/api/hero/fotos/${id}?w=480`), "a home deve apontar para a foto do banco");
+  const destaque = home.slice(home.indexOf('class="destaque'), home.indexOf('class="secao'));
   assert.ok(!destaque.includes("canecas-alca-colorida.jpg"), "as fixas devem sair do destaque");
-  assert.match(home, /<p class="cursiva polaroid-legenda">Laço de teste<\/p>/);
+  assert.match(home, /<span class="prateleira-bilhete cursiva">Laço de teste<\/span>/);
   assert.match(home, /alt="Um laço rosa de teste"/);
 });
 
@@ -251,9 +251,9 @@ test("o preload do topo aponta para exatamente a mesma imagem do <picture>", asy
   const home = await (await fetch(ORIGIN + "/")).text();
   const preload = home.match(/<link rel="preload" as="image"[^>]*>/);
   assert.ok(preload, "o preload da foto do topo sumiu");
-  const destaque = home.slice(home.indexOf('class="destaque-slide ativo'));
+  const destaque = home.slice(home.indexOf('class="prateleira-item'));
   const source = destaque.match(/<source type="image\/webp"[^>]*>/);
-  assert.ok(source, "o <source> webp do primeiro slide sumiu");
+  assert.ok(source, "o <source> webp da primeira foto da prateleira sumiu");
   const pegar = (tag, attr) => (tag.match(new RegExp(`${attr}="([^"]*)"`, "i")) || [])[1];
   assert.equal(pegar(preload[0], "href"), pegar(source[0], "srcSet"), "preload e <source> discordam: o navegador baixaria duas imagens");
   assert.match(preload[0], /type="image\/webp"/);
@@ -266,7 +266,7 @@ test("com foto do painel, o preload acompanha e larga o type webp", async () => 
 
   const preload = home.match(/<link rel="preload" as="image"[^>]*>/);
   assert.ok(preload, "o preload sumiu quando a foto veio do painel");
-  assert.ok(preload[0].includes(`/api/hero/fotos/${id}?w=960`),
+  assert.ok(preload[0].includes(`/api/hero/fotos/${id}?w=480`),
     "o preload continua apontando para a foto fixa em vez da do painel");
   assert.ok(!preload[0].includes("type="), "foto do painel não tem formato fixo para declarar");
   await apagarTodas();

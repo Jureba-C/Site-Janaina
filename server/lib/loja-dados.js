@@ -92,15 +92,15 @@ function dadosDaLoja(visiveis){
 }
 
 const DESTAQUES_PADRAO = [
-  { src: "/img/provisorias/canecas-alca-colorida.jpg", legenda: "11 cores de alça", alt: "Canecas com alça e interior coloridos empilhadas" },
-  { src: "/img/provisorias/xicaras-casamento.jpg", legenda: "casamentos e padrinhos", alt: "Xícaras de casamento empilhadas" },
-  { src: "/img/provisorias/garrafa-professores.jpg", legenda: "para os professores", alt: "Garrafa personalizada com fotos de alunos" },
+  { src: "/img/provisorias/canecas-alca-colorida.jpg", legenda: "11 cores de alça", alt: "Canecas com alça e interior coloridos empilhadas", link: "/categoria/canecas" },
+  { src: "/img/provisorias/xicaras-casamento.jpg", legenda: "casamentos", alt: "Xícaras de casamento empilhadas", link: "/categoria/casamento" },
+  { src: "/img/provisorias/xicara-ipes.jpg", legenda: "ipês de Brasília", alt: "Xícara da coleção Ipês Brasília", link: "/categoria/ipes-brasilia" },
 ];
 
 function destaques(){
   const doPainel = db.listHeroPhotos();
   if(!doPainel.length) return DESTAQUES_PADRAO;
-  return doPainel.map(f => ({ src: `/api/hero/fotos/${f.id}?w=960`, legenda: f.legenda, alt: f.alt }));
+  return doPainel.map(f => ({ src: `/api/hero/fotos/${f.id}?w=480`, legenda: f.legenda, alt: f.alt }));
 }
 
 function comCategoria(visiveis, slug){
@@ -123,7 +123,7 @@ function vitrines(visiveis){
     { id: "mais-pedidas", nome: "Mais pedidas", produtos: unicos(maisPedidas) },
     { id: "novidades", nome: "Novidades", produtos: unicos(novidades) },
     { id: "casamento", nome: "Casamento", produtos: unicos(comCategoria(disponiveis, "casamento")) },
-    { id: "brasilia", nome: "Coleção Brasília", produtos: unicos(comCategoria(disponiveis, "brasilia")) },
+    { id: "brasilia", nome: "Brasília", produtos: unicos(comCategoria(disponiveis, "brasilia")) },
   ];
 }
 
