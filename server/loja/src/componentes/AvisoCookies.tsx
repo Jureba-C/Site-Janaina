@@ -5,11 +5,14 @@ const CHAVE = "plc_cookie_consent";
 export function AvisoCookies() {
   const [mostrar, setMostrar] = useState(false);
   useEffect(() => {
-    try {
-      setMostrar(!localStorage.getItem(CHAVE));
-    } catch {
-      setMostrar(false);
-    }
+    let jaViu = true;
+    try { jaViu = Boolean(localStorage.getItem(CHAVE)); } catch { jaViu = true; }
+    if (jaViu) return;
+    const eventos = ["scroll", "pointerdown", "keydown", "touchstart"] as const;
+    const aparecer = () => { setMostrar(true); soltar(); };
+    const soltar = () => eventos.forEach(e => removeEventListener(e, aparecer));
+    eventos.forEach(e => addEventListener(e, aparecer, { once: true, passive: true }));
+    return soltar;
   }, []);
   if (!mostrar) return null;
   function fechar() {

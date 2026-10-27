@@ -33,6 +33,7 @@ export function Busca({ pagina }: { pagina: PaginaBusca }) {
           {favoritos ? null : <p className="lista-contagem" role="status">{pagina.produtos.length === 1 ? "1 produto" : `${pagina.produtos.length} produtos`}</p>}
         </div>
       </div>
+      <h2 className="visualmente-oculto">Produtos</h2>
       {favoritos ? <Favoritos /> : pagina.produtos.length ? (
         <div className="grade-produtos">
           {pagina.produtos.map((p, i) => <CartaoProduto key={p.id} produto={p} prioridade={i < 2} />)}

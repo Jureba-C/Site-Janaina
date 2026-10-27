@@ -190,7 +190,7 @@ export function Cabecalho({ loja, caminho, termo }: { loja: Loja; caminho: strin
         <div className="cabecalho-grade">
           <button type="button" className="botao-icone so-celular" onClick={() => setGaveta(true)} aria-label="Abrir menu"><Icone nome="menuCurto" /></button>
           <div className="cabecalho-busca so-computador"><CampoDeBusca id="busca-topo" termoInicial={termo} /></div>
-          <a className="cabecalho-logo" href="/" aria-label={`${loja.nome}, página inicial`}><Logo /></a>
+          <a className="cabecalho-logo" href="/" title={`${loja.nome}, página inicial`}><Logo /></a>
           <div className="cabecalho-atalhos">
             <a className="atalho so-computador" href={linkWhatsApp(loja.whatsapp)} target="_blank" rel="noopener noreferrer">
               <Icone nome="whatsapp" tamanho={26} traco={1.6} />

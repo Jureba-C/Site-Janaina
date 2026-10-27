@@ -33,9 +33,9 @@
   --borda: #EADFD3;
   --borda-forte: #D9CBBB;
   --terracota: #CD7031;
-  --terracota-forte: #A9521D;
+  --terracota-forte: #9E4A18;
   --terracota-escura: #7E3A12;
-  --terracota-rodape: #B65E27;
+  --terracota-rodape: #9A4717;
   --caramelo: #D4935E;
   --rosa: #DFA1AC;
   --rosa-claro: #F6E1DE;
@@ -153,13 +153,8 @@ main:focus { outline: none; }
   background: var(--terracota-forte); color: var(--branco); font-size: 12px; font-weight: 700; display: grid; place-items: center;
 }
 
-.logo { display: inline-flex; flex-direction: column; align-items: center; line-height: 0.82; }
-.logo-linha { display: flex; align-items: flex-end; gap: 4px; }
-.logo-arte { font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100, "opsz" 72; font-weight: 600; font-size: 34px; color: var(--terracota); }
-.logo-canecas { font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100, "opsz" 144; font-weight: 800; font-size: 50px; color: var(--rosa); letter-spacing: -0.01em; }
-.logo-personalizados { font-family: var(--fonte-cursiva); font-size: 30px; color: var(--terracota-forte); margin-top: 4px; line-height: 1; }
-.logo-compacto .logo-arte { font-size: 22px; }
-.logo-compacto .logo-canecas { font-size: 32px; }
+.logo { display: block; width: 190px; height: auto; }
+.logo-compacto { width: 112px; }
 
 .busca {
   position: relative; display: flex; align-items: center; background: var(--papel-2); border-radius: 999px;
@@ -258,7 +253,8 @@ main:focus { outline: none; }
 .polaroid-foto { width: 100%; object-fit: cover; }
 .destaque-polaroid { position: absolute; left: 14%; top: 54px; width: 340px; padding: 14px 14px 18px; box-shadow: var(--sombra-forte); rotate: -3deg; }
 .destaque-slide { display: none; }
-.destaque-slide.ativo { display: block; animation: aparece .5s ease; }
+.destaque-slide.ativo { display: block; }
+.destaque-slide.ativo:not(:first-of-type) { animation: aparece .5s ease; }
 @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
 .destaque-polaroid .polaroid-foto { aspect-ratio: 1 / 1; }
 .polaroid-legenda { margin-top: 12px; font-size: 30px; text-align: center; }
@@ -272,10 +268,11 @@ main:focus { outline: none; }
 .destaque-selo { position: absolute; right: 9%; top: 52px; }
 .selo-texto { transform-origin: 66px 66px; animation: gira 24s linear infinite; }
 @keyframes gira { to { transform: rotate(360deg); } }
-.destaque-pontos { position: absolute; left: 56px; bottom: 28px; display: flex; gap: 8px; align-items: center; }
-.destaque-pontos button { width: 10px; height: 10px; border-radius: 999px; border: 0; background: var(--rosa); padding: 0; cursor: pointer; position: relative; }
-.destaque-pontos button::after { content: ""; position: absolute; inset: -17px -6px; }
-.destaque-pontos button.ativo { width: 28px; background: var(--terracota-forte); }
+.destaque-pontos { position: absolute; left: 48px; bottom: 18px; display: flex; gap: 0; align-items: center; }
+.destaque-pontos button { width: 26px; height: 26px; border: 0; background: transparent; padding: 0; cursor: pointer; display: grid; place-items: center; }
+.destaque-pontos button::before { content: ""; width: 10px; height: 10px; border-radius: 999px; background: var(--rosa); transition: width .2s ease; }
+.destaque-pontos button.ativo { width: 40px; }
+.destaque-pontos button.ativo::before { width: 28px; background: var(--terracota-forte); }
 
 .vantagens { margin-top: 28px; }
 .vantagens ul {
@@ -379,10 +376,10 @@ main:focus { outline: none; }
 .onda { display: block; width: 100%; height: 34px; }
 .rodape-fundo { background: var(--terracota-rodape); }
 .rodape-novidades { max-width: var(--largura); margin: 0 auto; padding: 36px var(--margem) 0; }
-.novidades { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 28px; padding: 22px 26px; border-radius: 24px; background: rgba(255, 255, 255, 0.12); }
+.novidades { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 28px; padding: 22px 26px; border-radius: 24px; background: rgba(0, 0, 0, 0.14); }
 .novidades label { display: flex; flex-direction: column; gap: 2px; flex: 1 1 280px; }
 .novidades label strong { font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; font-size: 22px; font-weight: 700; }
-.novidades label span { font-size: 15px; opacity: .9; }
+.novidades label span { font-size: 15px; }
 .novidades-linha { display: flex; gap: 8px; flex: 1 1 340px; max-width: 460px; }
 .novidades input { flex: 1; min-width: 0; min-height: 48px; padding: 0 16px; border-radius: 999px; border: 0; font-size: 16px; color: var(--tinta); }
 .novidades .botao-cheio { background: var(--tinta); }
@@ -669,10 +666,7 @@ main:focus { outline: none; }
   .cabecalho-busca-celular { padding: 0 16px 12px; }
   .cabecalho-busca-celular .busca { max-width: none; }
   .busca-sugestoes { min-width: 0; }
-  .logo-arte { font-size: 22px; }
-  .logo-canecas { font-size: 34px; }
-  .logo-personalizados { font-size: 22px; }
-  .logo .logo-linha svg { width: 24px; height: 26px; }
+  .cabecalho-logo .logo { width: 128px; }
   .faixa-opcional { display: none; }
   .faixa-topo { font-size: 11px; padding: 8px 16px; gap: 4px 14px; }
 }
@@ -693,7 +687,7 @@ main:focus { outline: none; }
   .destaque-circulo { width: 120px; height: 120px; right: 6%; top: 170px; border-width: 6px; }
   .destaque-selo { right: 4%; top: 20px; }
   .destaque-selo svg { width: 96px; height: 96px; }
-  .destaque-pontos { left: 22px; bottom: 16px; }
+  .destaque-pontos { left: 14px; bottom: 8px; }
   .vantagens ul { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 4px; gap: 4px; }
   .vantagens li { flex-direction: column; text-align: center; gap: 8px; padding: 10px 6px; }
   .vantagens strong { font-size: 14px; }

@@ -62,7 +62,7 @@ function montarDocumento({ dados, meta }){
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapar(meta.titulo)}</title>
 <meta name="description" content="${escapar(meta.descricao)}">
-<meta name="theme-color" content="#A9521D">
+<meta name="theme-color" content="#9E4A18">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 ${meta.indexar === false ? '<meta name="robots" content="noindex, follow">' : ""}
 <link rel="canonical" href="${escapar(meta.canonico)}">

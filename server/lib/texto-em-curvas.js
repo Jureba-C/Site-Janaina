@@ -9,10 +9,13 @@ function fonte(arquivo){
   return cache.get(arquivo);
 }
 
-function escolherFonte(familia, peso){
+function escolherFonte(familia, peso, estilo){
   const f = String(familia || "").toLowerCase();
   if(f.includes("allura")) return fonte("allura-400.ttf");
-  if(f.includes("fraunces")) return fonte("fraunces-italico-500.ttf");
+  if(f.includes("fraunces")){
+    if(estilo === "italic") return fonte("fraunces-italico-500.ttf");
+    return fonte(Number(peso) >= 700 ? "fraunces-800.ttf" : "fraunces-600.ttf");
+  }
   return fonte(Number(peso) <= 300 ? "josefin-300.ttf" : "josefin-400.ttf");
 }
 
@@ -64,7 +67,7 @@ function textoEmCurvas(svg){
     const tamanho = numero(a["font-size"], 16);
     const espacoEm = String(a["letter-spacing"] || "0");
     const espaco = espacoEm.endsWith("em") ? numero(espacoEm) * tamanho : numero(espacoEm);
-    const f = escolherFonte(a["font-family"], a["font-weight"]);
+    const f = escolherFonte(a["font-family"], a["font-weight"], a["font-style"]);
     const base = { x: numero(a.x), y: numero(a.y), ancora: a["text-anchor"] || "start", tamanho, espaco, f };
     const linhas = [];
     if(miolo.includes("<tspan")){
@@ -81,4 +84,11 @@ function textoEmCurvas(svg){
   });
 }
 
-module.exports = { textoEmCurvas };
+function larguraDoTexto(conteudo, { familia, peso, estilo, tamanho, espaco = 0 }){
+  const f = escolherFonte(familia, peso, estilo);
+  const corrida = f.layout(conteudo);
+  const escala = tamanho / f.unitsPerEm;
+  return corrida.positions.reduce((s, p) => s + p.xAdvance * escala + espaco, 0) - (corrida.positions.length ? espaco : 0);
+}
+
+module.exports = { textoEmCurvas, larguraDoTexto };

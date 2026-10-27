@@ -14,10 +14,10 @@ const CORES = {
   titulo: "#323230",
   texto: "#323230",
   apoio: "#6B6259",
-  destaque: "#A9521D",
+  destaque: "#9E4A18",
   destaqueClaro: "#D4935E",
   tenue: "#9C9086",
-  botaoFundo: "#A9521D",
+  botaoFundo: "#9E4A18",
   botaoTexto: "#FFFFFF",
 };
 

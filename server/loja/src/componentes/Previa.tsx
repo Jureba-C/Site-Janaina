@@ -224,8 +224,8 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
                     </g>
                   )}
                   {fotoSelecionada === i && url ? (circulo
-                    ? <circle cx={cx + lado2 / 2} cy={cy + lado2 / 2} r={lado2 / 2} fill="none" stroke="#A9521D" strokeWidth={2.5} strokeDasharray="6 4" />
-                    : <rect x={cx} y={cy} width={lado2} height={lado2} rx={lado2 * 0.08} fill="none" stroke="#A9521D" strokeWidth={2.5} strokeDasharray="6 4" />) : null}
+                    ? <circle cx={cx + lado2 / 2} cy={cy + lado2 / 2} r={lado2 / 2} fill="none" stroke="#9E4A18" strokeWidth={2.5} strokeDasharray="6 4" />
+                    : <rect x={cx} y={cy} width={lado2} height={lado2} rx={lado2 * 0.08} fill="none" stroke="#9E4A18" strokeWidth={2.5} strokeDasharray="6 4" />) : null}
                 </g>
               );
             })}
@@ -280,8 +280,7 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
   );
 }
 
-function ArteCurva({ id, raio, largura, children }: { id: string; raio: number; largura: number; children: ReactNode }) {
-  const fatias = 28;
+function ArteCurva({ id, raio, largura, fatias, children }: { id: string; raio: number; largura: number; fatias: number; children: ReactNode }) {
   const passo = largura / fatias;
   return (
     <g>
@@ -321,6 +320,7 @@ export interface PropsPeca {
   urlDaFotoDoMolde?: string | null;
   comArte?: boolean;
   exemplos?: boolean;
+  fatias?: number;
 }
 
 interface Geometria {
@@ -510,7 +510,7 @@ function Sombra({ molde }: { molde: Molde }) {
   return <ellipse cx={180} cy={molde === "xicara" ? 290 : 362} rx={molde === "garrafa" ? 90 : 140} ry={10} fill="rgba(80, 40, 20, 0.12)" />;
 }
 
-export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fotoSelecionada, aoTocarFoto, urlDaFotoDoMolde = null, comArte = true, exemplos = true }: PropsPeca) {
+export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fotoSelecionada, aoTocarFoto, urlDaFotoDoMolde = null, comArte = true, exemplos = true, fatias = 28 }: PropsPeca) {
   const idBase = useId().replace(/[^a-zA-Z0-9]/g, "");
   const cores = coresDaPeca(config, escolhas, aquecida);
   const molde = config.molde;
@@ -528,7 +528,7 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
       {g.corpo}
       {arte ? (
         <g transform={`translate(${area.cx} ${area.cy})`}>
-          {area.raio && !aoTocarFoto ? <ArteCurva id={`${idBase}-curva`} raio={area.raio} largura={area.largura}>{arte}</ArteCurva> : arte}
+          {area.raio && !aoTocarFoto ? <ArteCurva id={`${idBase}-curva`} raio={area.raio} largura={area.largura} fatias={fatias}>{arte}</ArteCurva> : arte}
         </g>
       ) : null}
       {g.sobre}

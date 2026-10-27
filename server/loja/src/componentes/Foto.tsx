@@ -15,18 +15,18 @@ export function Foto({ src, alt, larguras = [400, 600], sizes, className, priori
   largura?: number;
   altura?: number;
 }) {
-  const carregamento = prioridade ? { fetchPriority: "high" as const } : { loading: "lazy" as const };
+  const carregamento = prioridade ? { fetchPriority: "high" as const } : { loading: "lazy" as const, decoding: "async" as const };
   if (DO_PAINEL.test(src)) {
     const srcSet = larguras.map(w => `${src}?w=${w} ${w}w`).join(", ");
-    return <img className={className} src={`${src}?w=${larguras[larguras.length - 1]}`} srcSet={srcSet} sizes={sizes} alt={alt} width={largura} height={altura} decoding="async" {...carregamento} />;
+    return <img className={className} src={`${src}?w=${larguras[larguras.length - 1]}`} srcSet={srcSet} sizes={sizes} alt={alt} width={largura} height={altura} {...carregamento} />;
   }
   if (LOCAL_JPG.test(src)) {
     return (
       <picture>
         <source type="image/webp" srcSet={src.replace(/\.jpe?g$/, ".webp")} />
-        <img className={className} src={src} alt={alt} width={largura} height={altura} decoding="async" {...carregamento} />
+        <img className={className} src={src} alt={alt} width={largura} height={altura} {...carregamento} />
       </picture>
     );
   }
-  return <img className={className} src={src} alt={alt} width={largura} height={altura} decoding="async" {...carregamento} />;
+  return <img className={className} src={src} alt={alt} width={largura} height={altura} {...carregamento} />;
 }

@@ -221,7 +221,7 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
           <div className="chamada-previa-peca">
             <div className="faixa-caramelo faixa-caramelo-esquerda" aria-hidden="true" />
             <svg viewBox="0 0 360 380" role="img" aria-label="Prévia de caneca rosa com florzinha e o nome Madrinha Lara">
-              <PecaSvg config={CANECA_EXEMPLO} escolhas={{ variacoes: {}, adicionais: [], personalizacao: { nome: "Madrinha Lara", arte: "flor", letra: "cursiva" } }} lado="frente" aquecida={false} urlDaFoto={() => null} medir={false} />
+              <PecaSvg config={CANECA_EXEMPLO} escolhas={{ variacoes: {}, adicionais: [], personalizacao: { nome: "Madrinha Lara", arte: "flor", letra: "cursiva" } }} lado="frente" aquecida={false} urlDaFoto={() => null} medir={false} fatias={16} />
             </svg>
           </div>
           <div className="chamada-previa-texto" id="como-personalizar">

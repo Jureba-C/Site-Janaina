@@ -9,30 +9,8 @@ export function Florzinha({ tamanho = 24, cor = "currentColor", traco = 1.2, mio
   );
 }
 
-export function CanecaComFlor({ tamanho = 34, cor = "#CD7031", traco = 2.2 }: { tamanho?: number; cor?: string; traco?: number }) {
-  return (
-    <svg width={tamanho} height={tamanho * 1.1} viewBox="0 0 40 44" fill="none" stroke={cor} strokeWidth={traco} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      <path d="M8 18v12a8 8 0 0 0 8 8h4a8 8 0 0 0 8-8V18" />
-      <path d="M28 22h2a4 4 0 0 1 0 8h-2" />
-      <path d="M18 30c0-6 1-13 3-20" />
-      {[0, 72, 144, 216, 288].map(angulo => (
-        <ellipse key={angulo} cx="21" cy="4.5" rx="1.7" ry="3.2" transform={`rotate(${angulo} 21 8)`} />
-      ))}
-    </svg>
-  );
-}
-
 export function Logo({ compacto = false }: { compacto?: boolean }) {
-  return (
-    <span className={`logo${compacto ? " logo-compacto" : ""}`}>
-      <span className="logo-linha">
-        <span className="logo-arte">arte</span>
-        <CanecaComFlor tamanho={compacto ? 24 : 34} />
-      </span>
-      <span className="logo-canecas">Canecas</span>
-      {compacto ? null : <span className="logo-personalizados">personalizados</span>}
-    </span>
-  );
+  return <img className={`logo${compacto ? " logo-compacto" : ""}`} src="/img/logo.svg" alt="Arte Canecas" width={compacto ? 112 : 190} height={compacto ? 66 : 112} />;
 }
 
 export function SeloPersonalizavel({ tamanho = 132 }: { tamanho?: number }) {

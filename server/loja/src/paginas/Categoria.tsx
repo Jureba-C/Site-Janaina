@@ -64,6 +64,7 @@ export function Categoria({ pagina }: { pagina: PaginaCategoria }) {
           <noscript><button type="submit" className="botao botao-vazado">Filtrar</button></noscript>
         </form>
       </div>
+      <h2 className="visualmente-oculto">Produtos</h2>
       {pagina.produtos.length ? (
         <div className="grade-produtos">
           {pagina.produtos.map((p, i) => <CartaoProduto key={p.id} produto={p} prioridade={i < 2} />)}

@@ -29,19 +29,11 @@ function fontesComoCss(){
 }
 
 function htmlDoLogo(){
-  return `<div class="logo">
-    <div class="linha"><span class="arte">arte</span><svg viewBox="0 0 40 44" width="34" height="37">${CANECA_COM_FLOR("#CD7031", 2.2)}</svg></div>
-    <span class="canecas">Canecas</span>
-    <span class="personalizados">personalizados</span>
-  </div>`;
+  const svg = fs.readFileSync(path.join(RAIZ, "img", "logo.svg")).toString("base64");
+  return `<img class="logo" src="data:image/svg+xml;base64,${svg}" alt="">`;
 }
 
-const CSS_DO_LOGO = `
-  .logo{display:inline-flex;flex-direction:column;align-items:center;line-height:.82}
-  .linha{display:flex;align-items:flex-end;gap:4px}
-  .arte{font-family:Fraunces;font-variation-settings:"opsz" 72;font-weight:600;font-size:34px;color:#CD7031}
-  .canecas{font-family:Fraunces;font-variation-settings:"opsz" 144;font-weight:800;font-size:50px;color:#DFA1AC;letter-spacing:-.01em}
-  .personalizados{font-family:Allura;font-size:30px;color:#A9521D;margin-top:4px;line-height:1}`;
+const CSS_DO_LOGO = `.logo{display:block;width:190px;height:auto}`;
 
 function icoComPngs(pngs){
   const cabecalho = Buffer.alloc(6);
@@ -79,12 +71,11 @@ async function gerar(){
   fs.writeFileSync(path.join(RAIZ, "favicon.ico"), icoComPngs(pngs));
   await sharp(Buffer.from(svgDoIcone(720))).resize(180, 180).png({ compressionLevel: 9 }).toFile(path.join(RAIZ, "apple-touch-icon.png"));
 
+  fs.writeFileSync(path.join(RAIZ, "img", "logo.svg"), require("./gerar-logo.js").montar());
+  await sharp(path.join(RAIZ, "img", "logo.svg"), { density: 300 }).resize(380).png({ compressionLevel: 9 }).toFile(path.join(RAIZ, "img", "logo-loja.png"));
+
   const navegador = await playwright.chromium.launch();
   try {
-    const pagina = await navegador.newPage({ deviceScaleFactor: 2, viewport: { width: 168, height: 108 } });
-    await pagina.setContent(`<!doctype html><meta charset="utf-8"><style>${fontesComoCss()}html,body{margin:0;background:transparent}body{display:grid;place-items:center;width:168px;height:108px}${CSS_DO_LOGO}</style>${htmlDoLogo()}`);
-    await pagina.evaluate(() => document.fonts.ready);
-    await pagina.screenshot({ path: path.join(RAIZ, "img", "logo-loja.png"), omitBackground: true });
 
     const foto = `data:image/jpeg;base64,${fs.readFileSync(path.join(RAIZ, "img", "provisorias", "canecas-alca-colorida.jpg")).toString("base64")}`;
     const og = await navegador.newPage({ viewport: { width: 1200, height: 630 } });
@@ -95,7 +86,7 @@ async function gerar(){
       ${CSS_DO_LOGO}
       .logo{transform:scale(1.5);transform-origin:left center;margin-bottom:36px}
       h1{font-family:Fraunces;font-weight:700;font-size:76px;line-height:.98;letter-spacing:-.02em;color:#323230;margin:0}
-      p{font-family:Allura;font-size:46px;color:#A9521D;margin:10px 0 0}
+      p{font-family:Allura;font-size:46px;color:#9E4A18;margin:10px 0 0}
       .faixa{position:absolute;right:-40px;left:620px;top:250px;height:200px;background:#D4935E;border-radius:999px 0 0 999px}
       .polaroid{position:absolute;right:120px;top:80px;width:330px;background:#fff;padding:14px 14px 50px;box-shadow:0 18px 40px rgba(110,60,30,.2);transform:rotate(-3deg)}
       .polaroid img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}

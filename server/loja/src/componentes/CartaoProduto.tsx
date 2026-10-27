@@ -18,7 +18,7 @@ export function IlustracaoDaPeca({ produto, rotulo }: { produto: ProdutoResumo; 
   const config = configDeVitrine(produto);
   return (
     <svg className="ilustracao-peca" viewBox="0 0 360 380" role="img" aria-label={rotulo}>
-      <PecaSvg config={config} escolhas={{ variacoes: {}, adicionais: [], personalizacao: { arte: "flor", letra: "cursiva" } }} lado="frente" aquecida={false} urlDaFoto={() => null} medir={false} exemplos={false} />
+      <PecaSvg config={config} escolhas={{ variacoes: {}, adicionais: [], personalizacao: { arte: "flor", letra: "cursiva" } }} lado="frente" aquecida={false} urlDaFoto={() => null} medir={false} exemplos={false} fatias={12} />
     </svg>
   );
 }
