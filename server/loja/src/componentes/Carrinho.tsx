@@ -450,6 +450,12 @@ export function Carrinho({ loja }: { loja: Loja }) {
 
         {linhas.length ? (
           <div className="carrinho-rodape">
+            {loja.freteGratisAcima ? (
+              <p className={`barra-frete-gratis${sub >= loja.freteGratisAcima ? " conseguiu" : ""}`}>
+                <span className="barra-frete-gratis-trilho"><span style={{ width: `${Math.min(100, (sub / loja.freteGratisAcima) * 100)}%` }} /></span>
+                {sub >= loja.freteGratisAcima ? "Você ganhou frete grátis na opção de envio mais barata." : `Faltam ${dinheiro(loja.freteGratisAcima - sub)} para o frete grátis.`}
+              </p>
+            ) : null}
             <dl className="totais">
               <div><dt>Subtotal</dt><dd>{dinheiro(sub)}</dd></div>
               {desconto > 0 ? <div className="desconto"><dt>Cupom {cupom?.code}</dt><dd>-{dinheiro(desconto)}</dd></div> : null}

@@ -1884,6 +1884,14 @@ function prazoDeProducao(){
   const dias = linha ? Number(linha.valor) : NaN;
   return Number.isInteger(dias) && dias > 0 ? dias : null;
 }
+function freteGratisAcima(){
+  const linha = lerEstado("frete_gratis_acima");
+  const valor = linha ? Number(linha.valor) : NaN;
+  return Number.isFinite(valor) && valor > 0 ? valor : null;
+}
+function definirFreteGratisAcima(valor){
+  gravarEstado("frete_gratis_acima", Number.isFinite(valor) && valor > 0 ? valor : null);
+}
 function definirPrazoDeProducao(dias){
   gravarEstado("prazo_producao", Number.isInteger(dias) && dias > 0 ? dias : null);
 }
@@ -1911,6 +1919,8 @@ module.exports = {
   apagarFotosPersonalizacaoVencidas,
   prazoDeProducao,
   definirPrazoDeProducao,
+  freteGratisAcima,
+  definirFreteGratisAcima,
   garantirTokenDeAvaliacao,
   tokenDeAvaliacaoConfere,
   salvarAvaliacao,

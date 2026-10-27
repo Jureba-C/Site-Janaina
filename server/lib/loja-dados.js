@@ -74,6 +74,7 @@ function dadosDaLoja(visiveis){
     cnpj: /^0{2}\.0{3}/.test(marca.cnpj) ? "[a confirmar]" : marca.cnpj,
     cidade: "Asa Norte · Brasília — DF",
     prazoProducao: db.prazoDeProducao(),
+    freteGratisAcima: db.freteGratisAcima(),
     regrasPagamento: pricing.PAYMENT_RULES,
     categorias: categoriasComContagem(visiveis),
     retirada: String(process.env.RETIRADA_ATIVA || "true").toLowerCase() !== "false",

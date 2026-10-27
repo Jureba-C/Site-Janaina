@@ -111,6 +111,7 @@ export interface Loja {
   cnpj: string;
   cidade: string;
   prazoProducao: number | null;
+  freteGratisAcima: number | null;
   regrasPagamento: RegrasPagamento;
   categorias: Categoria[];
   retirada: boolean;

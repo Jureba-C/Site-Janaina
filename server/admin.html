@@ -286,6 +286,12 @@
               <button type="submit" class="btn-outline-blush btn-sm-blush">Salvar prazo</button>
               <span class="small" id="prazoProducaoMsg" role="status" aria-live="polite"></span>
             </form>
+            <form class="prazo-producao" id="freteGratisForm">
+              <label for="freteGratis" class="small fw-semibold">Frete grátis acima de (R$)</label>
+              <input type="number" class="form-control form-control-sm" id="freteGratis" min="1" step="1" placeholder="desligado">
+              <button type="submit" class="btn-outline-blush btn-sm-blush">Salvar</button>
+              <span class="small" id="freteGratisMsg" role="status" aria-live="polite">Em branco = sem frete grátis. Vale para a opção de envio mais barata.</span>
+            </form>
             <div class="small mb-2 account-msg" id="productsOrderMsg" role="status" aria-live="polite"></div>
             <div class="admin-table-wrap">
               <div class="table-responsive">

@@ -1335,6 +1335,25 @@
     }
   });
 
+  document.getElementById("freteGratisForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const campo = document.getElementById("freteGratis");
+    const aviso = document.getElementById("freteGratisMsg");
+    aviso.textContent = "Salvando…";
+    try{
+      const res = await fetchWithTimeout("/api/admin/frete-gratis", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ valor: campo.value === "" ? null : Number(campo.value) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok) throw new Error(data.error || "Não foi possível salvar o frete grátis.");
+      aviso.textContent = data.freteGratisAcima ? `Ligado: frete grátis acima de ${formatMoney(data.freteGratisAcima)}.` : "Desligado: sem frete grátis.";
+    }catch(err){
+      aviso.textContent = err.message;
+    }
+  });
+
   const addProductModalEl = document.getElementById("addProductModal");
   const addProductModal = new bootstrap.Modal(addProductModalEl);
   const addProductForm = document.getElementById("addProductForm");
@@ -2686,6 +2705,8 @@
       availableBadges = Array.isArray(productsData.availableBadges) ? productsData.availableBadges : [];
       const prazoInput = document.getElementById("prazoProducao");
       if(prazoInput) prazoInput.value = productsData.prazoProducao || "";
+      const freteInput = document.getElementById("freteGratis");
+      if(freteInput) freteInput.value = productsData.freteGratisAcima || "";
       renderStats(ordersData.stats || { totalRevenue: 0, totalOrders: 0 });
       renderSalesChart(orders);
       renderCategoryChart(orders, products);

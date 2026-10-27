@@ -12,6 +12,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const pagamento = require("./lib/pagamento.js");
+const freteGratis = require("./lib/frete-gratis.js");
 const compression = require("compression");
 const multer = require("multer");
 const sharp = require("sharp");
@@ -850,6 +851,8 @@ async function opcoesDeEntrega(cep, validatedItems){
   }
   try {
     doMelhorEnvio = await quoteShipping(cep, validatedItems);
+    const subtotalDosItens = validatedItems.reduce((soma, { qty, unitPrice }) => soma + (unitPrice || 0) * qty, 0);
+    doMelhorEnvio = freteGratis.aplicarFreteGratis(doMelhorEnvio, subtotalDosItens, db.freteGratisAcima());
   } catch (err) {
     if(!RETIRADA_ATIVA) throw err;
     if(err.status === 422 && err.data?.errors?.postal_code) throw err;
@@ -1013,7 +1016,7 @@ async function buildCheckoutDraft(req){
 
   const shippingOptions = String(shipping_service_id) === OPCAO_RETIRADA.service_id && RETIRADA_ATIVA
     ? [OPCAO_RETIRADA]
-    : await quoteShipping(cep, validatedItems);
+    : freteGratis.aplicarFreteGratis(await quoteShipping(cep, validatedItems), subtotal, db.freteGratisAcima());
   const chosenShipping = shippingOptions.find(o => String(o.service_id) === String(shipping_service_id));
   if(!chosenShipping){
     throw { status: 409, message: "Essa opção de frete expirou ou não está mais disponível. Recalcule o frete e tente de novo." };
@@ -3140,6 +3143,7 @@ app.get("/api/admin/products", auth.requireAdmin, auth.requireAdminTwoFactor, (r
     products, categories: getAllCategories(), availableBadges: PRODUCT_BADGES,
     moldes: regras.MOLDES, letras: regras.LETRAS, artes: regras.ARTES, camposTexto: regras.CAMPOS_TEXTO,
     prazoProducao: db.prazoDeProducao(),
+    freteGratisAcima: db.freteGratisAcima(),
   });
 });
 
@@ -3152,6 +3156,16 @@ app.put("/api/admin/prazo-producao", auth.requireAdmin, auth.requireAdminTwoFact
   db.definirPrazoDeProducao(dias);
   invalidarPaginasDaLoja();
   res.json({ prazoProducao: db.prazoDeProducao() });
+});
+
+app.put("/api/admin/frete-gratis", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  const valor = freteGratis.valorValido(req.body?.valor);
+  if(valor === undefined){
+    return res.status(400).json({ error: "Frete grátis: use um valor em reais (ex.: 150) ou deixe em branco para desligar." });
+  }
+  db.definirFreteGratisAcima(valor);
+  invalidarPaginasDaLoja();
+  res.json({ freteGratisAcima: db.freteGratisAcima() });
 });
 
 function configDoPainel(bruta){
