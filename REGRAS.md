@@ -89,3 +89,10 @@ acumuladas"), com a data.
   servidor (SSR) para o Google. Servidor, painel, conta, pedidos e pagamentos
   continuam em JavaScript sem framework. Vale também para TS/TSX: zero
   comentário.
+- 2026-10-27 — **Sempre testar o que mudou e mostrar ao Caio testando**:
+  abrir o navegador do app (painel ao lado do chat) no servidor ao vivo e
+  fazer o teste de verdade na frente dele (clicar, digitar, rolar, trocar a
+  largura da tela), além dos testes automáticos e das capturas.
+- 2026-10-27 — O site tem que funcionar 100% e ser bonito no PC e no
+  celular em **qualquer largura** (não só as 5 do `conferir`), com animação
+  bonita onde faz sentido e "que dê vontade de comprar".

@@ -6,10 +6,12 @@ import { Busca } from "./paginas/Busca";
 import { Categoria } from "./paginas/Categoria";
 import { Inicio } from "./paginas/Inicio";
 import { Produto } from "./paginas/Produto";
+import { useRevelar } from "./estado/revelar";
 import type { DadosDaPagina } from "./tipos";
 
 export function App({ dados }: { dados: DadosDaPagina }) {
   const { loja, pagina, caminho } = dados;
+  useRevelar(caminho);
   return (
     <>
       <Cabecalho loja={loja} caminho={caminho} termo={pagina.tipo === "busca" ? pagina.termo : undefined} />

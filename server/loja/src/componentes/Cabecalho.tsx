@@ -177,10 +177,17 @@ function Gaveta({ loja, aberta, fechar }: { loja: Loja; aberta: boolean; fechar:
 }
 
 export function Cabecalho({ loja, caminho, termo }: { loja: Loja; caminho: string; termo?: string }) {
-  const { linhas } = useCarrinho();
+  const { linhas, aberto: carrinhoAberto } = useCarrinho();
   const { usuario } = useSessao();
   const [gaveta, setGaveta] = useState(false);
   const itens = totalDeItens(linhas);
+  const [pulou, setPulou] = useState(false);
+  const anteriores = useRef<number | null>(null);
+  useEffect(() => {
+    const antes = anteriores.current;
+    anteriores.current = itens;
+    if (antes !== null && itens > antes && carrinhoAberto) setPulou(true);
+  }, [itens, carrinhoAberto]);
   const tipos = loja.categorias.filter(c => c.grupo === "tipo" && c.quantidade > 0);
   return (
     <>
@@ -202,7 +209,7 @@ export function Cabecalho({ loja, caminho, termo }: { loja: Loja; caminho: strin
             </a>
             <button type="button" className="botao-carrinho" onClick={() => carrinho.abrir()} aria-label={`Carrinho, ${itens} ${itens === 1 ? "item" : "itens"}`}>
               <Icone nome="sacola" tamanho={24} />
-              {itens > 0 ? <span className="contador" aria-hidden="true">{itens}</span> : null}
+              {itens > 0 ? <span key={itens} className={`contador${pulou ? " pula" : ""}`} aria-hidden="true">{itens}</span> : null}
             </button>
           </div>
         </div>

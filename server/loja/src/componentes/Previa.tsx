@@ -527,7 +527,7 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
       {g.sob}
       {g.corpo}
       {arte ? (
-        <g transform={`translate(${area.cx} ${area.cy})`}>
+        <g key={`${escolhas.personalizacao.arte}-${escolhas.personalizacao.letra}`} className="arte-entra" transform={`translate(${area.cx} ${area.cy})`}>
           {area.raio && !aoTocarFoto ? <ArteCurva id={`${idBase}-curva`} raio={area.raio} largura={area.largura} fatias={fatias}>{arte}</ArteCurva> : arte}
         </g>
       ) : null}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { dinheiro, parcelas, precoNoPix } from "../compartilhado";
 import type { ConfigProduto, ProdutoResumo } from "../tipos";
 import { Foto } from "./Foto";
@@ -25,6 +26,7 @@ export function IlustracaoDaPeca({ produto, rotulo }: { produto: ProdutoResumo; 
 
 export function CartaoProduto({ produto, prioridade = false }: { produto: ProdutoResumo; prioridade?: boolean }) {
   const { favoritos, alternar } = useFavoritos();
+  const [pulso, setPulso] = useState(0);
   const favorito = favoritos.includes(produto.id);
   const pix = precoNoPix(produto.precoMinimo);
   const selo = produto.esgotado ? "Esgotado" : produto.aviso === "ultimas" ? "Últimas unidades" : produto.selos[0];
@@ -38,8 +40,8 @@ export function CartaoProduto({ produto, prioridade = false }: { produto: Produt
         )}
       </a>
       {selo ? <span className={`selo${produto.esgotado ? " selo-esgotado" : ""}`}>{selo}</span> : null}
-      <button type="button" className={`botao-favorito${favorito ? " ativo" : ""}`} aria-pressed={favorito} aria-label={favorito ? `Tirar ${produto.nome} dos favoritos` : `Favoritar ${produto.nome}`} onClick={() => alternar(produto.id)}>
-        <Icone nome="coracao" tamanho={20} />
+      <button type="button" className={`botao-favorito${favorito ? " ativo" : ""}`} aria-pressed={favorito} aria-label={favorito ? `Tirar ${produto.nome} dos favoritos` : `Favoritar ${produto.nome}`} onClick={() => { if (!favorito) setPulso(p => p + 1); alternar(produto.id); }}>
+        <span key={pulso} className={pulso ? "coracao-pulsa" : undefined}><Icone nome="coracao" tamanho={20} /></span>
       </button>
       <div className="cartao-produto-corpo">
         <h3 className="cartao-produto-nome"><a href={produto.endereco}>{produto.nome}</a></h3>

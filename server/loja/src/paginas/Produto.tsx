@@ -3,6 +3,7 @@ import { dinheiro, escolhasPadrao, linkWhatsApp, parcelas, precoNoPix, precoUnit
 import { CartaoProduto } from "../componentes/CartaoProduto";
 import { Foto, urlDaFoto as urlDaFotoDoProduto } from "../componentes/Foto";
 import { Icone, type NomeIcone } from "../componentes/Icone";
+import { voarParaSacola } from "../estado/voo";
 import { Florzinha } from "../componentes/Marca";
 import { FONTES, PecaSvg, coresDaPeca, descricaoDaPrevia, useMedirTexto, type Lado } from "../componentes/Previa";
 import { CalculoDeFrete } from "../componentes/CalculoDeFrete";
@@ -39,6 +40,11 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
 }) {
   const [vista, setVista] = useState(-1);
   const [modo3d, setModo3d] = useState(false);
+  const anterior = useRef({ lado, aquecida });
+  const efeito = useRef("");
+  if (anterior.current.lado !== lado) efeito.current = " vira";
+  else if (anterior.current.aquecida !== aquecida) efeito.current = aquecida ? " aquece" : " esfria";
+  anterior.current = { lado, aquecida };
   const medir = useMedirTexto();
   const config = produto.config;
   const temPrevia = config.molde !== "nenhum" && (config.personalizacao.ativa || produto.fotos.length === 0);
@@ -67,7 +73,7 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
               </div>
             ) : null}
             <span className="cursiva galeria-rotulo" aria-hidden="true">prévia ao vivo</span>
-            <svg className="galeria-previa" viewBox="0 0 360 380" role="img" aria-label={descricao}>
+            <svg key={`${lado}-${aquecida}`} className={`galeria-previa${efeito.current}`} viewBox="0 0 360 380" role="img" aria-label={descricao}>
               <PecaSvg config={config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} medir={medir} fotoSelecionada={aoTocarFoto ? fotoSelecionada : undefined} aoTocarFoto={aoTocarFoto} urlDaFotoDoMolde={config.moldeFoto?.foto ? urlDaFotoDoProduto(config.moldeFoto.foto, 900) : null} />
             </svg>
             <p className="visualmente-oculto" aria-live="polite">{descricao}</p>
@@ -270,6 +276,7 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
   const [escolhas, setEscolhas] = useState<Escolhas>(() => escolhasPadrao(produto));
   const [qtd, setQtd] = useState(config.qtdMinima || 1);
   const [lado, setLado] = useState<Lado>("frente");
+  const adicionando = useRef(false);
   const [aquecida, setAquecida] = useState(false);
   const [fotoSelecionada, setFotoSelecionada] = useState(0);
   const [erros, setErros] = useState<string[]>([]);
@@ -310,12 +317,16 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
     window.addEventListener("pointerup", soltar);
   }
 
-  function adicionar() {
+  async function adicionar() {
+    if (adicionando.current) return;
     const resultado = validarEscolhas(produto, escolhas, qtd);
     if (!resultado.ok) {
       setErros(resultado.erros);
       return;
     }
+    adicionando.current = true;
+    await voarParaSacola(document.querySelector(".galeria-palco .galeria-previa, .galeria-palco .galeria-foto"), document.querySelector(".botao-comprar"));
+    adicionando.current = false;
     const cores = coresDaPeca(config, resultado.escolhas, true);
     carrinho.adicionar({
       id: produto.id, qty: qtd, escolhas: resultado.escolhas, nome: produto.nome, endereco: produto.endereco,
@@ -404,7 +415,7 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
               <span aria-live="polite">{qtd}</span>
               <button type="button" onClick={() => setQtd(q => Math.min(regras.QTD_MAXIMA, q + 1))} aria-label="Aumentar quantidade" disabled={qtd >= regras.QTD_MAXIMA}><Icone nome="mais" tamanho={20} /></button>
             </div>
-            <button type="button" className="botao botao-cheio botao-comprar" onClick={adicionar} disabled={produto.esgotado}>
+            <button type="button" className={`botao botao-cheio botao-comprar${adicionado ? " feito" : ""}`} onClick={adicionar} disabled={produto.esgotado}>
               <Icone nome={adicionado ? "check" : "sacola"} tamanho={20} traco={1.8} />
               {produto.esgotado ? "Esgotado" : adicionado ? "Adicionado ao carrinho" : `Adicionar ao carrinho · ${dinheiro(total)}`}
             </button>

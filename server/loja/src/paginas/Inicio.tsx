@@ -48,6 +48,10 @@ function Destaque({ pagina }: { pagina: PaginaInicio }) {
   const slides = pagina.destaques;
   const [atual, setAtual] = useState(0);
   const [pausado, setPausado] = useState(false);
+  const [trocou, setTrocou] = useState(false);
+  useEffect(() => {
+    if (atual !== 0) setTrocou(true);
+  }, [atual]);
   useEffect(() => {
     if (slides.length < 2 || pausado) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -69,7 +73,7 @@ function Destaque({ pagina }: { pagina: PaginaInicio }) {
         </div>
         <div className="destaque-fotos">
           <div className="faixa-caramelo faixa-caramelo-direita" aria-hidden="true" />
-          <div className="polaroid destaque-polaroid">
+          <div className={`polaroid destaque-polaroid${trocou ? " trocou" : ""}`}>
             <span className="fita fita-crepe" aria-hidden="true" />
             {slides.map((s, i) => (
               <div key={s.src} className={`destaque-slide${i === atual ? " ativo" : ""}`} aria-hidden={i !== atual} role="group" aria-roledescription="slide" aria-label={`${i + 1} de ${slides.length}`}>
