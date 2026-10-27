@@ -59,97 +59,69 @@ foto, lista de produtos e preços, e as capturas de referência em
 
 </details>
 
-## Fase 1 — Marca e identidade ⬜
+## Fase 1 — Marca e identidade ✅
 
-- Preencher `marca.json` e rodar `npm run aplicar-marca` (nome, WhatsApp,
-  Instagram, e-mail, domínio, CNPJ/CPF, endereço, nome na fatura).
-- Logo, favicon, ícone do celular e imagem de compartilhamento a partir do
-  logo real.
-- Novas variáveis de cor e fontes no `:root` do `css/style.css` e no
-  `CORES` dos e-mails. Fontes servidas pelo próprio site, como hoje.
-- Trocar o ícone de laço (`#bow-shape`) e os enfeites por um elemento da marca
-  dela (ex.: caneca/coração estilizado, do jeito que ela usa no Instagram).
+- Dados reais em `marca.json` (nome, WhatsApp, Instagram, e-mail). CNPJ,
+  endereço e domínio continuam marcados como `[a confirmar]`.
+- Logo provisório em SVG com texto em curvas (`npm run gerar-logo` →
+  `img/logo.svg`), favicon, ícone do celular, imagem de compartilhamento e
+  logo dos e-mails gerados por `scripts/gerar-marca.js`. Troca pelo arquivo
+  real da Janaina quando ela mandar.
+- Paleta e fontes do design (Fraunces, Josefin Sans, Allura), servidas pelo
+  próprio site. Terracota escurecida para `#9E4A18` para passar no contraste.
+- Flor no lugar do laço em todas as páginas e e-mails.
 
-## Fase 2 — Catálogo de canecas ⬜
+## Fase 2 — Catálogo ✅
 
-- `lib/catalogo.js`: trocar os 8 laços de exemplo pelos produtos reais dos
-  catálogos (ou começar vazio e cadastrar pelo painel). Categorias por
-  ocasião + coleções + tipo (caneca cerâmica 325 ml, mágica, chopp/jateada,
-  xícara, copo/garrafa térmica, azulejo, quadro, kit), conforme o que ela
-  vende de verdade.
-- Endereço do produto de `/laco/…` para `/caneca/…` (rota, `produto-url.js`,
-  `robots.txt`, sitemap, testes).
-- `js/colors.js` (cor da fita): virar **variações de caneca** (cor da alça e
-  do interior, tamanho/ml), com preço por variação se o catálogo pedir. Hoje a
-  cor é validada no servidor; manter essa garantia.
-- `lib/empacotamento.js`: peso e caixa reais de caneca (cerâmica ~350–450 g
-  embalada; caixa individual; várias canecas por caixa; kits com caixa MDF).
-  Pedir à cliente as medidas da caixa que ela usa.
-- Prazo de produção (hoje "até 2 dias úteis") para o prazo real dela, em
-  `lib/prazoFrete.js`, textos e e-mails.
-- Promoção "Leve 4, pague 3": retirada (site, cobrança e testes) em
-  2026-10-26.
-- `PAYMENT_RULES`: Pix 10% e 3x sem juros, como na inspiração (confirmar).
+- 77 produtos reais dos catálogos em `lib/catalogo.js`, com tipo e ocasião,
+  variações (cor da alça, tamanho…), adicionais e faixas de quantidade, tudo
+  validado e cobrado pelo servidor.
+- Endereço `/produto/<id>-<nome>`, com redirecionamento permanente de
+  `/laco/…`. Páginas `/categoria/…` e `/busca`.
+- Peso e caixa por produto no painel; prazo de produção editável no painel.
+- Pix 10% e 3x sem juros (`PAYMENT_RULES`). "Leve 4, pague 3" removida.
+- Retirada grátis na Asa Norte além do Melhor Envio.
 
-## Fase 3 — Personalização da caneca ⬜ (recurso novo, o mais importante)
+## Fase 3 — Personalização ✅
 
-O que a inspiração tem e o site da Adriana não tem:
+- Campos por produto (nome, frase, data, letra, arte, 0 a 8 fotos,
+  observações, aprovar pelo WhatsApp), validados no servidor.
+- Prévia ao vivo em SVG para caneca, xícara, garrafa, copo, azulejo, plano e
+  molde por foto; frente e verso; prévia em 3D ao tocar em "Ver em 3D"
+  (carrega só nessa hora).
+- Fotos privadas (só quem enviou, a dona do pedido e o painel), tipo real
+  conferido; apagadas sozinhas (48 h sem pedido, 15 dias sem pagamento,
+  60 dias depois da entrega).
+- Painel: prévia, arte em PNG e **arquivo para Corel/Illustrator** (SVG em
+  milímetros, texto em curvas, foto embutida, camadas Frente/Verso/Guias).
 
-- Na página do produto, campos definidos **por produto** no painel: nome,
-  frase, data, **envio de 1 a 8 fotos**, observações. Obrigatório ou opcional.
-- Fotos enviadas guardadas no banco (como as fotos de avaliação), com limite
-  de tamanho, conversão para JPG/WebP e verificação do tipo real do arquivo.
-  Só a dona do pedido e o painel enxergam.
-- Personalização vai junto no carrinho, no pedido, no e-mail de venda, no aviso
-  de WhatsApp e no painel (com botão para **baixar as fotos** da arte).
-- Caixa "quero aprovar a arte pelo WhatsApp antes da produção" e botão
-  "arte 100% personalizada? Fale no WhatsApp".
-- **Prévia da arte ao vivo** (decidido): molde em SVG para cada tipo de peça
-  (caneca, xícara, garrafa, copo/vidro, azulejo, plano) e "molde por foto"
-  no painel para qualquer outro produto. Frente e verso, cor da peça, letra,
-  arte e fotos. O painel baixa a arte em PNG para a produção.
-- LGPD: dizer na política por quanto tempo as fotos ficam guardadas e apagar
-  sozinho depois da entrega + X dias.
-- Política de troca: produto personalizado pode ter regra diferente (defeito
-  sempre troca). Texto final é decisão da cliente.
+## Fase 4 — Layout do Claude Design ✅
 
-## Fase 4 — Layout no estilo da inspiração ⬜
+- Loja (início, categoria, busca, produto, carrinho) em React 19 +
+  TypeScript com renderização no servidor, seguindo o canvas.
+- Celular 360/390, tablet 768 e computador 1440/1920 conferidos.
 
-Estrutura (com a identidade da cliente, sem copiar a arte da outra loja):
+## Fase 5 — Conteúdo e SEO ✅
 
-- Barra de aviso no topo (Pix com desconto, frete, prazo).
-- Cabeçalho com logo, **busca em destaque**, conta, carrinho.
-- **Menu de categorias** com submenu (ocasiões, coleções, tipos): menu grande
-  no computador e gaveta no celular.
-- Banner em carrossel (já existe e é trocado pelo painel em "Fotos do topo").
-- **Vitrines por tema** na home ("Mais vendidas", ocasião do mês, coleções),
-  configuráveis no painel.
-- Cartão de produto: foto, nome, preço, preço no Pix, parcelas, selo
-  ("Personalizável", "Novo", "Mais vendido"), botão.
-- **Páginas de categoria** com endereço próprio (`/categoria/…`), filtro e
-  ordenação. Hoje é tudo numa vitrine só; essa página é nova e conta pro
-  Google.
-- Página de produto completa: galeria com várias fotos (o banco já guarda
-  `photos`), especificações, prazo, personalização, frete, avaliações,
-  relacionados.
-- Faixa de benefícios, avaliações/depoimentos, feed do Instagram (já existe),
-  WhatsApp flutuante (já existe), rodapé completo com pagamentos e políticas.
+- Textos da home, política (fotos e LGPD, trocas de personalizado com
+  `[a confirmar]`, retirada, Pix 10%), `llms.txt`, `robots.txt`, sitemap com
+  categorias, dados estruturados e prévia de compartilhamento.
+- Fotos provisórias tiradas do Instagram/catálogos da Janaina até ela mandar
+  as originais.
 
-## Fase 5 — Conteúdo ⬜
+## Fase 6 — Verificação final ✅
 
-- Textos da home, "sobre", como funciona, garantias e política no tom do
-  Instagram dela.
-- Fotos reais dos produtos (as dos catálogos/Instagram, com autorização) e as
-  5 fotos do topo (`node scripts/gerar-hero.js pasta-das-fotos`).
-- `llms.txt`, dados estruturados e prévias de compartilhamento.
-
-## Fase 6 — Verificação final ⬜
-
-- `npm run verificar` e `npm run conferir` limpos.
-- Compra completa de teste com credenciais `TEST-` do Mercado Pago (Pix e
-  cartão), frete real, e-mails, painel (etiqueta, rastreio, avaliação).
-- Desempenho e acessibilidade (Lighthouse) no celular.
-- Revisão visual página por página com o Caio no servidor ao vivo.
+- `npm run verificar` (256 testes) e `npm run conferir` limpos.
+- Lighthouse no celular (27/10/2026): início, produto, categoria e busca com
+  desempenho 98–99, acessibilidade 100, boas práticas 100, SEO 100 (a busca
+  dá 69 de SEO de propósito, porque não deve ser indexada). LCP 2,0–2,1 s,
+  CLS ≤ 0,001.
+- Compra de teste completa com o Mercado Pago simulado (conta, personalização
+  com foto, retirada, Pix, confirmação pelo webhook, painel, arte, arquivo de
+  produção, "retirado", acompanhamento). Falta repetir com as credenciais
+  `TEST-` reais e o Melhor Envio (⚠️ dependem das contas da Janaina).
+- Segurança do site inteiro até o pagamento: ver
+  `server/docs/SECURITY-AUDIT.md` (rodada de 27/10/2026).
 
 ## Fase 7 — Entrega para a cliente ⬜
 
@@ -166,6 +138,11 @@ Estrutura (com a identidade da cliente, sem copiar a arte da outra loja):
 - 2026-10-26 — Personalização com prévia visual da arte na caneca.
 - 2026-10-26 — Promoção "Leve 4, pague 3" sai do site.
 - 2026-10-26 — Funcionamento e catálogo (Fases 2 e 3) começam já.
+- 2026-10-26 — Frete pelo Melhor Envio, mais retirada grátis na Asa Norte.
+- 2026-10-26 — Prévia em 3D entra, carregada só quando a cliente pede.
+- 2026-10-27 — A loja só baixa o React depois de mostrar a página (a
+  primeira pintura não espera o script); o aviso de privacidade aparece na
+  primeira rolagem ou toque.
 
 - 2026-10-26 — Design no Claude Design (canvas "Arte Canecas — Loja"),
   resumido em `server/docs/design.md`.
@@ -183,16 +160,12 @@ Estrutura (com a identidade da cliente, sem copiar a arte da outra loja):
 
 ## Decisões pendentes (Caio/cliente)
 
-1. Quais linhas além de caneca entram no lançamento (copo, azulejo, quadro,
-   kit)?
-2. Regra de troca para personalizados.
-3. Onde hospedar a prévia para a cliente.
-4. Pix com desconto e parcelas sem juros (inspiração: Pix 10% e 3x). O
-   design usa 10% e 3x como exemplo.
-5. Prévia em 3D (girar a caneca com o dedo): bonito, mas pesa ~150 KB a mais
-   só na página de produto. O padrão é a prévia 2D em SVG.
-6. Prazo de produção, peso e caixa de envio, CNPJ/endereço, domínio, logo
-   em arquivo e fotos em boa resolução (ver `server/docs/identidade.md`).
+1. Regra de troca para personalizados (a política está com `[a confirmar]`).
+2. Onde hospedar a prévia para a cliente.
+3. Confirmar Pix 10% e 3x sem juros.
+4. Prazo de produção, peso e caixa de envio, moldes de impressão por peça,
+   CNPJ/endereço, domínio, logo em arquivo e fotos em boa resolução (ver
+   `server/docs/PEDIDO-DA-CLIENTE.md`).
 
 ## Ordem de trabalho
 

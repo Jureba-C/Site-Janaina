@@ -18,8 +18,8 @@ que este arquivo.
 | `--borda` | `#EADFD3` | linhas e bordas de cartão |
 | `--borda-forte` | `#D9CBBB` | campos e botões vazados |
 | `--terracota` | `#CD7031` | logo, ícones grandes (só texto ≥ 24 px) |
-| `--terracota-forte` | `#A9521D` | botões, preços, links, faixa do topo (branco por cima passa 4.5:1) |
-| `--terracota-rodape` | `#B65E27` | rodapé em onda |
+| `--terracota-forte` | `#9E4A18` | botões, preços, links, faixa do topo (escurecido de `#A9521D` para o branco por cima passar 4.5:1 em todos os tamanhos) |
+| `--terracota-rodape` | `#9A4717` | rodapé em onda (escurecido de `#B65E27` pelo contraste do texto branco) |
 | `--caramelo` | `#D4935E` | faixa arredondada atrás das fotos (marca do catálogo) |
 | `--rosa` | `#DFA1AC` | palavra "Canecas" do logo (decorativo) |
 | `--rosa-claro` | `#F6E1DE` | destaque do topo, faixa Ipês, fundo de ícones |

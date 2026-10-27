@@ -39,6 +39,14 @@ precisa conter tudo — site e servidor juntos.
 Configure a aplicação apontando o **diretório raiz** para **`server`**, com
 arquivo de entrada **`server.js`** e comando de início **`npm start`**.
 
+A loja (início, categoria, busca, produto e carrinho) é React + TypeScript,
+mas **a hospedagem não precisa compilar nada**: o resultado do
+`npm run construir` (`server/js/loja/` e `server/loja-ssr/`) vai no commit.
+Antes de subir, rode `cd server && npm run construir && npm run verificar` e
+confira que `git status` não mostra arquivos novos em `js/loja/` esquecidos.
+Em produção basta `npm install --omit=dev` (React e React DOM estão nas
+dependências normais porque o servidor monta o HTML da loja).
+
 ---
 
 ## 3. Variáveis de ambiente

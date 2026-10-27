@@ -5,32 +5,33 @@ idas e vindas.
 
 ## Identidade
 
-- [ ] Nome da loja (como aparece no site) e nome da responsável
+- [x] Nome da loja (como aparece no site) e nome da responsável — Arte Canecas, Janaina
 - [ ] Domínio (ex.: minhaloja.com.br) — já tem ou precisa comprar?
 - [ ] E-mail de contato e e-mail que recebe aviso de venda
-- [ ] WhatsApp da loja
-- [ ] Instagram (usuário)
+- [x] WhatsApp da loja — (61) 99692-7401
+- [x] Instagram (usuário) — @arte.canecasbsb
 - [ ] CNPJ ou CPF e endereço (vão na página de políticas — exigência do Código de Defesa do Consumidor)
-- [ ] Cidade/UF que aparece no site
-- [ ] Nome curto para a fatura do cartão (até 22 letras, sem acento)
+- [x] Cidade/UF que aparece no site — Asa Norte, Brasília/DF
+- [x] Nome curto para a fatura do cartão (até 22 letras, sem acento) — ARTECANECAS
 - [ ] Logo em boa resolução (PNG com fundo transparente ou SVG)
-- [ ] Cores e estilo que ela gosta (sites de referência ajudam)
+- [x] Cores e estilo que ela gosta — design do Claude Design a partir do Instagram e dos catálogos
 
 ## Produtos
 
-- [ ] O que vende, e as categorias
+- [x] O que vende, e as categorias — 77 produtos dos catálogos já cadastrados
 - [ ] Para cada produto: nome, preço, categoria, foto(s), descrição curta
 - [ ] Variações que a cliente escolhe (cor, tamanho, personalização?) e se mudam o preço
 - [ ] Produz sob encomenda ou tem estoque pronto? Prazo de produção
 - [ ] Tamanho e peso da embalagem mais comum (para o frete) e se algum produto vai em caixa diferente
-- [ ] 5 fotos bonitas para o topo do site (vertical, 4:5)
+- [ ] Moldes de impressão de cada peça (área útil em mm de caneca, xícara, garrafa, copo, azulejo) para conferir os gabaritos do arquivo de Corel/Illustrator
+- [ ] Fotos originais em boa resolução (hoje são as do Instagram/catálogos) — fotos do topo trocam pelo painel
 
 ## Venda
 
-- [ ] Desconto no Pix (%) e parcelas no cartão (até quantas, com ou sem juros)
-- [ ] Cupom de boas-vindas (código e %) e promoções (ex.: leve 4, pague 3)
+- [ ] Confirmar Pix com 10% de desconto e cartão em até 3x sem juros (é o que está no site)
+- [ ] Cupom de boas-vindas (código e %) — "leve 4, pague 3" já saiu do site
 - [ ] Política de troca e devolução (prazo, quem paga o frete)
-- [ ] CEP e endereço de onde saem os envios (remetente da etiqueta)
+- [ ] CEP e endereço de onde saem os envios (remetente da etiqueta) e endereço da retirada na Asa Norte
 
 ## Contas (ela cria; o Caio cola as chaves direto na hospedagem, nunca no chat)
 

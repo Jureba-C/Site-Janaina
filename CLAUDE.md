@@ -9,10 +9,9 @@ Loja online feita pelo **Caio** para a cliente **Janaina**. A base é uma cópia
 do site da **Adriana Melo Acessórios** (repositório de referência
 `Jureba-C/Adriana-Melo-Acessorios`, branch `main`), com **o mesmo
 funcionamento**: vitrine, carrinho, frete real, pagamento, acompanhar pedido,
-conta da cliente e painel administrativo. A identidade da Adriana (nome,
-contatos, CNPJ, endereço, logo, fotos) já foi trocada por marcadores
-provisórios; os produtos e textos de "laços" continuam como exemplo até a
-Janaina mandar os dela.
+conta da cliente e painel administrativo. A identidade já é a da Arte Canecas
+(@arte.canecasbsb); só CNPJ, endereço, domínio, logo em arquivo e fotos em
+alta resolução esperam a Janaina (ver `server/docs/PEDIDO-DA-CLIENTE.md`).
 
 ## Regras de trabalho (obrigatórias)
 
@@ -53,69 +52,52 @@ npm test               # testes (node:test)
 npm run sem-comentarios
 npm run verificar      # sem comentários + testes — rodar depois de toda mudança
 npm run aplicar-marca -- marca-nova.json [--simular]
+npm run construir      # recompila a loja React (js/loja/ e loja-ssr/) — o ao-vivo faz sozinho
+node scripts/gerar-logo.js   # img/logo.svg (texto em curvas)
+node scripts/gerar-marca.js  # favicon, ícone do celular, logo PNG, og-loja.jpg e logo dos e-mails
 ```
+
+`js/loja/` e `loja-ssr/` são gerados pelo `npm run construir` e **vão no
+commit** (a hospedagem não roda o Vite).
 
 Para rodar local, copie `server/.env.example` para `server/.env` e troque
 `NODE_ENV=production` por `development`. Sem tokens o site abre normalmente;
 só frete, pagamento e e-mail ficam desligados (o servidor avisa no terminal).
 
-## Trocar a marca (primeiro passo quando a Janaina mandar os dados)
+## Trocar a marca
 
-Todos os dados de identidade estão em **`server/marca.json`** e aparecem no
-site como marcadores únicos:
-
-| Campo | Marcador atual | Onde aparece |
-|---|---|---|
-| `nomeLoja` | `Nome da Loja` | títulos, rodapés, e-mails, dados estruturados, avisos |
-| `responsavel` | `Nome da Responsável` | topo da home, "nossa história", política |
-| `dominio` | `nomedaloja.com.br` | `SITE_URL` no `server.js`, canonical, sitemap, robots, llms |
-| `email` | `contato@nomedaloja.com.br` | contato, política, dados estruturados |
-| `instagram` | `nomedaloja` | links, feed, dados estruturados |
-| `whatsappDigitos` | `5500000000000` | todos os links `wa.me` |
-| `whatsappFormatado` | `(00) 00000-0000` | textos com o número |
-| `cnpj` | `00.000.000/0000-00` | rodapé, política, dados estruturados |
-| `endereco` | `Endereço completo — CEP 00000-000 — Cidade/UF` | política |
-| `nomeFatura` | `NOMEDALOJA` | nome na fatura do cartão (máx. 22, maiúsculas, sem acento) |
-| `nomeSemEspaco` | `NomeDaLoja` | User-Agent do Melhor Envio |
-
-Copie `marca.json` para um arquivo novo, preencha e rode
-`npm run aplicar-marca -- marca-nova.json --simular` (mostra o que muda) e
-depois sem `--simular`. O script valida os formatos, troca tudo em uma
-passada e atualiza o `marca.json`. O teste `test/marca.test.js` garante que
-cada marcador existe e que nenhum dado da Adriana voltou.
-
-Depois da troca, revisar à mão: `Brasília/DF` (cidade aparece em textos da
-home, rodapé, e-mails via `ASSINATURA_LOJA` em `lib/email.js` e
-`addressLocality` no `server.js`) e as frases de história em `index.html`.
+Dados de identidade em **`server/marca.json`**. Já preenchidos: nome (Arte
+Canecas), responsável, e-mail, Instagram, WhatsApp, nome na fatura. Ainda
+com marcador: `dominio` (`nomedaloja.com.br`), `cnpj`
+(`00.000.000/0000-00`) e `endereco`. Para trocar: copiar `marca.json`,
+preencher e rodar `npm run aplicar-marca -- marca-nova.json --simular`, depois
+sem `--simular`. O teste `test/marca.test.js` garante que cada marcador existe
+e que nenhum dado da Adriana voltou.
 
 ## Imagens provisórias (trocar pelas reais)
 
-| Arquivo | Tamanho | Como trocar |
-|---|---|---|
-| `img/logo-loja.png` | 336×108 | arte da logo; depois `node scripts/logo-email.js` gera `img/logo-loja-email.png` |
-| `img/og-loja.jpg` | 1200×630 | prévia no WhatsApp/redes |
-| `favicon.ico`, `apple-touch-icon.png` | 16/32/48 e 180 | ícone da aba |
-| `img/hero-foto-1..5-{480,960}.{jpg,webp}` | 4:5 | `node scripts/gerar-hero.js pasta-com-5-fotos` (corte automático). O painel também troca as fotos do topo sem mexer em código (aba "Fotos do topo"). |
+| Arquivo | Como trocar |
+|---|---|
+| `img/logo.svg` | logo provisório montado por `scripts/gerar-logo.js`; com o arquivo real, salvar como `img/logo.svg` e rodar `node scripts/gerar-marca.js` (gera favicon, ícone do celular, `logo-loja.png`, `og-loja.jpg` e o logo dos e-mails) |
+| `img/provisorias/*` | fotos tiradas do Instagram/catálogos; trocar pelas originais. Fotos de produto entram pelo **painel** (aba Produtos) |
+| fotos do topo da home | painel → "Fotos do topo" |
 
-Produtos novos e fotos de produto entram pelo **painel** (aba Produtos), não
-pelo código.
-
-## O que ainda é específico de "laços" (adaptar ao que a Janaina vende)
+## Onde mexer em cada assunto
 
 | Assunto | Onde |
 |---|---|
-| Produtos de exemplo, categorias fixas, selos | `lib/catalogo.js` (`PRODUCTS`, `BUILTIN_CATEGORIES`, `PRODUCT_BADGES`) |
-| Cores da fita escolhidas no carrinho (validadas no servidor) | `js/colors.js` (`RIBBON_COLORS`) — usado por `main.js`, `server.js` e e-mails |
-| Caixa, peso e medidas para o frete | `lib/empacotamento.js` (`CAIXA_PADRAO`, `PESO_LACO_KG`, caixa "maior" para cabide) |
-| Endereço do produto `/laco/<id>-<nome>` | `js/produto-url.js`, rota `app.get("/laco/:apelido")` e `PUBLIC_TOP_LEVEL` no `server.js`, `robots.txt`, testes de `produto-link` |
-| Promoção "Leve 4, pague 3" | `js/pricing.js` (`promoLeve4Pague3Breakdown`, cobrada no servidor) e faixa em `js/faixa-promo.js` |
-| Pix com desconto e parcelas | `js/pricing.js` → `PAYMENT_RULES` (vale para site e cobrança ao mesmo tempo) |
-| Cupom de boas-vindas | `WELCOME_COUPON_CODE = "BEMVINDA10"` no `server.js` (cupom em si é criado/apagado no painel) |
-| Prazo de produção e textos de "feito à mão" | `index.html`, `pagamento-*.html`, `lib/email.js`, `lib/prazoFrete.js`, `llms.txt` |
-| Ícone de laço (`#bow-shape`) e enfeites | `index.html` (símbolo SVG), `css/style.css`, `js/animacoes.js` |
-| Paleta rosa e fontes (Fraunces, Poppins, Caveat) | `css/style.css` (variáveis no `:root`), `css/fonts.css`, `CORES` em `lib/email.js` |
-| Textos das seções da home (história, como funciona, garantias, contato) | `index.html` |
-| Política de trocas/privacidade | `politica.html` (revisar com os dados reais da cliente) |
+| Produtos, categorias (tipo e ocasião), selos | `lib/catalogo.js` e painel (Produtos) |
+| Variações, adicionais, faixas de quantidade, personalização por produto | painel → editar produto (`js/admin-loja.js`); regras em `js/regras-produto.js` (servidor e loja) |
+| Moldes da prévia e arte | `loja/src/componentes/Previa.tsx` (SVG) e `Previa3D.tsx` |
+| Arquivo para Corel/Illustrator | `lib/producao.js` (gabaritos em mm) e `lib/texto-em-curvas.js` (fontes em `lib/fontes/`) |
+| Peso e caixa para o frete | painel → produto; cálculo em `lib/empacotamento.js` |
+| Retirada grátis | `OPCAO_RETIRADA` e `LOCAL_DE_RETIRADA` no `server.js` |
+| Pix com desconto e parcelas | `js/pricing.js` → `PAYMENT_RULES` |
+| Prazo de produção | painel → Produtos (campo "Prazo de produção") |
+| Cupom de boas-vindas | `WELCOME_COUPON_CODE = "BEMVINDA10"` no `server.js` |
+| Cores e fontes | `loja/src/estilos/loja.css` (loja), `css/style.css` (demais páginas), `CORES` em `lib/email.js` |
+| Textos da home | `loja/src/paginas/Inicio.tsx` |
+| Política de trocas/privacidade | `politica.html` (itens `[a confirmar]`) |
 
 ## Mapa do sistema
 
@@ -123,28 +105,33 @@ Tudo fica em `server/` (é a pasta que a hospedagem usa como raiz). O
 `express.static` só publica o que está em `PUBLIC_TOP_LEVEL` no `server.js`;
 `lib/`, `scripts/`, `docs/`, `test/` e `marca.json` nunca saem na web.
 
-- **Páginas**: `index.html` (loja, montada pelo servidor com os marcadores
-  `<template data-marca=...>` e `%%CUPOM-BOAS-VINDAS%%`), `conta.html`,
+- **Loja (React + TypeScript)**: `loja/src/` — `/`, `/categoria/:slug`,
+  `/busca`, `/produto/:apelido` e o carrinho. O servidor monta o HTML
+  (`lib/loja-ssr.js` + `loja-ssr/entrada-servidor.cjs`) com os dados de
+  `lib/loja-dados.js`; o navegador baixa o React só depois da primeira
+  pintura (`loja/src/entrada-cliente.tsx`).
+- **Páginas**: `conta.html`,
   `pedidos.html` (minha conta), `acompanhar-pedido.html`, `avaliar.html`,
   `pagamento-pix.html` (QR Code próprio), `pagamento-sucesso/erro/pendente.html`,
   `redefinir-senha.html`, `politica.html`, `admin.html`, `404.html`,
   `429.html`, `manutencao.html`.
-- **Navegador (`js/`)**: `main.js` (vitrine, carrinho, frete, cupom, checkout),
-  `pricing.js` e `colors.js` (compartilhados com o servidor), `admin.js`
-  (painel inteiro), `auth.js`, `conta.js`, `pedidos.js`, `minha-conta.js`,
-  `acompanhar-pedido.js`, `pagamento-pix.js`, `avaliar.js`, `animacoes.js`
-  (GSAP, respeita movimento reduzido).
+- **Navegador (`js/`)**: `pricing.js`, `regras-produto.js` e
+  `produto-url.js` (compartilhados com o servidor e a loja), `admin.js` e
+  `admin-loja.js` (painel), `auth.js`, `conta.js`, `pedidos.js`,
+  `minha-conta.js`, `acompanhar-pedido.js`, `pagamento-pix.js`, `avaliar.js`.
 - **Servidor**: `server.js` (rotas, checkout, webhook, painel), `lib/db.js`
   (SQLite: usuários, sessões, pedidos, cupons, produtos, avaliações,
   campanhas, fila de e-mail), `lib/auth.js` (senha bcrypt, cookie httpOnly,
   admin por hash de e-mail, 2FA), `lib/melhorEnvio.js`, `lib/rastreio.js`,
   `lib/email.js`, `lib/whatsapp.js`, `lib/instagram.js`, `lib/campanhas.js`,
-  `lib/googleAuth.js`, `lib/xlsx.js`.
+  `lib/googleAuth.js`, `lib/xlsx.js`, `lib/pagamento.js` (assinatura do
+  webhook e valor conferido), `lib/itens-pedido.js`, `lib/producao.js`.
 - **Fluxo de compra**: carrinho → CEP (`/api/calculate-shipping`) → escolha
   Pix ou cartão/boleto → `/api/create-pix-payment` ou
   `/api/create-preference` (Mercado Pago Checkout Pro) → webhook
   `/api/webhook` confirma o pagamento consultando o Mercado Pago → avisos por
-  e-mail/WhatsApp → painel gera etiqueta no Melhor Envio e rastreio →
+  e-mail/WhatsApp → painel gera etiqueta no Melhor Envio e rastreio (ou
+  marca "retirado") →
   cliente acompanha em `acompanhar-pedido.html` e avalia em `avaliar.html`.
 - **Painel** (`admin.html`): Dashboard, Produtos (criar, editar, foto,
   ordem, esgotado, oculto), Cupons, Vendas e pedidos (etiqueta, rastreio,
