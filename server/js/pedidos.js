@@ -63,7 +63,7 @@
         <a href="${url}" class="pedido-avaliar is-avaliar">
           <span class="pedido-avaliar-texto">
             <span class="pedido-avaliar-estrelas" aria-hidden="true">${'<i class="bi bi-star-fill"></i>'.repeat(5)}</span>
-            <strong>Como ficaram os laços?</strong>
+            <strong>Como ficou o seu presente?</strong>
             <span>${detalhe}</span>
           </span>
           <span class="pedido-avaliar-acao">Avaliar <i class="bi bi-chevron-right" aria-hidden="true"></i></span>

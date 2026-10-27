@@ -1,7 +1,7 @@
 (function(){
   "use strict";
 
-  const MENSAGEM_PADRAO = "Achei esse ateliê de laços feitos à mão e amei 🎀";
+  const MENSAGEM_PADRAO = "Olha que lindo esse presente personalizado da Arte Canecas";
 
   function comUtm(url, origem){
     const u = new URL(url, window.location.origin);

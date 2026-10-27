@@ -498,8 +498,8 @@
       `Olá${primeiroNome ? ", " + primeiroNome : ""}! 🎀`,
       "",
       oQueSaiu
-        ? `Seu pedido ${oQueSaiu} saiu do ateliê e já está a caminho.`
-        : "Seu pedido saiu do ateliê e já está a caminho.",
+        ? `Seu pedido ${oQueSaiu} foi postado e já está a caminho.`
+        : "Seu pedido foi postado e já está a caminho.",
       "",
       `Código de rastreio: *${order.trackingCode}*`,
       "Acompanhe a entrega por aqui:",
@@ -508,7 +508,7 @@
       "Fico à disposição por aqui para o que precisar.",
       "",
       "🎀 *Arte Canecas*",
-      "Laços feitos à mão em Brasília",
+      "Presentes personalizados em Brasília",
     ].join("\n");
     return whatsappUrl(order.customer?.telefone, msg);
   }
@@ -2251,7 +2251,7 @@
   }
 
   const WHATSAPP_SEM_COMPRA_MESSAGE =
-    "Oi! Aqui é da Arte Canecas. Vi que você se cadastrou na loja e queria saber se posso ajudar a escolher um laço 💗";
+    "Oi! Aqui é da Arte Canecas. Vi que você se cadastrou na loja e queria saber se posso ajudar a escolher um presente ✿";
 
   let segmentoDeClientes = "compraram";
   let dadosDeClientes = { customers: [], contas: [], subscribers: [] };

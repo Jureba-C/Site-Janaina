@@ -2,7 +2,8 @@ User-agent: *
 Allow: /$
 Allow: /index.html
 Allow: /politica.html
-Allow: /laco/
+Allow: /produto/
+Allow: /categoria/
 Allow: /llms.txt
 Disallow: /admin.html
 Disallow: /conta.html

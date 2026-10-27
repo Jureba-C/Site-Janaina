@@ -2,6 +2,7 @@ import { linkWhatsApp } from "../compartilhado";
 import type { Loja } from "../tipos";
 import { Icone } from "./Icone";
 import { Onda } from "./Marca";
+import { Novidades } from "./Novidades";
 
 export function Rodape({ loja }: { loja: Loja }) {
   const tipos = loja.categorias.filter(c => c.grupo === "tipo" && c.quantidade > 0).slice(0, 6);
@@ -10,6 +11,7 @@ export function Rodape({ loja }: { loja: Loja }) {
     <footer className="rodape">
       <Onda />
       <div className="rodape-fundo">
+        <div className="rodape-novidades"><Novidades /></div>
         <div className="rodape-grade">
           <div className="rodape-marca">
             <p className="rodape-logo"><span>arte</span><span>Canecas</span></p>

@@ -278,4 +278,4 @@ function paginaProduto(id){
   };
 }
 
-module.exports = { paginaInicio, paginaBusca, paginaCategoria, paginaProduto, sugestoes, porIds, resumo, precoMinimo, normalizar };
+module.exports = { DESTAQUES_PADRAO, paginaInicio, paginaBusca, paginaCategoria, paginaProduto, sugestoes, porIds, resumo, precoMinimo, normalizar };

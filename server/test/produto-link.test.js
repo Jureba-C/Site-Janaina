@@ -80,8 +80,9 @@ test("produto renomeado: o link velho leva ao produto, com a query intacta", asy
 
 test("endereço que não existe é 404, não desvio para a vitrine", async () => {
   for(const caminho of ["/produto/999999-nao-existe", "/produto/sem-id", "/produto/0-zero", "/laco/999999-x", "/categoria/nao-existe"]){
-    const res = await fetch(ORIGIN + caminho, { redirect: "manual" });
+    const res = await fetch(ORIGIN + caminho, { redirect: "manual", headers: { Accept: "text/html" } });
     assert.equal(res.status, 404, caminho);
+    assert.match(await res.text(), /Página não encontrada/, `${caminho} devia mostrar a página 404, não um erro`);
   }
 });
 

@@ -3,36 +3,36 @@ const path = require("path");
 const { formatCurrency, formatOrderDateTime, deliveryLineFor } = require("./orderFormatting");
 
 const LOGO_CID = "logo-loja";
-const ASSINATURA_LOJA = "Arte Canecas — ateliê artesanal de laços, Brasília/DF";
+const ASSINATURA_LOJA = "Arte Canecas — presentes personalizados, Brasília/DF";
 const LOGO_PATH = path.join(__dirname, "..", "img", "logo-loja-email.png");
 
 const CORES = {
-  fundo: "#FFFDFC",
+  fundo: "#FBF8F3",
   cartao: "#FFFFFF",
-  faixa: "#FBDCE8",
-  caixaSuave: "#FFF5F9",
-  titulo: "#54293C",
-  texto: "#54293C",
-  apoio: "#8C6577",
-  destaque: "#C05480",
-  destaqueClaro: "#EA8FB4",
-  tenue: "#B79AA9",
-  botaoFundo: "#DD6E9B",
+  faixa: "#F6E1DE",
+  caixaSuave: "#FBF3EF",
+  titulo: "#323230",
+  texto: "#323230",
+  apoio: "#6B6259",
+  destaque: "#A9521D",
+  destaqueClaro: "#D4935E",
+  tenue: "#9C9086",
+  botaoFundo: "#A9521D",
   botaoTexto: "#FFFFFF",
 };
 
 const ESCURO = {
-  fundo: "#241019",
-  cartao: "#331A25",
-  faixa: "#331A25",
-  caixaSuave: "#3E1F2C",
-  titulo: "#FCEAF1",
-  texto: "#F0DAE4",
-  apoio: "#C9A6B7",
-  destaque: "#F4B4CC",
-  tenue: "#C9A6B7",
-  botaoFundo: "#F4B4CC",
-  botaoTexto: "#3A1B27",
+  fundo: "#1F1A17",
+  cartao: "#2A2320",
+  faixa: "#2A2320",
+  caixaSuave: "#352C27",
+  titulo: "#FBF3EF",
+  texto: "#EFE6DD",
+  apoio: "#C9B8A8",
+  destaque: "#E3A27A",
+  tenue: "#C9B8A8",
+  botaoFundo: "#E3A27A",
+  botaoTexto: "#2A1A10",
 };
 
 function regrasEscuras(prefixo) {
@@ -119,7 +119,7 @@ function emailShell({ titulo, preheader, eyebrow, tituloCartao, corpoHtml }) {
 
           <tr>
             <td align="center" class="e-apoio" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:12px; line-height:1.7; padding:22px 24px 0;">
-              Arte Canecas — ateliê artesanal de laços, feitos à mão em Brasília/DF.<br>
+              Arte Canecas — presentes que marcam, personalizados com carinho em Brasília/DF.<br>
               Dúvidas? Responda este e-mail ou fale pelo
               <a href="https://wa.me/5561996927401" class="e-destaque" style="color:${CORES.destaque}; text-decoration:none;">WhatsApp</a>.
             </td>
@@ -190,7 +190,7 @@ function formatOrderEmail({ externalReference, items, address, total, paidAt, ad
     .map(item => `<li>${item.qty}x ${escapeHTML(item.name)}</li>`)
     .join("");
 
-  const subject = `🎀 Novo pedido pago — ${externalReference}`;
+  const subject = `✿ Novo pedido pago — ${externalReference}`;
   const deliveryLine = deliveryLineFor(address);
 
   const text = [
@@ -226,7 +226,7 @@ function formatOrderEmail({ externalReference, items, address, total, paidAt, ad
     titulo: subject,
     preheader: `${formatCurrency(total)} — ${address?.nome || "novo pedido"}`,
     eyebrow: "pedido pago",
-    tituloCartao: "Novo pedido! 🎀",
+    tituloCartao: "Novo pedido! ✿",
     corpoHtml: `
       <tr>
         <td class="e-apoio" align="left" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:13px; line-height:1.6; padding-bottom:18px;">
@@ -453,7 +453,7 @@ function formatOrderConfirmationEmail({
     "",
     `Entrega: ${entrega || "-"}`,
     "",
-    "Cada laço é feito à mão, um de cada vez. Assim que despacharmos, você",
+    "Cada peça é personalizada com carinho, uma de cada vez. Assim que despacharmos, você",
     "recebe outro e-mail com o código de rastreio.",
     "",
     `Acompanhar o pedido: ${trackUrl}`,
@@ -466,7 +466,7 @@ function formatOrderConfirmationEmail({
     titulo: subject,
     preheader: `Pagamento confirmado — ${formatCurrency(total)}. Seu pedido entrou na fila de produção.`,
     eyebrow: "pagamento confirmado",
-    tituloCartao: nome ? `Obrigada, ${nome}! 🎀` : "Pedido confirmado 🎀",
+    tituloCartao: nome ? `Obrigada, ${nome}! ✿` : "Pedido confirmado ✿",
     corpoHtml: `
       <tr>
         <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:15px; line-height:1.6; padding-bottom:24px;">
@@ -499,7 +499,7 @@ function formatOrderConfirmationEmail({
       <tr><td style="height:22px;"></td></tr>
       <tr>
         <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:14px; line-height:1.6; padding-bottom:22px;">
-          Cada laço é feito à mão, um de cada vez. Assim que despacharmos, você recebe outro e-mail com o código de rastreio.
+          Cada peça é personalizada com carinho, uma de cada vez. Assim que despacharmos, você recebe outro e-mail com o código de rastreio.
         </td>
       </tr>
       ${botaoEmail(trackUrl, "Acompanhar meu pedido")}
@@ -516,7 +516,7 @@ function formatTrackingEmail({ externalReference, trackingCode, address, trackUr
   const text = [
     nome ? `Oi, ${nome}!` : "Oi!",
     "",
-    "Seu pedido saiu do ateliê e já está a caminho.",
+    "Seu pedido foi postado e já está a caminho.",
     "",
     `Pedido: ${externalReference}`,
     `Código de rastreio: ${trackingCode}`,
@@ -531,11 +531,11 @@ function formatTrackingEmail({ externalReference, trackingCode, address, trackUr
     titulo: subject,
     preheader: `Código de rastreio: ${trackingCode}`,
     eyebrow: "pedido postado",
-    tituloCartao: "Seu laço está a caminho 💌",
+    tituloCartao: "Seu presente está a caminho",
     corpoHtml: `
       <tr>
         <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:15px; line-height:1.6; padding-bottom:26px;">
-          ${nome ? `Oi, ${escapeHTML(nome)}! ` : ""}Seu pedido <strong class="e-texto" style="color:${CORES.texto};">${escapeHTML(externalReference)}</strong> saiu do ateliê e já está a caminho.
+          ${nome ? `Oi, ${escapeHTML(nome)}! ` : ""}Seu pedido <strong class="e-texto" style="color:${CORES.texto};">${escapeHTML(externalReference)}</strong> foi postado e já está a caminho.
         </td>
       </tr>
       <tr>
@@ -560,7 +560,7 @@ function formatTrackingEmail({ externalReference, trackingCode, address, trackUr
 }
 
 async function sendWelcomeCouponEmail({ to, couponCode, percentOff, shopUrl, unsubscribeUrl }) {
-  const subject = `🎀 Seu cupom de ${percentOff}% — Arte Canecas`;
+  const subject = `✿ Seu cupom de ${percentOff}% — Arte Canecas`;
 
   const text = [
     "Obrigada por se cadastrar!",
@@ -581,11 +581,11 @@ async function sendWelcomeCouponEmail({ to, couponCode, percentOff, shopUrl, uns
     titulo: subject,
     preheader: `Seu cupom de ${percentOff}% já está pronto para a primeira compra.`,
     eyebrow: "obrigada por se cadastrar",
-    tituloCartao: "Seu laço de boas-vindas chegou 🎀",
+    tituloCartao: "Seu cupom de boas-vindas chegou",
     corpoHtml: `
       <tr>
         <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:15px; line-height:1.6; padding-bottom:26px;">
-          Aqui está o seu cupom de <strong class="e-texto" style="color:${CORES.texto};">${escapeHTML(String(percentOff))}% de desconto</strong> na primeira compra — vale para qualquer laço da coleção.
+          Aqui está o seu cupom de <strong class="e-texto" style="color:${CORES.texto};">${escapeHTML(String(percentOff))}% de desconto</strong> na primeira compra — vale para qualquer peça da loja.
         </td>
       </tr>
 
@@ -620,10 +620,10 @@ async function sendWelcomeCouponEmail({ to, couponCode, percentOff, shopUrl, uns
 }
 
 function formatContactEmail({ nome, telefone, ocasiao, mensagem }) {
-  const subject = `🎀 Nova mensagem de contato — ${nome}`;
+  const subject = `✿ Nova mensagem de contato — ${nome}`;
 
   const text = [
-    "Nova mensagem pelo formulário \"Vamos criar seu laço?\":",
+    "Nova mensagem pelo formulário de contato do site:",
     "",
     `Nome: ${nome}`,
     `WhatsApp: ${telefone}`,
@@ -637,7 +637,7 @@ function formatContactEmail({ nome, telefone, ocasiao, mensagem }) {
     titulo: subject,
     preheader: `${nome}: ${mensagem.slice(0, 100)}`,
     eyebrow: "novo contato",
-    tituloCartao: "Nova mensagem pelo site 🎀",
+    tituloCartao: "Nova mensagem pelo site ✿",
     corpoHtml: `
       <tr>
         <td class="e-apoio" align="left" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:13px; line-height:1.6; padding-bottom:18px;">
@@ -716,7 +716,7 @@ function primeiroNome(address){
 
 function formatConfirmarRecebimentoEmail({ externalReference, address, avaliarUrl }){
   const nome = primeiroNome(address);
-  const subject = "Seu pedido já chegou? 🎀";
+  const subject = "Seu pedido já chegou? ✿";
 
   const text = [
     nome ? `Oi, ${nome}!` : "Oi!",
@@ -734,7 +734,7 @@ function formatConfirmarRecebimentoEmail({ externalReference, address, avaliarUr
     titulo: subject,
     preheader: "Confirme em um clique que recebeu seu pedido.",
     eyebrow: "entrega",
-    tituloCartao: "Chegou tudo certinho? 💌",
+    tituloCartao: "Chegou tudo certinho? ",
     corpoHtml: `
       <tr>
         <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:15px; line-height:1.6; padding-bottom:26px;">
@@ -755,7 +755,7 @@ function formatConfirmarRecebimentoEmail({ externalReference, address, avaliarUr
 
 function formatPedirAvaliacaoEmail({ externalReference, address, items, avaliarUrl }){
   const nome = primeiroNome(address);
-  const subject = "Como ficaram os laços? 💗";
+  const subject = "Como ficou o seu presente? ✿";
   const lista = (items || []).map(i => `• ${i.name}`).join("\n");
 
   const text = [
@@ -784,7 +784,7 @@ function formatPedirAvaliacaoEmail({ externalReference, address, items, avaliarU
     titulo: subject,
     preheader: "Conta pra gente o que achou — leva menos de um minuto.",
     eyebrow: "sua opinião",
-    tituloCartao: "Como ficaram os laços? 💗",
+    tituloCartao: "Como ficou o seu presente? ✿",
     corpoHtml: `
       <tr>
         <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:15px; line-height:1.6; padding-bottom:20px;">
@@ -829,16 +829,16 @@ function cabecalhosDeDescadastro(unsubscribeUrl){
 
 function formatCarrinhoEsquecidoEmail({ address, items, retomarUrl, whatsappUrl, unsubscribeUrl }){
   const nome = primeiroNome(address);
-  const subject = "Seus laços ficaram esperando 🎀";
+  const subject = "Seu pedido ficou esperando ✿";
   const lista = (items || []).map(i => `• ${i.name}${i.qty > 1 ? ` (${i.qty})` : ""}`).join("\n");
 
   const text = [
     nome ? `Oi, ${nome}!` : "Oi!",
     "",
-    "Você começou um pedido aqui no ateliê e ele ficou pela metade:",
+    "Você começou um pedido aqui na loja e ele ficou pela metade:",
     lista,
     "",
-    `Se quiser terminar, é só abrir este link — os laços já voltam para o carrinho: ${retomarUrl}`,
+    `Se quiser terminar, é só abrir este link — os itens já voltam para o carrinho: ${retomarUrl}`,
     "",
     ...(whatsappUrl ? [`Ficou com alguma dúvida? Fala comigo no WhatsApp: ${whatsappUrl}`, ""] : []),
     "Cada peça é feita à mão, sob encomenda, na cor que você escolher.",
@@ -860,7 +860,7 @@ function formatCarrinhoEsquecidoEmail({ address, items, retomarUrl, whatsappUrl,
     titulo: subject,
     preheader: "Seu carrinho continua guardado — é só abrir e terminar.",
     eyebrow: "seu carrinho",
-    tituloCartao: "Ficou faltando pouco 🎀",
+    tituloCartao: "Ficou faltando pouco ✿",
     corpoHtml: `
       <tr>
         <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:15px; line-height:1.6; padding-bottom:20px;">
@@ -926,7 +926,7 @@ function formatCampanhaEmail({ assunto, chamada, corpo, produtos, shopUrl, unsub
   const html = emailShell({
     titulo: assunto,
     preheader: chamada || assunto,
-    eyebrow: "novidades do ateliê",
+    eyebrow: "novidades da Arte Canecas",
     tituloCartao: assunto,
     corpoHtml: `
       ${paragrafosDoTexto(corpo)}
@@ -947,9 +947,9 @@ function formatCampanhaEmail({ assunto, chamada, corpo, produtos, shopUrl, unsub
 function formatAniversarioEmail({ nome, couponCode, percentOff, shopUrl, contaUrl }){
   const subject = `🎂 Feliz aniversário${nome ? `, ${nome}` : ""}! Um presente da Arte Canecas`;
   const text = [
-    nome ? `Feliz aniversário, ${nome}! 🎀` : "Feliz aniversário! 🎀",
+    nome ? `Feliz aniversário, ${nome}! ✿` : "Feliz aniversário! ✿",
     "",
-    `Para comemorar, um presente: ${percentOff}% de desconto em qualquer laço da coleção.`,
+    `Para comemorar, um presente: ${percentOff}% de desconto em qualquer peça da loja.`,
     `Cupom: ${couponCode}`,
     "",
     "Vale na sua conta até 30 dias depois do seu aniversário, uma vez.",
@@ -969,7 +969,7 @@ function formatAniversarioEmail({ nome, couponCode, percentOff, shopUrl, contaUr
     corpoHtml: `
       <tr>
         <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:15px; line-height:1.6; padding-bottom:26px;">
-          Para comemorar, um presente: <strong class="e-texto" style="color:${CORES.texto};">${escapeHTML(String(percentOff))}% de desconto</strong> em qualquer laço da coleção.
+          Para comemorar, um presente: <strong class="e-texto" style="color:${CORES.texto};">${escapeHTML(String(percentOff))}% de desconto</strong> em qualquer peça da loja.
         </td>
       </tr>
       <tr>

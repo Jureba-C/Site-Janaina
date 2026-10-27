@@ -15,8 +15,8 @@ const RASTREIO = "AA123456789BR";
 
 const pedido = {
   itens: [
-    { qty: 1, name: "Laço Duquesa", price: 49.90 },
-    { qty: 2, name: "Laço Borboleta", price: 44.90 },
+    { qty: 1, name: "Caneca alça e dentro colorida", price: 45.00 },
+    { qty: 2, name: "Xícara Ipês Brasília", price: 42.00 },
   ],
   endereco: {
     nome: "Cliente de Teste", telefone: "(61) 99692-7401",

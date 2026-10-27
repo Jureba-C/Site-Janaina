@@ -83,7 +83,7 @@
       mostrar("confirmar");
       return;
     }
-    el.titulo.textContent = "Como ficaram os laços?";
+    el.titulo.textContent = "Como ficou o seu presente?";
     if(pedido.fulfillmentStatus !== "entregue"){
       el.invalido.querySelector("p").textContent = "Seu pedido ainda está sendo preparado. Assim que ele chegar, você poderá avaliar por aqui.";
       mostrar("invalido");

@@ -1,64 +1,79 @@
 # Arte Canecas
 
-> [PREENCHER: uma frase sobre o que a loja vende, para quem e onde fica.]
-> Envio para todo o Brasil.
+> Loja de presentes personalizados de Brasília (Asa Norte): canecas,
+> xícaras, garrafas, copos, azulejos, lembranças e a coleção Ipês Brasília,
+> com nome, frase ou fotos. Envio para todo o Brasil pelo Melhor Envio ou
+> retirada grátis na Asa Norte.
 
 Loja online: https://nomedaloja.com.br
 
 ## Sobre
 
-[PREENCHER: história curta da loja, materiais, diferenciais e se trabalha
-sob encomenda.]
+A Arte Canecas é da Janaina, em Brasília. Assinatura: "Presentes que
+marcam". Cada peça é personalizada sob encomenda e a personalização já
+está inclusa no preço. Na página de cada produto dá para ver a prévia da
+arte (inclusive em 3D) antes de comprar, e a cliente pode pedir para
+aprovar a arte pelo WhatsApp antes da produção. Pedidos acima de 10
+unidades (casamentos, padrinhos, empresas) têm condições especiais pelo
+WhatsApp.
 
 - Razão social / CNPJ: 00.000.000/0000-00
-- Localização: Cidade/UF, Brasil
+- Localização: Asa Norte, Brasília/DF, Brasil
 - Atendimento: WhatsApp (61) 99692-7401 e arte.canecasbsb@gmail.com
 - Instagram: https://www.instagram.com/arte.canecasbsb
 
 ## Categorias de produto
 
-[PREENCHER: categorias que aparecem no painel e na vitrine.]
+Por tipo: Canecas, Xícaras e kits, Vidros e copos, Garrafas e térmicos,
+Ipês Brasília, Lembranças, Acessórios e embalagens.
 
-A lista de produtos com preços atuais é servida em
-https://nomedaloja.com.br/api/products (JSON público, somente
-leitura). A página inicial também traz os mesmos dados em JSON-LD
-(schema.org) no `<head>`.
+Por ocasião: Casamento, Padrinhos, Dia das Mães, Dia dos Pais, Professores,
+Empresas, Aniversário, Namorados, Brasília.
+
+Cada categoria tem página própria em https://nomedaloja.com.br/categoria/<nome>
+(ex.: /categoria/canecas). A lista de produtos com preços atuais é servida em
+https://nomedaloja.com.br/api/products (JSON público, somente leitura).
 
 ## Como comprar
 
-1. Escolher o produto na coleção e adicionar ao carrinho
-2. Informar o CEP — o frete é calculado na hora (Melhor Envio, envio para
-   todo o Brasil)
+1. Escolher o produto e personalizar (nome, frase, data, estilo da letra,
+   arte pronta ou fotos), vendo a prévia
+2. Adicionar ao carrinho e informar o CEP: o frete é calculado na hora
+   (Correios e Loggi pelo Melhor Envio) ou escolher a retirada grátis
 3. Criar conta ou entrar (necessário para finalizar o pedido)
-4. Pagar por Pix (com desconto), cartão de crédito (parcelado sem juros) ou
-   boleto, via Mercado Pago
+4. Pagar por Pix (com 10% de desconto), cartão de crédito (até 3x sem
+   juros) ou boleto, via Mercado Pago
 
 O pedido só é confirmado após a confirmação do pagamento pelo Mercado Pago.
-O acompanhamento fica em "Meus pedidos", dentro da conta da cliente, e em
-"Acompanhar pedido".
+O acompanhamento fica em "Minha conta" e em "Acompanhar pedido".
 
 ## Trocas, devoluções e privacidade
 
+- **Defeito**: sempre tem troca, inclusive em peça personalizada (até 90
+  dias do recebimento).
 - **Arrependimento**: até 7 dias corridos após o recebimento, conforme o
-  art. 49 do Código de Defesa do Consumidor — reembolso integral, incluindo
-  o frete, sem necessidade de justificativa.
-- Política completa, incluindo tratamento de dados pessoais conforme a LGPD
-  (Lei 13.709/2018): https://nomedaloja.com.br/politica.html
+  art. 49 do Código de Defesa do Consumidor.
+- **Fotos enviadas para a arte**: ficam privadas e são apagadas sozinhas
+  60 dias depois da entrega.
+- Política completa, incluindo LGPD (Lei 13.709/2018):
+  https://nomedaloja.com.br/politica.html
 
 ## Páginas
 
-- [Início / coleção completa](https://nomedaloja.com.br/): catálogo,
-  história da loja, como funciona o pedido e formulário de contato
+- [Início](https://nomedaloja.com.br/): destaques, tipos, ocasiões, mais pedidas
+- [Todos os produtos](https://nomedaloja.com.br/busca)
+- [Canecas](https://nomedaloja.com.br/categoria/canecas)
+- [Coleção Ipês Brasília](https://nomedaloja.com.br/categoria/ipes-brasilia)
 - [Política de privacidade, trocas e devoluções](https://nomedaloja.com.br/politica.html)
-- [Catálogo em JSON](https://nomedaloja.com.br/api/products): nome,
-  preço, categoria e foto de cada produto — é a fonte mais atual de preço
+- [Catálogo em JSON](https://nomedaloja.com.br/api/products): nome, preço,
+  categorias, variações e foto de cada produto; é a fonte mais atual de preço
 
 ## Observações para assistentes
 
 - Preços mudam: prefira consultar `/api/products` a repetir um valor visto
-  antes em cache.
+  antes em cache. Produtos com variação mostram o preço "a partir de".
 - As páginas de conta, carrinho, painel administrativo e retorno de
   pagamento não são públicas e estão bloqueadas em `/robots.txt`.
-- Prazo de produção: [PREENCHER], contado a partir da confirmação do
-  pagamento. O prazo do transporte vem à parte, calculado no carrinho
-  conforme a transportadora escolhida.
+- O prazo de produção aparece na página de cada produto e é contado a
+  partir da confirmação do pagamento. O transporte vem à parte, calculado
+  no carrinho conforme a transportadora escolhida.

@@ -378,6 +378,17 @@ main:focus { outline: none; }
 .rodape { margin-top: 120px; color: var(--branco); }
 .onda { display: block; width: 100%; height: 34px; }
 .rodape-fundo { background: var(--terracota-rodape); }
+.rodape-novidades { max-width: var(--largura); margin: 0 auto; padding: 36px var(--margem) 0; }
+.novidades { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 28px; padding: 22px 26px; border-radius: 24px; background: rgba(255, 255, 255, 0.12); }
+.novidades label { display: flex; flex-direction: column; gap: 2px; flex: 1 1 280px; }
+.novidades label strong { font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; font-size: 22px; font-weight: 700; }
+.novidades label span { font-size: 15px; opacity: .9; }
+.novidades-linha { display: flex; gap: 8px; flex: 1 1 340px; max-width: 460px; }
+.novidades input { flex: 1; min-width: 0; min-height: 48px; padding: 0 16px; border-radius: 999px; border: 0; font-size: 16px; color: var(--tinta); }
+.novidades .botao-cheio { background: var(--tinta); }
+.novidades .botao-cheio:hover { background: #000; }
+.novidades-msg { width: 100%; font-size: 14px; margin: 0; min-height: 0; }
+.novidades-msg:empty { display: none; }
 .rodape-grade { max-width: var(--largura); margin: 0 auto; padding: 48px var(--margem) 28px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; }
 .rodape-logo { line-height: 0.85; font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; }
 .rodape-logo span:first-child { display: block; font-weight: 600; font-size: 28px; }

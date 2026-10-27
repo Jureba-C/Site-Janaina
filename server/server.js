@@ -300,7 +300,7 @@ function sendNotFound(req, res){
     return res.status(404).json({ error: "Rota não encontrada." });
   }
   if ((req.method === "GET" || req.method === "HEAD") && req.accepts("html")) {
-    return res.status(404).sendFile(path.join(SITE_ROOT, "404.html"));
+    return res.status(404).sendFile(path.join(SITE_ROOT, "404.html"), { dotfiles: "allow" });
   }
   return res.status(404).send("Não encontrado.");
 }
@@ -310,7 +310,7 @@ function sendTooManyRequests(req, res){
     return res.status(429).json({ error: "Muitas requisições. Aguarde um instante e tente novamente." });
   }
   if ((req.method === "GET" || req.method === "HEAD") && req.accepts("html")) {
-    return res.status(429).sendFile(path.join(SITE_ROOT, "429.html"));
+    return res.status(429).sendFile(path.join(SITE_ROOT, "429.html"), { dotfiles: "allow" });
   }
   return res.status(429).send("Muitas requisições. Aguarde um instante e tente novamente.");
 }
@@ -362,101 +362,9 @@ const politicaTroca = {
   returnFees: "https://schema.org/FreeReturn",
 };
 
-function dadosEstruturados(){
-  const overridesMap = getProductOverridesMap();
-  const rotuloCategoria = new Map(getAllCategories().map(c => [c.slug, c.label]));
-  const produtos = getAllProductIds().map((id, i) => {
-    const p = effectiveProduct(id, overridesMap);
-    if(!p || p.hidden) return null;
-    const categoria = rotuloCategoria.get(p.category) || p.category;
-    const item = {
-      "@type": "Product",
-      name: p.name,
-      description: `${p.name} — laço artesanal feito à mão pela Arte Canecas, ideal para ${categoria.toLowerCase()}.`,
-      category: p.category,
-      brand: { "@type": "Brand", name: "Arte Canecas" },
-      offers: {
-        "@type": "Offer",
-        price: p.price.toFixed(2),
-        priceCurrency: "BRL",
-        availability: p.soldOut
-          ? "https://schema.org/OutOfStock"
-          : "https://schema.org/InStock",
-        itemCondition: "https://schema.org/NewCondition",
-        url: SITE_URL + produtoUrl.caminhoDoProduto(id, p.name),
-        seller: { "@id": `${SITE_URL}/#loja` },
-        hasMerchantReturnPolicy: { "@id": POLITICA_TROCA_ID },
-      },
-    };
-    if(p.photoUrl){
-      item.image = p.photoUrl.startsWith("http") ? p.photoUrl : `${SITE_URL}/${p.photoUrl.replace(/^\//, "")}`;
-    }
-    return { "@type": "ListItem", item };
-  }).filter(Boolean).map((linha, i) => ({ ...linha, position: i + 1 }));
-
-  return {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Store",
-        "@id": `${SITE_URL}/#loja`,
-        name: "Arte Canecas",
-        description: "Ateliê artesanal de laços e presilhas para bebês e crianças. Cada peça é feita à mão, sob encomenda, na cor escolhida pela cliente.",
-        url: SITE_URL,
-        logo: `${SITE_URL}/img/logo-loja.png`,
-        image: `${SITE_URL}/img/og-loja.jpg`,
-        telephone: "+5561996927401",
-        email: "arte.canecasbsb@gmail.com",
-        taxID: "00.000.000/0000-00",
-        priceRange: "R$ 29 - R$ 90",
-        currenciesAccepted: "BRL",
-        paymentAccepted: "Pix, Cartão de crédito, Boleto",
-        address: {
-          "@type": "PostalAddress",
-          addressLocality: "Brasília",
-          addressRegion: "DF",
-          addressCountry: "BR",
-        },
-        areaServed: { "@type": "Country", name: "Brasil" },
-        sameAs: ["https://www.instagram.com/arte.canecasbsb"],
-      },
-      {
-        "@type": "WebSite",
-        "@id": `${SITE_URL}/#site`,
-        url: SITE_URL,
-        name: "Arte Canecas",
-        inLanguage: "pt-BR",
-        publisher: { "@id": `${SITE_URL}/#loja` },
-      },
-      {
-        "@type": "ItemList",
-        name: "Coleção de laços artesanais",
-        itemListElement: produtos,
-      },
-      politicaTroca,
-    ],
-  };
-}
-
-function blocoDadosEstruturados(){
-  const json = JSON.stringify(dadosEstruturados()).replace(/</g, "\\u003c");
-  return `<script type="application/ld+json">${json}</script>`;
-}
-
-function atributoCupomBoasVindas(){
-  const coupon = db.getCoupon(WELCOME_COUPON_CODE);
-  const dados = coupon ? { code: coupon.code, percentOff: coupon.percent_off } : null;
-  return JSON.stringify(dados)
-    .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-}
-
 const REF_ASSET = /\b(href|src)="(\/?(?:css|js|img)\/[^"?#]+\.(?:css|js|jpg|jpeg|png|svg|webp|gif)|\/?favicon\.ico|\/?apple-touch-icon\.png)"/g;
 const REF_SRCSET = /\bsrcset="([^"]+)"/g;
 const CAMINHO_NO_SRCSET = /(\/?(?:css|js|img)\/[^\s,?#]+\.(?:jpg|jpeg|png|svg|webp|gif))/g;
-const MARCA_JSONLD = "<template data-marca=DADOS-ESTRUTURADOS></template>";
-const MARCA_CUPOM = "%%CUPOM-BOAS-VINDAS%%";
-const MARCA_META_SOCIAL = "<template data-marca=META-SOCIAL></template>";
-const MARCA_DADOS_PRODUTO = "<template data-marca=DADOS-PRODUTO></template>";
 const CACHE_HTML = new Map();
 
 function assinaturaDosAssets(refs){
@@ -472,10 +380,9 @@ function htmlVersionado(absoluto){
 
   const valido = cacheado
     && cacheado.assinatura === assinatura
-    && cacheado.assets === assinaturaDosAssets(cacheado.refs)
-    && (!cacheado.temJsonld || cacheado.catalogo === db.catalogVersion());
+    && cacheado.assets === assinaturaDosAssets(cacheado.refs);
 
-  if(valido) return comCupom(cacheado.html);
+  if(valido) return cacheado.html;
 
   const refs = [];
   const versionar = (rel) => {
@@ -483,7 +390,7 @@ function htmlVersionado(absoluto){
     const v = versaoDoAsset(rel);
     return v ? `${rel}?v=${v}` : rel;
   };
-  let html = fs.readFileSync(absoluto, "utf8")
+  const html = fs.readFileSync(absoluto, "utf8")
     .replace(REF_ASSET, (inteiro, attr, rel) => {
       const versionado = versionar(rel);
       return versionado === rel ? inteiro : `${attr}="${versionado}"`;
@@ -491,29 +398,14 @@ function htmlVersionado(absoluto){
     .replace(REF_SRCSET, (inteiro, lista) =>
       `srcset="${lista.replace(CAMINHO_NO_SRCSET, versionar)}"`);
 
-  const temJsonld = html.includes(MARCA_JSONLD);
-  if(temJsonld) html = html.replace(MARCA_JSONLD, blocoDadosEstruturados());
-
   CACHE_HTML.set(absoluto, {
     assinatura,
     refs,
     assets: assinaturaDosAssets(refs),
-    temJsonld,
-    catalogo: temJsonld ? db.catalogVersion() : "",
     html,
   });
-  return comCupom(html);
+  return html;
 }
-
-function comCupom(html){
-  const comCupomTrocado = html.includes(MARCA_CUPOM)
-    ? html.replace(MARCA_CUPOM, atributoCupomBoasVindas())
-    : html;
-  return comAvaliacoes(comCupomTrocado);
-}
-
-const MARCA_NOTA_MEDIA = "<template data-marca=NOTA-MEDIA></template>";
-const MARCA_AVALIACOES = "<template data-marca=AVALIACOES></template>";
 
 function escaparHtml(valor){
   return String(valor ?? "")
@@ -521,421 +413,12 @@ function escaparHtml(valor){
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-function estrelasHtml(nota){
-  let html = "";
-  for(let i = 1; i <= 5; i++){
-    html += `<i class="bi bi-star-fill${i <= nota ? "" : " is-apagada"}" aria-hidden="true"></i>`;
-  }
-  return `<span class="avaliacao-estrelas" role="img" aria-label="${nota} de 5 estrelas">${html}</span>`;
-}
-
-function blocoNotaMedia(){
-  const { total, media } = db.notaMedia();
-  if(!total){
-    return `<div class="hero-stat"><span class="hero-stat-icone" aria-hidden="true"><i class="bi bi-truck"></i></span><span class="num is-texto">Todo o Brasil</span><span class="lbl">envio com rastreio</span></div>`;
-  }
-  const nota = media.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const rotulo = total === 1 ? "de 1 avaliação" : `de ${total} avaliações`;
-  return `<div class="hero-stat hero-stat-nota"><span class="hero-stat-icone" aria-hidden="true"><i class="bi bi-star-fill"></i></span><span class="num"><span class="num-valor" data-contar="${media.toFixed(1)}" data-casas="1">${nota}</span><i class="bi bi-star-fill num-estrela" aria-hidden="true"></i></span><span class="lbl">${rotulo}</span></div>`;
-}
-
-const ENFEITES_AVALIACOES = [
-  ["laco", "4%", "12%", "48px", "-18deg", "rosa", 1],
-  ["laco", "38%", "6%", "30px", "14deg", "ouro", 2],
-  ["laco", "57%", "80%", "56px", "10deg", "claro", 3],
-  ["laco", "93%", "16%", "40px", "-10deg", "forte", 2],
-  ["laco", "88%", "80%", "70px", "20deg", "claro", 1],
-  ["laco", "7%", "80%", "36px", "12deg", "ouro", 3],
-  ["laco", "46%", "42%", "22px", "-24deg", "rosa", 4],
-  ["laco", "72%", "5%", "26px", "6deg", "rosa", 3],
-  ["laco", "30%", "91%", "28px", "-12deg", "forte", 2],
-  ["brilho", "16%", "5%", "14px", "0deg", "ouro", 2],
-  ["brilho", "50%", "20%", "10px", "0deg", "ouro", 3],
-  ["brilho", "97%", "48%", "16px", "0deg", "ouro", 1],
-  ["brilho", "66%", "92%", "12px", "0deg", "ouro", 4],
-  ["brilho", "2%", "46%", "11px", "0deg", "ouro", 2],
-  ["brilho", "42%", "70%", "9px", "0deg", "ouro", 3],
-].map(([tipo, x, y, t, r, cor, p], i) => {
-  const desenho = tipo === "laco"
-    ? `<svg viewBox="0 0 100 70" focusable="false"><use href="#bow-shape"/></svg>`
-    : `<svg viewBox="0 0 20 20" focusable="false"><path d="M10 0 C11 7 13 9 20 10 C13 11 11 13 10 20 C9 13 7 11 0 10 C7 9 9 7 10 0Z"/></svg>`;
-  return `<span class="avaliacoes-enfeite enfeite-${tipo} enfeite-${cor}" data-profundidade="${p}" style="--x:${x};--y:${y};--t:${t};--r:${r};--atraso:-${(i * 0.9).toFixed(1)}s">${desenho}</span>`;
-}).join("");
-
-function secaoAvaliacoesVazia(){
-  return `
-<section class="py-5 avaliacoes-section avaliacoes-convite" id="avaliacoes" aria-labelledby="avaliacoesConviteTitulo">
-  <div class="container">
-    <div class="avaliacoes-convite-cartao">
-      <svg class="avaliacao-laco" viewBox="0 0 100 70" aria-hidden="true" focusable="false"><use href="#bow-shape"/></svg>
-      <span class="section-eyebrow avaliacoes-eyebrow">ainda sem avaliações</span>
-      <h2 class="section-title avaliacoes-convite-titulo" id="avaliacoesConviteTitulo">Seja a primeira a contar</h2>
-      <p class="avaliacoes-convite-texto">
-        Nenhuma cliente avaliou por aqui ainda. Quando o seu laço chegar, a gente
-        manda um link para você contar o que achou — e o que você escrever aparece
-        nesta página, do seu jeito.
-      </p>
-      <a href="#colecoes" class="btn-blush avaliacoes-convite-cta">Ver os laços <i class="bi bi-arrow-down-short" aria-hidden="true"></i></a>
-    </div>
-  </div>
-</section>`;
-}
-
-const CARDS_NA_SECAO = 6;
-
-function secaoAvaliacoes(){
-  const avaliacoes = db.avaliacoesPublicadas(CARDS_NA_SECAO);
-  const sobrando = CARDS_NA_SECAO - avaliacoes.length;
-  const depoimentos = sobrando > 0 ? db.depoimentosPublicados(sobrando) : [];
-  if(!avaliacoes.length && !depoimentos.length) return secaoAvaliacoesVazia();
-  const overridesMap = getProductOverridesMap();
-  const { total, media } = db.notaMedia();
-  const nota = total ? media.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "";
-  const dois = (n) => String(n).padStart(2, "0");
-  const cartoes = avaliacoes.length + depoimentos.length;
-
-  const cards = avaliacoes.map(r => {
-    const produto = effectiveProduct(r.product_id, overridesMap);
-    const nomeProduto = produto?.name || "";
-    const fotoProduto = produto?.photoUrl
-      ? (produto.photoUrl.startsWith("/api/products/photos/") ? `${produto.photoUrl}?w=160` : produto.photoUrl)
-      : "";
-    const quem = [r.customer_first_name, r.customer_city].filter(Boolean).map(escaparHtml).join(" · ");
-    const primeiroNome = escaparHtml(r.customer_first_name || "cliente");
-    const foto = r.photo_id ? `/api/avaliacoes/fotos/${escaparHtml(r.photo_id)}` : "";
-    return `
-      <li class="avaliacao-card">
-        <svg class="avaliacao-laco" viewBox="0 0 100 70" aria-hidden="true" focusable="false"><use href="#bow-shape"/></svg>
-        ${nomeProduto ? `<span class="avaliacao-produto-chip">${fotoProduto ? `<img src="${escaparHtml(fotoProduto)}" alt="" width="28" height="28" loading="lazy" decoding="async">` : ""}<span>${escaparHtml(nomeProduto)}</span></span>` : ""}
-        <div class="avaliacao-topo">
-          ${estrelasHtml(r.rating)}
-          <span class="avaliacao-selo"><i class="bi bi-shield-check" aria-hidden="true"></i> Compra verificada</span>
-        </div>
-        ${r.comment ? `<blockquote class="avaliacao-texto"><p>“${escaparHtml(r.comment)}”</p></blockquote>` : ""}
-        <footer class="avaliacao-rodape">
-          ${foto ? `<button type="button" class="avaliacao-foto-botao" data-foto="${foto}?w=640" data-legenda="Foto enviada por ${quem || primeiroNome}" aria-label="Ampliar foto enviada por ${primeiroNome}"><img class="avaliacao-foto" src="${foto}?w=160" alt="" loading="lazy" decoding="async" width="56" height="56"><span class="avaliacao-foto-zoom" aria-hidden="true"><i class="bi bi-zoom-in"></i></span></button>` : ""}
-          <span class="avaliacao-autor">
-            ${quem ? `<span class="avaliacao-quem">${quem}</span>` : ""}
-            ${nomeProduto ? `<span class="avaliacao-produto">${escaparHtml(nomeProduto)}</span>` : ""}
-          </span>
-        </footer>
-      </li>`;
-  }).join("");
-
-  const cardsDepoimento = depoimentos.map(d => {
-    const quem = [d.cliente_nome, d.cliente_cidade].filter(Boolean).map(escaparHtml).join(" · ");
-    const primeiroNome = escaparHtml(d.cliente_nome || "cliente");
-    const foto = d.photo_id ? `/api/depoimentos/fotos/${escaparHtml(d.photo_id)}` : "";
-    const origem = d.origem === "instagram"
-      ? '<i class="bi bi-instagram" aria-hidden="true"></i> Enviado por Instagram'
-      : '<i class="bi bi-whatsapp" aria-hidden="true"></i> Enviado por WhatsApp';
-    return `
-      <li class="avaliacao-card is-depoimento">
-        <svg class="avaliacao-laco" viewBox="0 0 100 70" aria-hidden="true" focusable="false"><use href="#bow-shape"/></svg>
-        <div class="avaliacao-topo">
-          <span class="avaliacao-selo avaliacao-selo-origem">${origem}</span>
-        </div>
-        <blockquote class="avaliacao-texto"><p>“${escaparHtml(d.texto)}”</p></blockquote>
-        <footer class="avaliacao-rodape">
-          ${foto ? `<button type="button" class="avaliacao-foto-botao" data-foto="${foto}?w=640" data-legenda="Foto enviada por ${quem || primeiroNome}" aria-label="Ampliar foto enviada por ${primeiroNome}"><img class="avaliacao-foto" src="${foto}?w=160" alt="" loading="lazy" decoding="async" width="56" height="56"><span class="avaliacao-foto-zoom" aria-hidden="true"><i class="bi bi-zoom-in"></i></span></button>` : ""}
-          <span class="avaliacao-autor">
-            ${quem ? `<span class="avaliacao-quem">${quem}</span>` : ""}
-          </span>
-        </footer>
-      </li>`;
-  }).join("");
-
-  const pontos = cartoes > 1
-    ? `<div class="avaliacoes-pontos" aria-hidden="true">${Array.from({ length: cartoes }, (_, i) => `<span class="avaliacoes-ponto${i === 0 ? " is-ativo" : ""}"></span>`).join("")}</div>`
-    : "";
-
-  return `
-<section id="avaliacoes" class="avaliacoes-section" aria-labelledby="avaliacoesTitulo">
-  <div class="avaliacoes-enfeites" aria-hidden="true">${ENFEITES_AVALIACOES}</div>
-  <div class="container avaliacoes-container">
-    <div class="avaliacoes-tag">
-      <div class="avaliacoes-tag-cartao">
-        <svg class="presente-fita" viewBox="0 0 600 24" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-          <defs>
-            <linearGradient id="cetimFita" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="600" y2="0">
-              <stop offset="0" stop-color="#F2ABC6"/><stop offset=".17" stop-color="#F8C8D9"/><stop offset=".25" stop-color="#E48DB0"/><stop offset=".3" stop-color="#FCE1EB"/><stop offset=".42" stop-color="#F5B8CE"/><stop offset=".6" stop-color="#F7C4D7"/><stop offset=".75" stop-color="#DF84A9"/><stop offset=".8" stop-color="#FDE6EE"/><stop offset=".92" stop-color="#F4B4CC"/><stop offset="1" stop-color="#F0A6C2"/>
-            </linearGradient>
-            <linearGradient id="cetimFitaTrama" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#8C3B5E" stop-opacity=".12"/>
-            </linearGradient>
-            <linearGradient id="fitaReflexo" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
-            </linearGradient>
-            <clipPath id="fitaForma"><path d="M0 5 C60 5 110 7 150 9 C200 11 240 4 300 5 C360 6 410 8 450 9.5 C500 11 550 5 600 5 L600 20 C550 20 500 16 450 15.5 C410 15 360 20 300 20 C240 20 200 17 150 16 C110 15 60 20 0 20 Z"/></clipPath>
-          </defs>
-          <path class="presente-fita-corpo" d="M0 5 C60 5 110 7 150 9 C200 11 240 4 300 5 C360 6 410 8 450 9.5 C500 11 550 5 600 5 L600 20 C550 20 500 16 450 15.5 C410 15 360 20 300 20 C240 20 200 17 150 16 C110 15 60 20 0 20 Z" fill="url(#cetimFita)"/>
-          <path class="presente-fita-trama" d="M0 5 C60 5 110 7 150 9 C200 11 240 4 300 5 C360 6 410 8 450 9.5 C500 11 550 5 600 5 L600 20 C550 20 500 16 450 15.5 C410 15 360 20 300 20 C240 20 200 17 150 16 C110 15 60 20 0 20 Z" fill="url(#cetimFitaTrama)"/>
-          <g clip-path="url(#fitaForma)"><rect class="presente-fita-reflexo" x="-90" y="0" width="90" height="24" fill="url(#fitaReflexo)"/></g>
-          <path class="presente-fita-ouro" d="M0 5 C60 5 110 7 150 9 C200 11 240 4 300 5 C360 6 410 8 450 9.5 C500 11 550 5 600 5 L600 20 C550 20 500 16 450 15.5 C410 15 360 20 300 20 C240 20 200 17 150 16 C110 15 60 20 0 20 Z"/>
-        </svg>
-        <svg class="presente-lacinho" viewBox="0 0 80 50" aria-hidden="true" focusable="false">
-          <path class="lacinho-fita" d="M6 44 C18 38 30 32 40 24 C30 10 12 6 12 18 C12 28 30 28 40 24 C50 20 68 28 68 18 C68 6 50 10 40 24 C48 32 60 38 74 44" pathLength="1"/>
-          <path class="lacinho-ouro" d="M6 44 C18 38 30 32 40 24 C30 10 12 6 12 18 C12 28 30 28 40 24 C50 20 68 28 68 18 C68 6 50 10 40 24 C48 32 60 38 74 44" pathLength="1"/>
-        </svg>
-        <svg class="presente-laco" viewBox="0 0 240 180" aria-hidden="true" focusable="false">
-          <defs>
-            <linearGradient id="cetimLaco" x1="0" y1="0" x2="0.4" y2="1">
-              <stop offset="0" stop-color="#FDE7EF"/><stop offset=".45" stop-color="#F4B4CC"/><stop offset="1" stop-color="#DD6E9B"/>
-            </linearGradient>
-            <linearGradient id="cetimLacoNo" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#EA8FB4"/><stop offset="1" stop-color="#C05480"/>
-            </linearGradient>
-            <linearGradient id="ouroLaco" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#F3E3BF"/><stop offset=".5" stop-color="#C9A66B"/><stop offset="1" stop-color="#E6CC98"/>
-            </linearGradient>
-          </defs>
-          <g class="laco-corpo">
-            <path class="laco-ponta laco-ponta-esq" d="M114 80 C106 102 88 118 92 146 L101 138 L108 150 C107 124 119 104 124 82Z"/>
-            <path class="laco-ponta laco-ponta-dir" d="M126 80 C134 102 152 118 148 146 L139 138 L132 150 C133 124 121 104 116 82Z"/>
-            <path class="laco-alca laco-alca-esq" d="M120 72 C104 42 62 16 38 34 C16 50 28 90 70 88 C92 87 110 80 120 72Z"/>
-            <path class="laco-alca laco-alca-dir" d="M120 72 C136 42 178 16 202 34 C224 50 212 90 170 88 C148 87 130 80 120 72Z"/>
-            <path class="laco-brilho laco-brilho-esq" d="M48 40 C64 30 88 40 104 58"/>
-            <path class="laco-brilho laco-brilho-dir" d="M192 40 C176 30 152 40 136 58"/>
-            <path class="laco-no" d="M110 62 Q120 56 130 62 Q135 72 130 82 Q120 88 110 82 Q105 72 110 62Z"/>
-          </g>
-        </svg>
-        <span class="section-eyebrow avaliacoes-eyebrow">quem já recebeu</span>
-        <h2 class="section-title avaliacoes-titulo" id="avaliacoesTitulo">O que dizem as clientes</h2>
-        ${total ? `<p class="avaliacoes-resumo">
-          <strong class="avaliacoes-nota">${nota}</strong>
-          <span class="avaliacoes-resumo-lado">
-            <span aria-hidden="true">${estrelasHtml(Math.round(media))}</span>
-            <span>${total === 1 ? "1 avaliação verificada" : `${total} avaliações verificadas`}</span>
-          </span>
-        </p>` : ""}
-        <div class="avaliacoes-controles" hidden>
-          <button type="button" class="avaliacoes-seta" data-ir="-1" aria-label="Avaliação anterior"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
-          <span class="avaliacoes-contador" aria-live="polite"><span class="avaliacoes-contador-atual">01</span><span class="visually-hidden"> de </span><span class="avaliacoes-trilho" aria-hidden="true"><span class="avaliacoes-trilho-fita"></span></span><span class="avaliacoes-contador-total">${dois(cartoes)}</span></span>
-          <button type="button" class="avaliacoes-seta" data-ir="1" aria-label="Próxima avaliação"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
-        </div>
-      </div>
-    </div>
-    <div class="avaliacoes-palco">
-      <ul class="avaliacoes-grade" aria-label="Avaliações das clientes" tabindex="0">${cards}${cardsDepoimento}
-      </ul>
-      ${pontos}
-    </div>
-  </div>
-</section>`;
-}
-
-const MARCA_HERO = "<template data-marca=HERO-FOTOS></template>";
-const MARCA_HERO_PRELOAD = "<template data-marca=HERO-PRELOAD></template>";
-const HERO_SIZES = "(max-width: 575.98px) 78vw, (max-width: 991.98px) 62vw, 420px";
-
-const FOTOS_HERO_PADRAO = [
-  { slug: "hero-foto-1", legenda: "Foto de destaque 1",
-    alt: "Foto de destaque 1 da loja" },
-  { slug: "hero-foto-2", legenda: "Foto de destaque 2",
-    alt: "Foto de destaque 2 da loja" },
-  { slug: "hero-foto-3", legenda: "Foto de destaque 3",
-    alt: "Foto de destaque 3 da loja" },
-  { slug: "hero-foto-4", legenda: "Foto de destaque 4",
-    alt: "Foto de destaque 4 da loja" },
-  { slug: "hero-foto-5", legenda: "Foto de destaque 5",
-    alt: "Foto de destaque 5 da loja" },
-];
-
-function fontesDaFoto(foto){
-  return foto.slug
-    ? {
-        webp480: comVersao(`/img/${foto.slug}-480.webp`),
-        webp960: comVersao(`/img/${foto.slug}-960.webp`),
-        jpg480:  comVersao(`/img/${foto.slug}-480.jpg`),
-        jpg960:  comVersao(`/img/${foto.slug}-960.jpg`),
-        temWebpSeparado: true,
-      }
-    : {
-        webp480: `/api/hero/fotos/${foto.id}?w=480`,
-        webp960: `/api/hero/fotos/${foto.id}?w=960`,
-        jpg480:  `/api/hero/fotos/${foto.id}?w=480`,
-        jpg960:  `/api/hero/fotos/${foto.id}?w=960`,
-        temWebpSeparado: false,
-      };
-}
-
-function preloadHero(foto){
-  const f = fontesDaFoto(foto);
-  const tipo = f.temWebpSeparado ? ' type="image/webp"' : "";
-  const p480 = f.temWebpSeparado ? f.webp480 : f.jpg480;
-  const p960 = f.temWebpSeparado ? f.webp960 : f.jpg960;
-  return `<link rel="preload" as="image"${tipo} imagesrcset="${p480} 480w, ${p960} 960w" imagesizes="${HERO_SIZES}" fetchpriority="high">`;
-}
-
-function slideHero(foto, primeiro){
-  const prioridade = primeiro ? ' fetchpriority="high"' : "";
-  const ativa = primeiro ? " is-ativa" : "";
-  const fontes = fontesDaFoto(foto);
-  const source = fontes.temWebpSeparado
-    ? `<source type="image/webp" sizes="${HERO_SIZES}" srcset="${fontes.webp480} 480w, ${fontes.webp960} 960w">`
-    : "";
-  return `<div class="hero-slide${ativa}" data-legenda="${escaparHtml(foto.legenda)}">
-                  <picture>
-                    ${source}
-                    <img src="${fontes.jpg960}" srcset="${fontes.jpg480} 480w, ${fontes.jpg960} 960w" sizes="${HERO_SIZES}"
-                         alt="${escaparHtml(foto.alt)}" width="960" height="1200" decoding="async"${prioridade}>
-                  </picture>
-                </div>`;
-}
-
 function comVersao(rel){
   const v = versaoDoAsset(rel);
   return v ? `${rel}?v=${v}` : rel;
 }
 
-let CACHE_HERO = null;
-
-function blocoHero(){
-  const doPainel = db.listHeroPhotos();
-  const fotos = doPainel.length ? doPainel : FOTOS_HERO_PADRAO;
-  const assinatura = doPainel.length
-    ? db.heroVersion()
-    : FOTOS_HERO_PADRAO.flatMap(f => [
-        versaoDoAsset(`img/${f.slug}-480.jpg`),
-        versaoDoAsset(`img/${f.slug}-960.jpg`),
-        versaoDoAsset(`img/${f.slug}-480.webp`),
-        versaoDoAsset(`img/${f.slug}-960.webp`),
-      ]).join("|");
-  if(CACHE_HERO && CACHE_HERO.assinatura === assinatura) return CACHE_HERO.html;
-
-  const html = `<div class="hero-slides" id="heroSlides">
-                ${slideHero(fotos[0], true)}
-              </div>
-              <span class="hero-quadro-badge" aria-hidden="true">feito à mão <i class="bi bi-heart-fill"></i></span>
-              <template id="heroSlidesExtras">
-                ${fotos.slice(1).map(f => slideHero(f, false)).join("\n                ")}
-              </template>`;
-  CACHE_HERO = { assinatura, html, preload: preloadHero(fotos[0]) };
-  return html;
-}
-
-function preloadDoHero(){
-  blocoHero();
-  return CACHE_HERO.preload;
-}
-
-function comAvaliacoes(html){
-  let saida = html;
-  if(saida.includes(MARCA_NOTA_MEDIA)) saida = saida.replace(MARCA_NOTA_MEDIA, () => blocoNotaMedia());
-  if(saida.includes(MARCA_AVALIACOES)) saida = saida.replace(MARCA_AVALIACOES, () => secaoAvaliacoes());
-  if(saida.includes(MARCA_HERO)) saida = saida.replace(MARCA_HERO, () => blocoHero());
-  if(saida.includes(MARCA_HERO_PRELOAD)) saida = saida.replace(MARCA_HERO_PRELOAD, () => preloadDoHero());
-  return saida;
-}
-
 const OG_IMAGEM_PADRAO = `${SITE_URL}/img/og-loja.jpg`;
-
-function metaSocialPadrao(){
-  return `<link rel="canonical" href="${SITE_URL}/">
-
-<meta property="og:type" content="website">
-<meta property="og:locale" content="pt_BR">
-<meta property="og:site_name" content="Arte Canecas">
-<meta property="og:url" content="${SITE_URL}/">
-<meta property="og:title" content="Arte Canecas — Laços artesanais feitos com carinho">
-<meta property="og:description" content="Presilhas e laços artesanais em cetim e algodão, feitos sob encomenda na cor que você escolher. Envio para todo o Brasil.">
-<meta property="og:image" content="${OG_IMAGEM_PADRAO}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:alt" content="Arte Canecas">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Arte Canecas — Laços artesanais feitos com carinho">
-<meta name="twitter:description" content="Presilhas e laços artesanais em cetim e algodão, feitos sob encomenda na cor que você escolher.">
-<meta name="twitter:image" content="${OG_IMAGEM_PADRAO}">`;
-}
-
-function imagemSocialDoProduto(p){
-  const foto = p.photoUrl;
-  if(!foto) return OG_IMAGEM_PADRAO;
-  if(foto.startsWith("http")) return foto;
-  if(foto.startsWith("/api/products/photos/")) return `${SITE_URL}${foto}?w=900`;
-  return `${SITE_URL}/${foto.replace(/^\//, "")}`;
-}
-
-function descricaoDoProduto(p){
-  if(p.description) return p.description;
-  const rotulo = getAllCategories().find(c => c.slug === p.category)?.label || p.category;
-  return `${p.name} — laço artesanal feito à mão pela Arte Canecas, ideal para ${String(rotulo).toLowerCase()}.`;
-}
-
-function tituloDoProduto(p){
-  return `${p.name} — Arte Canecas`;
-}
-
-function metaSocialDoProduto(id, p){
-  const url = SITE_URL + produtoUrl.caminhoDoProduto(id, p.name);
-  const titulo = escaparHtml(tituloDoProduto(p));
-  const descricao = escaparHtml(descricaoDoProduto(p));
-  const imagem = escaparHtml(imagemSocialDoProduto(p));
-  return `<link rel="canonical" href="${escaparHtml(url)}">
-
-<meta property="og:type" content="product">
-<meta property="og:locale" content="pt_BR">
-<meta property="og:site_name" content="Arte Canecas">
-<meta property="og:url" content="${escaparHtml(url)}">
-<meta property="og:title" content="${titulo}">
-<meta property="og:description" content="${descricao}">
-<meta property="og:image" content="${imagem}">
-<meta property="og:image:alt" content="${escaparHtml(p.name)}">
-<meta property="product:price:amount" content="${p.price.toFixed(2)}">
-<meta property="product:price:currency" content="BRL">
-<meta property="product:availability" content="${p.soldOut ? "out of stock" : "in stock"}">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="${titulo}">
-<meta name="twitter:description" content="${descricao}">
-<meta name="twitter:image" content="${imagem}">`;
-}
-
-function blocoDadosDoProduto(id, p){
-  const categoria = getAllCategories().find(c => c.slug === p.category)?.label || p.category;
-  const dados = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: p.name,
-    description: descricaoDoProduto(p),
-    category: categoria,
-    url: SITE_URL + produtoUrl.caminhoDoProduto(id, p.name),
-    image: imagemSocialDoProduto(p),
-    brand: { "@type": "Brand", name: "Arte Canecas" },
-    offers: {
-      "@type": "Offer",
-      price: p.price.toFixed(2),
-      priceCurrency: "BRL",
-      availability: p.soldOut
-        ? "https://schema.org/OutOfStock"
-        : "https://schema.org/InStock",
-      itemCondition: "https://schema.org/NewCondition",
-      url: SITE_URL + produtoUrl.caminhoDoProduto(id, p.name),
-      seller: { "@id": `${SITE_URL}/#loja` },
-      hasMerchantReturnPolicy: { "@id": POLITICA_TROCA_ID },
-    },
-  };
-  const json = JSON.stringify(dados).replace(/</g, "\\u003c");
-  return `<script type="application/ld+json">${json}</script>`;
-}
-
-function comMetaSocial(html, destaque){
-  if(!html.includes(MARCA_META_SOCIAL)) return html;
-  if(!destaque){
-    return html
-      .replace(MARCA_META_SOCIAL, () => metaSocialPadrao())
-      .replace(MARCA_DADOS_PRODUTO, "");
-  }
-  const { id, produto } = destaque;
-  return html
-    .replace(MARCA_META_SOCIAL, () => metaSocialDoProduto(id, produto))
-    .replace(MARCA_DADOS_PRODUTO, () => blocoDadosDoProduto(id, produto))
-    .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${escaparHtml(tituloDoProduto(produto))}</title>`)
-    .replace(/<meta name="description" content="[^"]*">/,
-      () => `<meta name="description" content="${escaparHtml(descricaoDoProduto(produto))}">`)
-    .replace("<body ", () => `<body data-produto="${id}" `);
-}
 
 let CACHE_SITEMAP = null;
 
@@ -1175,7 +658,7 @@ app.use((req, res, next) => {
   try { html = htmlVersionado(arquivo); } catch { return next(); }
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache");
-  return res.send(comMetaSocial(html, null));
+  return res.send(html);
 });
 
 app.use(precompress.criarPrecompressor(SITE_ROOT, { revalidarSempre: REVALIDATE_ALWAYS }));
@@ -2445,7 +1928,7 @@ app.post("/api/newsletter", strictLimiter, async (req, res) => {
       to: emailAddress,
       couponCode: coupon.code,
       percentOff: coupon.percent_off,
-      shopUrl: `${CLIENT_ORIGIN}/index.html#colecoes`,
+      shopUrl: `${CLIENT_ORIGIN}/`,
       unsubscribeUrl,
     });
     emailed = true;
@@ -2464,14 +1947,14 @@ function handleNewsletterUnsubscribe(req, res) {
   res.send(`<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Descadastro — Arte Canecas</title></head>
-<body style="margin:0; padding:0; background:#FFFDFC; font-family:'Segoe UI', Helvetica, Arial, sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FFFDFC;"><tr><td align="center" style="padding:64px 16px;">
+<body style="margin:0; padding:0; background:#FBF8F3; font-family:'Segoe UI', Helvetica, Arial, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF8F3;"><tr><td align="center" style="padding:64px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:420px; background:#FFFFFF; border-radius:24px; padding:36px 32px; text-align:center;">
-      <tr><td style="font-size:26px; padding-bottom:10px;">${ok ? "🎀" : "⚠️"}</td></tr>
-      <tr><td style="color:#54293C; font-size:18px; font-weight:bold; padding-bottom:8px;">
+      <tr><td style="font-size:26px; padding-bottom:10px; color:#CD7031;">${ok ? "✿" : "!"}</td></tr>
+      <tr><td style="color:#323230; font-size:18px; font-weight:bold; padding-bottom:8px;">
         ${ok ? "Descadastro concluído" : "Não foi possível descadastrar"}
       </td></tr>
-      <tr><td style="color:#8C6577; font-size:14px; line-height:1.6;">
+      <tr><td style="color:#6B6259; font-size:14px; line-height:1.6;">
         ${ok
           ? "Você não vai mais receber e-mails promocionais da Arte Canecas. Pedidos e redefinições de senha continuam chegando normalmente, se você tiver conta."
           : "O link parece inválido ou já foi usado. Se precisar de ajuda, fale pelo WhatsApp."}
@@ -4367,10 +3850,10 @@ app.get("/api/admin/hero/fotos", auth.requireAdmin, auth.requireAdminTwoFactor, 
     })),
     max: MAX_FOTOS_HERO,
     usandoPadrao: db.countHeroPhotos() === 0,
-    padrao: FOTOS_HERO_PADRAO.map(f => ({
+    padrao: lojaDados.DESTAQUES_PADRAO.map(f => ({
       legenda: f.legenda,
       alt: f.alt,
-      url: comVersao(`img/${f.slug}-480.jpg`),
+      url: comVersao(f.src.slice(1)),
     })),
   });
 });

@@ -146,7 +146,7 @@ function enfileirarPedidosDeAvaliacao(agora = Date.now()){
     });
     if(id) novos++;
   }
-  console.log(`"Como ficaram os laços?": ${novos} novo(s) na fila.`);
+  console.log(`"Como ficou o seu presente?": ${novos} novo(s) na fila.`);
   return novos;
 }
 
