@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CartaoProduto } from "../componentes/CartaoProduto";
 import { Icone } from "../componentes/Icone";
 import type { PaginaCategoria } from "../tipos";
@@ -30,6 +31,8 @@ function enderecoDaPagina(slug: string, filtros: PaginaCategoria["filtros"], pag
 export function Categoria({ pagina }: { pagina: PaginaCategoria }) {
   const { categoria, filtros } = pagina;
   const outroGrupo = pagina.outras.filter(c => c.grupo !== categoria.grupo);
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const ativos = [filtros.outra, filtros.preco, filtros.ordem && filtros.ordem !== "destaque" ? filtros.ordem : ""].filter(Boolean).length;
   return (
     <div className="envolve pagina-lista">
       <nav className="trilha" aria-label="Você está em">
@@ -41,7 +44,10 @@ export function Categoria({ pagina }: { pagina: PaginaCategoria }) {
           <h1>{categoria.nome}</h1>
           <p className="lista-contagem" role="status">{pagina.total === 1 ? "1 produto" : `${pagina.total} produtos`}</p>
         </div>
-        <form className="filtros" method="get" action={`/categoria/${categoria.slug}`}>
+        <button type="button" className="botao botao-vazado botao-filtrar" aria-expanded={filtrosAbertos} aria-controls="filtros-categoria" onClick={() => setFiltrosAbertos(a => !a)}>
+          <Icone nome="filtro" tamanho={18} />Filtrar e ordenar{ativos ? <span className="filtros-contagem">{ativos}</span> : null}
+        </button>
+        <form id="filtros-categoria" className={`filtros${filtrosAbertos ? " aberto" : ""}`} method="get" action={`/categoria/${categoria.slug}`}>
           <div className="campo">
             <label htmlFor="filtro-outra">{categoria.grupo === "ocasiao" ? "Tipo" : "Ocasião"}</label>
             <select id="filtro-outra" name="outra" defaultValue={filtros.outra} onChange={e => e.currentTarget.form?.requestSubmit()}>
@@ -64,6 +70,12 @@ export function Categoria({ pagina }: { pagina: PaginaCategoria }) {
           <noscript><button type="submit" className="botao botao-vazado">Filtrar</button></noscript>
         </form>
       </div>
+      {outroGrupo.length ? (
+        <nav className="chips-filtro" aria-label={categoria.grupo === "ocasiao" ? "Filtrar por tipo" : "Filtrar por ocasião"}>
+          <a href={enderecoDaPagina(categoria.slug, { ...filtros, outra: "" }, 1)} aria-current={!filtros.outra ? "true" : undefined}>Todos</a>
+          {outroGrupo.map(c => <a key={c.slug} href={enderecoDaPagina(categoria.slug, { ...filtros, outra: c.slug }, 1)} aria-current={filtros.outra === c.slug ? "true" : undefined}>{c.nome}</a>)}
+        </nav>
+      ) : null}
       <h2 className="visualmente-oculto">Produtos</h2>
       {pagina.produtos.length ? (
         <div className="grade-produtos">

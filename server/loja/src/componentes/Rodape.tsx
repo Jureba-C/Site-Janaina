@@ -1,8 +1,17 @@
+import { useState, type ReactNode } from "react";
 import { linkWhatsApp } from "../compartilhado";
 import type { Loja } from "../tipos";
 import { Icone } from "./Icone";
 import { Onda } from "./Marca";
 import { Novidades } from "./Novidades";
+
+function Grupo({ titulo, rotulo, children }: { titulo: string; rotulo?: string; children: ReactNode }) {
+  const [aberto, setAberto] = useState(false);
+  const conteudo = <><h2><button type="button" className="rodape-grupo-botao" aria-expanded={aberto} onClick={() => setAberto(a => !a)}>{titulo}<Icone nome="mais" tamanho={18} /></button></h2>{children}</>;
+  return rotulo
+    ? <nav aria-label={rotulo} className={`rodape-grupo${aberto ? " aberto" : ""}`}>{conteudo}</nav>
+    : <div className={`rodape-grupo${aberto ? " aberto" : ""}`}>{conteudo}</div>;
+}
 
 export function Rodape({ loja }: { loja: Loja }) {
   const tipos = loja.categorias.filter(c => c.grupo === "tipo" && c.quantidade > 0).slice(0, 6);
@@ -17,12 +26,10 @@ export function Rodape({ loja }: { loja: Loja }) {
             <p className="rodape-logo"><span>arte</span><span>Canecas</span></p>
             <p>Transformando sentimentos em presentes.<br />{loja.cidade}</p>
           </div>
-          <nav aria-label="Loja">
-            <h2>Loja</h2>
+          <Grupo titulo="Loja" rotulo="Loja">
             <ul>{tipos.map(c => <li key={c.slug}><a href={`/categoria/${c.slug}`}>{c.nome}</a></li>)}</ul>
-          </nav>
-          <nav aria-label="Ajuda">
-            <h2>Ajuda</h2>
+          </Grupo>
+          <Grupo titulo="Ajuda" rotulo="Ajuda">
             <ul>
               <li><a href="/acompanhar-pedido.html">Acompanhar pedido</a></li>
               <li><a href="/pedidos.html">Minha conta</a></li>
@@ -30,15 +37,14 @@ export function Rodape({ loja }: { loja: Loja }) {
               <li><a href="/politica.html#trocas">Trocas e devoluções</a></li>
               <li><a href="/politica.html#privacidade">Privacidade</a></li>
             </ul>
-          </nav>
-          <div>
-            <h2>Fale com a gente</h2>
+          </Grupo>
+          <Grupo titulo="Fale com a gente">
             <ul>
               <li><a href={linkWhatsApp(loja.whatsapp)} target="_blank" rel="noopener noreferrer">WhatsApp {loja.whatsappFormatado}</a></li>
               <li><a href={`mailto:${loja.email}`}>{loja.email}</a></li>
               <li><a href={`https://www.instagram.com/${loja.instagram}`} target="_blank" rel="noopener noreferrer">Instagram e TikTok @{loja.instagram}</a></li>
             </ul>
-          </div>
+          </Grupo>
         </div>
         <div className="rodape-base">
           <div className="rodape-pagamentos">

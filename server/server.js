@@ -543,8 +543,8 @@ app.get("/categoria/:slug", (req, res) => {
   const { categoria, filtros, pagina, produtos } = dados.pagina;
   const filtrada = Boolean(filtros.outra || filtros.preco || filtros.ordem !== "destaque");
   const titulo = categoria.grupo === "ocasiao"
-    ? `Presentes para ${categoria.nome} personalizados — Arte Canecas`
-    : `${categoria.nome} personalizados — Arte Canecas`;
+    ? `Presentes personalizados para ${categoria.nome} — Arte Canecas`
+    : `${categoria.nome} com nome, frase ou foto — Arte Canecas`;
   return enviarPaginaDaLoja(res, () => ({
     dados,
     meta: {

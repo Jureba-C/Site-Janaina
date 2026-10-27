@@ -379,6 +379,21 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
     setTimeout(() => setAdicionado(false), 2500);
   }
 
+  const [origem, setOrigem] = useState("");
+  useEffect(() => setOrigem(window.location.origin), []);
+
+  function mensagemDoPedido(): string {
+    const linhas = resumoDasEscolhas(produto, escolhas).filter(l => l.valor).map(l => `${l.rotulo}: ${l.valor}`);
+    return [
+      `Olá, ${loja.responsavel}! Quero encomendar:`,
+      `${qtd}× ${produto.nome}`,
+      ...linhas,
+      usaFotos(produto, escolhas) ? "Vou mandar as fotos por aqui." : "",
+      `Valor no site: ${dinheiro(total)} (${dinheiro(precoNoPix(total))} no Pix)`,
+      `${origem}${produto.endereco}`,
+    ].filter(Boolean).join("\n");
+  }
+
   const podeArrastar = usaFotos(produto, escolhas) && (escolhas.personalizacao.fotos || []).some(f => f.zoom > 1);
   const qtdMinima = config.qtdMinima || 1;
   const categoria = produto.categoriaPrincipal;
@@ -400,13 +415,13 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
           <h1 className="produto-titulo">{produto.nome}</h1>
           {config.codigo ? <p className="produto-codigo">Cód. {config.codigo}</p> : null}
 
-          <Avisos loja={loja} produto={produto} />
-
           <div className="produto-preco" aria-live="polite">
             <p><strong>{dinheiro(precoNoPix(total))}</strong> <span>no Pix</span></p>
             <p className="produto-preco-cartao"><strong>{dinheiro(total)}</strong> no cartão em até <strong>{parcelas(total)}</strong></p>
             {qtd > 1 ? <p className="produto-preco-unidade">{dinheiro(unitario)} cada{config.faixas.length ? ` · a partir de ${config.faixas[0].min} unidades: ${dinheiro(config.faixas[0].preco)} cada` : ""}</p> : config.faixas.length ? <p className="produto-preco-unidade">A partir de {config.faixas[0].min} unidades: {dinheiro(config.faixas[0].preco)} cada</p> : null}
           </div>
+
+          <Avisos loja={loja} produto={produto} />
 
           {config.variacoes.map(grupo => {
             const escolhida = grupo.opcoes.find(o => o.id === escolhas.variacoes[grupo.id]);
@@ -462,6 +477,12 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
               {produto.esgotado ? "Esgotado" : adicionado ? "Adicionado ao carrinho" : `Adicionar ao carrinho · ${dinheiro(total)}`}
             </button>
           </div>
+          {!produto.esgotado ? (
+            <a className="pedir-whatsapp" href={linkWhatsApp(loja.whatsapp, mensagemDoPedido())} target="_blank" rel="noopener noreferrer">
+              <Icone nome="whatsapp" tamanho={20} />
+              <span>Prefere pelo WhatsApp? <strong>Pedir à {loja.responsavel}</strong></span>
+            </a>
+          ) : null}
           <ul className="confianca" aria-label="Por que comprar aqui">
             <li><Icone nome="cartao" tamanho={18} /><span><strong>10% off no Pix</strong> ou 3x sem juros</span></li>
             {config.personalizacao.ativa ? <li><Icone nome="whatsapp" tamanho={18} /><span>Você <strong>aprova a arte</strong> antes da produção</span></li> : null}

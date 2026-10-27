@@ -212,6 +212,11 @@ function paginaCategoria(slug, consulta){
     outra: categorias.some(c => c.slug === consulta.outra && c.grupo !== categoria.grupo) ? String(consulta.outra) : "",
   };
   let lista = comCategoria(visiveis, slug).map(({ id, p }) => resumo(id, p));
+  const nestaCategoria = new Set(lista.map(r => r.id));
+  const outras = categorias
+    .filter(c => c.slug !== slug && c.grupo !== categoria.grupo)
+    .map(c => ({ ...c, quantidade: comCategoria(visiveis, c.slug).filter(({ id }) => nestaCategoria.has(id)).length }))
+    .filter(c => c.quantidade > 0);
   if(filtros.outra){
     const comOutra = new Set(comCategoria(visiveis, filtros.outra).map(({ id }) => id));
     lista = lista.filter(r => comOutra.has(r.id));
@@ -231,7 +236,7 @@ function paginaCategoria(slug, consulta){
     pagina: {
       tipo: "categoria", categoria, filtros, total: lista.length, pagina, paginas,
       produtos: lista.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA),
-      outras: categorias.filter(c => c.quantidade > 0 && c.slug !== slug),
+      outras,
     },
     caminho: `/categoria/${slug}`,
   };

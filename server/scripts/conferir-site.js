@@ -118,6 +118,9 @@ async function elementosCobertos(pagina){
         if(x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
         const topo = document.elementFromPoint(x, y);
         if(!topo || el.contains(topo) || topo.contains(el) || naBarra(topo)) continue;
+        const caixaDoTopo = topo.getBoundingClientRect();
+        const linkEsticado = topo.tagName === "A" && (x < caixaDoTopo.left || x > caixaDoTopo.right || y < caixaDoTopo.top || y > caixaDoTopo.bottom);
+        if(linkEsticado && !el.matches("a, button, input, select, textarea, label")) continue;
         let cortado = false;
         for(let a = el.parentElement; a && a !== document.body; a = a.parentElement){
           const r = a.getBoundingClientRect();
@@ -168,7 +171,7 @@ async function conferirCarrinho(contexto, tela, problemas){
   const anotar = (texto) => problemas.push(`[${tela.nome}] carrinho: ${texto}`);
   pagina.on("pageerror", erro => anotar(`erro de JavaScript — ${erro.message}`));
   await pagina.goto(ORIGEM + "/", { waitUntil: "networkidle" });
-  const cartao = pagina.locator(".cartao-produto-acao").first();
+  const cartao = pagina.locator(".cartao-produto-nome a").first();
   if(!(await cartao.count())){ anotar("nenhum produto com botão na vitrine"); await pagina.close(); return; }
   await cartao.scrollIntoViewIfNeeded();
   await cartao.click();

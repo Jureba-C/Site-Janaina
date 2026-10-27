@@ -50,7 +50,7 @@ export function CartaoProduto({ produto, prioridade = false }: { produto: Produt
           {produto.aPartirDe ? <span className="a-partir">a partir de</span> : null}
           <strong>{dinheiro(pix)}</strong> <span>no Pix</span>
         </p>
-        <p className="cartao-produto-cartao">{dinheiro(produto.precoMinimo)} ou {parcelas(produto.precoMinimo)}</p>
+        <p className="cartao-produto-cartao"><span className="cartao-preco-cheio">{dinheiro(produto.precoMinimo)} </span>ou {parcelas(produto.precoMinimo).replace(" sem juros", "")}<span className="cartao-preco-cheio"> sem juros</span></p>
         <a className="botao botao-cheio botao-bloco cartao-produto-acao" href={produto.endereco}>
           <Icone nome={produto.personalizavel ? "lapis" : "sacola"} tamanho={18} traco={1.8} />
           {produto.esgotado ? "Ver detalhes" : produto.personalizavel ? "Personalizar" : "Ver produto"}

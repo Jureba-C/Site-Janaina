@@ -68,7 +68,7 @@ function Destaque({ pagina }: { pagina: PaginaInicio }) {
           <p className="destaque-apoio">Escolha a peça, escreva o nome ou envie suas fotos e veja como a arte fica na caneca antes de comprar.</p>
           <div className="destaque-acoes">
             <a className="botao botao-cheio botao-grande" href="/categoria/canecas">Ver as canecas</a>
-            <a className="botao botao-vazado botao-grande" href="/#previa">Criar a minha e ver a prévia</a>
+            <a className="botao botao-vazado botao-grande" href="/#previa">Criar a minha<span className="so-largo"> e ver a prévia</span></a>
           </div>
         </div>
         <div className="destaque-fotos">
@@ -104,7 +104,6 @@ function Vantagens({ loja }: { loja: Loja }) {
     { t: "Personalização inclusa", s: "nome, frase ou fotos", icone: "lapis" as const },
     { t: "Enviamos para todo o Brasil", s: loja.retirada ? "ou retire na Asa Norte" : "pelo Melhor Envio", icone: "caminhao" as const },
     { t: "Parcelamos no cartão", s: `ou ${loja.regrasPagamento.pixDiscountPercent}% de desconto no Pix`, icone: "cartao" as const },
-    { t: "Acima de 10 unidades", s: "condições especiais", icone: "caixas" as const },
   ];
   return (
     <section className="vantagens envolve" aria-label="Vantagens">
@@ -138,8 +137,12 @@ function Vitrine({ pagina }: { pagina: PaginaInicio }) {
           ))}
         </div>
       </div>
-      <div className="grade-produtos" role="tabpanel" id="vitrine-painel" aria-labelledby={`aba-${atual.id}`}>
+      <div className="grade-produtos vitrine-trilho" role="tabpanel" id="vitrine-painel" aria-labelledby={`aba-${atual.id}`}>
         {atual.produtos.map(p => <CartaoProduto key={p.id} produto={p} />)}
+        <a className="cartao-ver-todos" href="/busca">
+          <span>Ver todos os produtos</span>
+          <Icone nome="setaDireita" tamanho={22} />
+        </a>
       </div>
     </section>
   );
@@ -183,6 +186,7 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
     <>
       <Destaque pagina={pagina} />
       <Vantagens loja={loja} />
+      <Vitrine pagina={pagina} />
 
       <section className="secao envolve" aria-labelledby="tipos">
         <div className="secao-topo">
@@ -215,8 +219,6 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
           ))}
         </ul>
       </section>
-
-      <Vitrine pagina={pagina} />
 
       <Avaliacoes pagina={pagina} />
 
@@ -276,7 +278,7 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
 
       <section className="secao envolve instagram" aria-labelledby="insta">
         <div className="secao-topo">
-          <p className="cursiva sobre-titulo">60,7 mil pessoas acompanham</p>
+          <p className="cursiva sobre-titulo">bastidores e novidades</p>
           <h2 id="insta">@{loja.instagram}</h2>
         </div>
         <div className="grade-instagram">
