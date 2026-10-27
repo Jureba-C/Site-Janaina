@@ -118,12 +118,12 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
               <div className="galeria-acoes">
                 {config.magica ? (
                   <button type="button" className="botao botao-escuro galeria-calor" aria-pressed={aquecida} onClick={() => setAquecida(!aquecida)}>
-                    <Icone nome="calor" tamanho={18} />{aquecida ? <>Ver <span className="so-largo">a caneca </span>fria</> : <><span className="so-largo">Ver com bebida quente</span><span className="so-curto">Bebida quente</span></>}
+                    <Icone nome="calor" tamanho={18} />{aquecida ? <><span className="so-largo">Ver a caneca fria</span><span className="so-curto">Ver fria</span></> : <><span className="so-largo">Ver com bebida quente</span><span className="so-curto">Bebida quente</span></>}
                   </button>
                 ) : null}
                 {pode3d ? (
                   <button type="button" className="botao botao-escuro galeria-3d" onClick={() => setModo3d(true)} aria-label="Ver em 3D">
-                    <Icone nome="girar" tamanho={18} /><span className="so-largo">Ver em </span>3D
+                    <Icone nome="girar" tamanho={18} /><span className="so-largo">Ver em 3D</span><span className="so-curto">3D</span>
                   </button>
                 ) : null}
               </div>

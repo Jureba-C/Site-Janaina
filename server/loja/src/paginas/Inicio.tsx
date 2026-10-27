@@ -68,7 +68,7 @@ function Destaque({ pagina }: { pagina: PaginaInicio }) {
           <p className="destaque-apoio">Escolha a peça, escreva o nome ou envie suas fotos e veja como a arte fica na caneca antes de comprar.</p>
           <div className="destaque-acoes">
             <a className="botao botao-cheio botao-grande" href="/categoria/canecas">Ver as canecas</a>
-            <a className="botao botao-vazado botao-grande" href="/#previa">Criar a minha<span className="so-largo"> e ver a prévia</span></a>
+            <a className="botao botao-vazado botao-grande" href="/#previa"><span className="so-largo">Criar a minha e ver a prévia</span><span className="so-curto">Criar a minha</span></a>
           </div>
         </div>
         <div className="destaque-fotos">
