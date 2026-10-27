@@ -2705,6 +2705,7 @@
       availableBadges = Array.isArray(productsData.availableBadges) ? productsData.availableBadges : [];
       const prazoInput = document.getElementById("prazoProducao");
       if(prazoInput) prazoInput.value = productsData.prazoProducao || "";
+      window.ArteAdminEstampas?.carregar().catch(() => {});
       const freteInput = document.getElementById("freteGratis");
       if(freteInput) freteInput.value = productsData.freteGratisAcima || "";
       renderStats(ordersData.stats || { totalRevenue: 0, totalOrders: 0 });

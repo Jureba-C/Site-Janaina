@@ -24,6 +24,31 @@
   let config = null;
   let fotosDoProduto = [];
   let categorias = [];
+  const MOLDES_COM_ESTAMPA = ["caneca", "xicara", "garrafa", "copo"];
+
+  function blocoDeEstampas(){
+    const e = config.estampas || { ativa: false, ids: [], obrigatoria: false };
+    const todas = window.ArteAdminEstampas ? window.ArteAdminEstampas.lista() : [];
+    const marcadas = new Set(e.ids || []);
+    const lista = todas.length
+      ? `<div class="al-estampas">${todas.map(x => `
+          <label class="al-estampa${x.ativa ? "" : " is-oculta"}">
+            <input type="checkbox" data-estampa="${esc(x.id)}"${marcadas.has(x.id) ? " checked" : ""}>
+            <img src="${esc(x.miniatura)}" alt="" width="90" height="60" loading="lazy">
+            <span>${esc(x.nome)}<small>${esc(x.colecao)}${x.ativa ? "" : " · oculta"}</small></span>
+          </label>`).join("")}</div>`
+      : `<p class="form-text">Nenhuma estampa cadastrada. Suba em Loja e configurações → Estampas.</p>`;
+    return `
+        <label class="al-check"><input type="checkbox" data-campo="estampas-ativa"${e.ativa ? " checked" : ""}> a cliente escolhe uma estampa (só caneca, xícara, garrafa e copo)</label>
+        <label class="al-check"><input type="checkbox" data-campo="estampas-obrigatoria"${e.obrigatoria ? " checked" : ""}> toda peça sai com estampa (sem a opção "sem estampa")</label>
+        <p class="form-text">Marque quais estampas este produto oferece. Nenhuma marcada = todas as estampas que aparecem na loja.</p>
+        ${lista}`;
+  }
+
+  function renderEstampas(){
+    const alvo = raiz && raiz.querySelector("[data-bloco-estampas]");
+    if(alvo) alvo.innerHTML = blocoDeEstampas();
+  }
 
   function esc(valor){
     return String(valor == null ? "" : valor).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
@@ -152,6 +177,11 @@
         </div>
       </details>
 
+      <details class="al-secao"${config.estampas && config.estampas.ativa ? " open" : ""}>
+        <summary>Estampas</summary>
+        <div data-bloco-estampas>${blocoDeEstampas()}</div>
+      </details>
+
       <details class="al-secao">
         <summary>Frete: peso e caixa</summary>
         <div class="al-linha">
@@ -233,6 +263,11 @@
         fotos: { min: num(valor("[data-campo=fotos-min]"), 0), max: num(valor("[data-campo=fotos-max]"), 0), formato: valor("[data-campo=fotos-formato]").value },
         verso: valor("[data-campo=verso]").checked,
       },
+      estampas: {
+        ativa: valor("[data-campo=estampas-ativa]").checked && MOLDES_COM_ESTAMPA.includes(molde),
+        obrigatoria: valor("[data-campo=estampas-obrigatoria]").checked,
+        ids: [...raiz.querySelectorAll("[data-estampa]")].filter(c => c.checked).map(c => c.dataset.estampa),
+      },
       peso: num(valor("[data-campo=peso]"), 0.45),
       caixa: {
         largura: num(valor("[data-caixa=largura]"), 12),
@@ -296,6 +331,7 @@
       categorias = Array.isArray(listaDeCategorias) ? listaDeCategorias : [];
       if(!raiz.dataset.ligado){ ligar(); raiz.dataset.ligado = "1"; }
       render();
+      if(window.ArteAdminEstampas && !window.ArteAdminEstampas.lista().length) window.ArteAdminEstampas.carregar().then(renderEstampas).catch(() => {});
     },
     ler,
   };

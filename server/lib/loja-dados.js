@@ -4,6 +4,7 @@ const regras = require("../js/regras-produto.js");
 const pricing = require("../js/pricing.js");
 const produtoUrl = require("../js/produto-url.js");
 const marca = require("../marca.json");
+const estampas = require("./estampas.js");
 
 const POR_PAGINA = 24;
 const NA_VITRINE = 8;
@@ -24,11 +25,18 @@ function precoMinimo(p){
     preco += Math.min(...precos);
     if(new Set(precos).size > 1) variavel = true;
   }
+  const disponiveis = estampas.estampasDisponiveis(config);
+  if(disponiveis.length){
+    const extras = disponiveis.map(e => e.preco || 0);
+    if(config.estampas.obrigatoria) preco += Math.min(...extras);
+    if(new Set(extras).size > 1 || (!config.estampas.obrigatoria && Math.max(...extras) > 0)) variavel = true;
+  }
   return { valor: regras.round2(preco), aPartirDe: variavel };
 }
 
 function resumo(id, p){
   const minimo = precoMinimo(p);
+  const disponiveis = estampas.estampasDisponiveis(p.config);
   return {
     id,
     nome: p.name,
@@ -47,6 +55,8 @@ function resumo(id, p){
     formato: p.config.formato,
     aviso: p.config.aviso,
     personalizavel: p.config.personalizacao.ativa,
+    qtdEstampas: disponiveis.length,
+    estampaVitrine: disponiveis.length && p.config.estampas && p.config.estampas.obrigatoria ? disponiveis[0] : null,
   };
 }
 
@@ -270,6 +280,7 @@ function paginaProduto(id){
         fotos: p.photos,
         descricao: p.description || null,
         config: p.config,
+        estampasDisponiveis: estampas.estampasDisponiveis(p.config),
         categoriaPrincipal: principal ? { slug: principal.slug, nome: principal.label } : null,
       },
       extras,

@@ -13,6 +13,8 @@ const cors = require("cors");
 const helmet = require("helmet");
 const pagamento = require("./lib/pagamento.js");
 const freteGratis = require("./lib/frete-gratis.js");
+const estampas = require("./lib/estampas.js");
+const estampasExemplo = require("./lib/estampas-exemplo.js");
 const compression = require("compression");
 const multer = require("multer");
 const sharp = require("sharp");
@@ -740,7 +742,7 @@ function buildValidatedItems(items, opcoes = {}){
   return items.map(raw => {
     const id = Number(raw?.id);
     const qty = Number(raw?.qty);
-    const product = Number.isInteger(id) ? effectiveProduct(id, overridesMap) : null;
+    const product = Number.isInteger(id) ? estampas.comEstampas(effectiveProduct(id, overridesMap)) : null;
     if(!product){
       throw { status:400, message:`Produto inválido: ${raw?.id}` };
     }
@@ -3899,6 +3901,114 @@ app.put("/api/admin/depoimentos/ordem", auth.requireAdmin, auth.requireAdminTwoF
   res.json({ ok: true });
 });
 
+const ID_DA_ESTAMPA = /^[a-z0-9][a-z0-9-]{2,39}$/;
+const uploadDeEstampa = multer({ storage: multer.memoryStorage(), limits: { fileSize: estampas.LIMITE_BYTES, files: 1, fields: 10 } });
+
+function camposDaEstampa(corpo){
+  const nome = textoDeFoto(corpo?.nome, 60);
+  const colecao = textoDeFoto(corpo?.colecao, 40);
+  const preco = corpo?.preco === undefined || corpo?.preco === "" ? 0 : Number(corpo.preco);
+  if(!nome || nome.length < 2) throw { status: 400, message: "Dê um nome para a estampa (até 60 letras)." };
+  if(!colecao || colecao.length < 2) throw { status: 400, message: "Escreva a coleção (ex.: Flores, Brasília)." };
+  if(!Number.isFinite(preco) || preco < 0 || preco > 500) throw { status: 400, message: "Valor extra da estampa: de 0 a 500 reais." };
+  return { nome, colecao, preco: Math.round(preco * 100) / 100, ativa: corpo?.ativa === undefined ? true : corpo.ativa === true || corpo.ativa === "true" };
+}
+
+function estampaDoPainel(e){
+  return { ...estampas.estampaPublica(e), ativa: e.ativa, exemplo: e.exemplo, largura: e.largura, altura: e.altura };
+}
+
+app.get("/api/estampas", (req, res) => {
+  res.setHeader("Cache-Control", "public, max-age=60");
+  res.json({ estampas: db.listarEstampas().filter(e => e.ativa).map(estampas.estampaPublica) });
+});
+
+app.get("/api/estampas/:id/:tipo", (req, res) => {
+  const tipo = req.params.tipo;
+  if(!ID_DA_ESTAMPA.test(req.params.id) || !["miniatura", "textura"].includes(tipo)) return res.status(404).end();
+  const estampa = db.lerEstampa(req.params.id);
+  if(!estampa || (!estampa.ativa && !req.user?.isAdmin)) return res.status(404).end();
+  const imagem = db.imagemDaEstampa(req.params.id, tipo);
+  if(!imagem) return res.status(404).end();
+  res.setHeader("Content-Type", imagem.mime);
+  res.setHeader("Cache-Control", req.query.v ? "public, max-age=31536000, immutable" : "public, max-age=300");
+  res.send(Buffer.from(imagem.data));
+});
+
+app.get("/api/admin/estampas", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  res.json({ estampas: db.listarEstampas().map(estampaDoPainel), tamanhos: estampas.TAMANHOS_IDEAIS });
+});
+
+app.get("/api/admin/estampas/:id/original", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  if(!ID_DA_ESTAMPA.test(req.params.id)) return res.status(404).end();
+  const imagem = db.imagemDaEstampa(req.params.id, "original");
+  if(!imagem) return res.status(404).end();
+  res.setHeader("Content-Type", imagem.mime);
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Content-Disposition", `attachment; filename="estampa-${req.params.id}.${imagem.mime === "image/png" ? "png" : "jpg"}"`);
+  res.send(Buffer.from(imagem.data));
+});
+
+app.post("/api/admin/estampas", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  uploadDeEstampa.single("arquivo")(req, res, async (err) => {
+    if(err instanceof multer.MulterError){
+      if(err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "Arquivo muito grande. O limite é 30 MB." });
+      return res.status(400).json({ error: "Não foi possível enviar o arquivo." });
+    }
+    if(err){
+      console.error("Erro no envio de estampa:", err);
+      return res.status(500).json({ error: "Não foi possível enviar a estampa agora." });
+    }
+    if(!req.file) return res.status(400).json({ error: "Escolha o arquivo da estampa (PNG ou JPG)." });
+    try{
+      const campos = camposDaEstampa(req.body);
+      const imagens = await estampas.prepararImagens(req.file.buffer);
+      const id = estampas.novoId(campos.nome);
+      db.inserirEstampa({ id, ...campos, exemplo: false, ...imagens });
+      invalidarPaginasDaLoja();
+      res.status(201).json({ estampa: estampaDoPainel(db.lerEstampa(id)) });
+    }catch(erro){
+      if(erro && erro.status) return res.status(erro.status).json({ error: erro.message });
+      console.error("Erro ao processar estampa:", erro);
+      res.status(500).json({ error: "Não foi possível processar a estampa." });
+    }
+  });
+});
+
+app.patch("/api/admin/estampas/:id", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  if(!ID_DA_ESTAMPA.test(req.params.id)) return res.status(404).json({ error: "Estampa não encontrada." });
+  try{
+    if(!db.atualizarEstampa(req.params.id, camposDaEstampa(req.body))) return res.status(404).json({ error: "Estampa não encontrada." });
+    invalidarPaginasDaLoja();
+    res.json({ estampa: estampaDoPainel(db.lerEstampa(req.params.id)) });
+  }catch(erro){
+    if(erro && erro.status) return res.status(erro.status).json({ error: erro.message });
+    throw erro;
+  }
+});
+
+app.delete("/api/admin/estampas/:id", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  if(!ID_DA_ESTAMPA.test(req.params.id)) return res.status(404).json({ error: "Estampa não encontrada." });
+  const abertos = db.pedidosAbertosComEstampa(req.params.id);
+  if(abertos){
+    return res.status(409).json({ error: `Tem ${abertos === 1 ? "1 pedido" : `${abertos} pedidos`} em produção com esta estampa. Para tirar da loja agora, desmarque "aparece na loja".` });
+  }
+  if(!db.apagarEstampa(req.params.id)) return res.status(404).json({ error: "Estampa não encontrada." });
+  invalidarPaginasDaLoja();
+  res.json({ ok: true });
+});
+
+app.put("/api/admin/estampas/ordem", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  const ids = req.body?.ids;
+  const atuais = db.listarEstampas().map(e => e.id);
+  if(!Array.isArray(ids) || ids.length !== atuais.length || new Set(ids).size !== ids.length || !ids.every(i => atuais.includes(i))){
+    return res.status(409).json({ error: "A lista de estampas mudou. Recarregue a página e tente de novo." });
+  }
+  db.ordenarEstampas(ids);
+  invalidarPaginasDaLoja();
+  res.json({ ok: true });
+});
+
 const MAX_FOTOS_HERO = 6;
 const ENQUADRAMENTOS = new Set(["top", "center", "bottom"]);
 
@@ -4327,4 +4437,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
+  estampasExemplo.semearEstampasDeExemplo()
+    .then(n => { if(n) { invalidarPaginasDaLoja(); console.log(`Estampas de exemplo cadastradas: ${n}.`); } })
+    .catch(err => console.error("Não foi possível criar as estampas de exemplo:", err.message));
 });

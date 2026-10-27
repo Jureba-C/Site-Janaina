@@ -32,6 +32,8 @@
   const ID_VALIDO = /^[a-z0-9][a-z0-9-]{0,39}$/;
   const HEX_VALIDO = /^#[0-9a-fA-F]{6}$/;
   const ID_FOTO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  const ID_ESTAMPA = /^[a-z0-9][a-z0-9-]{2,39}$/;
+  const MOLDES_COM_ESTAMPA = ["caneca", "xicara", "garrafa", "copo"];
   const CHAVE_FOTO = /^[0-9a-f]{32}$/;
 
   function round2(n) {
@@ -143,6 +145,28 @@
     return { x: round2(x * 100) / 100, y: round2(y * 100) / 100, w: round2(Math.min(w, 1 - x) * 100) / 100, h: round2(Math.min(h, 1 - y) * 100) / 100, curva: Boolean(bruta.curva) };
   }
 
+  function normalizarEstampas(bruta, molde) {
+    const e = bruta && typeof bruta === "object" ? bruta : {};
+    const ids = [...new Set((Array.isArray(e.ids) ? e.ids : []).map(String).filter(id => ID_ESTAMPA.test(id)))].slice(0, 200);
+    return {
+      ativa: Boolean(e.ativa) && MOLDES_COM_ESTAMPA.includes(molde),
+      ids,
+      obrigatoria: Boolean(e.obrigatoria),
+    };
+  }
+
+  function estampasDoProduto(produto) {
+    const config = produto.config || {};
+    if (!config.estampas || !config.estampas.ativa) return [];
+    return Array.isArray(produto.estampasDisponiveis) ? produto.estampasDisponiveis : [];
+  }
+
+  function estampaEscolhida(produto, escolhas) {
+    const id = escolhas && escolhas.personalizacao ? escolhas.personalizacao.estampa : null;
+    if (!id) return null;
+    return estampasDoProduto(produto).find(e => e.id === id) || null;
+  }
+
   function normalizarConfig(bruta) {
     const c = bruta && typeof bruta === "object" ? bruta : {};
     const molde = MOLDES.includes(c.molde) ? c.molde : "nenhum";
@@ -163,6 +187,7 @@
       faixas: normalizarFaixas(c.faixas),
       qtdMinima: Math.round(numero(c.qtdMinima, 1, 100, 1)),
       personalizacao: normalizarPersonalizacao(c.personalizacao),
+      estampas: normalizarEstampas(c.estampas, molde),
       peso: round2(numero(c.peso, 0.01, 30, 0.45) * 1000) / 1000,
       caixa: {
         largura: round2(numero(c.caixa && c.caixa.largura, 1, 100, 12)),
@@ -194,6 +219,8 @@
     }
     const marcados = new Set((escolhas && escolhas.adicionais) || []);
     for (const adicional of config.adicionais || []) if (marcados.has(adicional.id)) preco += adicional.preco;
+    const estampa = estampaEscolhida(produto, escolhas);
+    if (estampa && estampa.preco > 0) preco += estampa.preco;
     return round2(Math.max(0.01, preco));
   }
 
@@ -212,6 +239,8 @@
       personalizacao.fotos = [];
       personalizacao.aprovarWhatsApp = true;
     }
+    const estampas = estampasDoProduto(produto);
+    if (estampas.length && config.estampas.obrigatoria) personalizacao.estampa = estampas[0].id;
     return { variacoes, adicionais: [], personalizacao };
   }
 
@@ -271,6 +300,14 @@
       escolhas.personalizacao.aprovarWhatsApp = bruta.aprovarWhatsApp !== false;
     }
 
+    const estampas = estampasDoProduto(produto);
+    if (estampas.length) {
+      const pedida = bruta.estampa ? String(bruta.estampa) : "";
+      if (pedida && estampas.some(e => e.id === pedida)) escolhas.personalizacao.estampa = pedida;
+      else if (pedida) erros.push("Essa estampa não está mais disponível. Escolha outra.");
+      else if (config.estampas.obrigatoria) erros.push("Escolha a estampa.");
+    }
+
     const quantidade = Number(qtd);
     const minima = config.qtdMinima || 1;
     if (!Number.isInteger(quantidade) || quantidade < minima || quantidade > QTD_MAXIMA) {
@@ -304,6 +341,8 @@
     for (const campo of CAMPOS_TEXTO) {
       if (pers[campo.id]) linhas.push({ rotulo: (campos[campo.id] && campos[campo.id].rotulo) || campo.rotulo, valor: pers[campo.id] });
     }
+    const estampa = estampaEscolhida(produto, escolhas);
+    if (estampa) linhas.push({ rotulo: "Estampa", valor: estampa.nome });
     if (pers.arte) linhas.push({ rotulo: "Arte", valor: nomeDaArte(pers.arte) });
     if (pers.letra) linhas.push({ rotulo: "Letra", valor: nomeDaLetra(pers.letra) });
     if (pers.fotos && pers.fotos.length) linhas.push({ rotulo: "Fotos", valor: String(pers.fotos.length) });
@@ -319,12 +358,13 @@
     const adicionais = [...(e.adicionais || [])].sort().join(",");
     const pers = e.personalizacao || {};
     const fotos = (pers.fotos || []).map(f => `${f.id}:${f.x}:${f.y}:${f.zoom}`).join(",");
-    const campos = ["nome", "frase", "data", "observacoes", "letra", "arte"].map(k => `${k}=${pers[k] || ""}`).join("|");
+    const campos = ["nome", "frase", "data", "observacoes", "letra", "arte", "estampa"].map(k => `${k}=${pers[k] || ""}`).join("|");
     return `${id}#${variacoes}#${adicionais}#${campos}#${fotos}#${pers.aprovarWhatsApp === false ? 0 : 1}`;
   }
 
   return {
-    MOLDES, LETRAS, ARTES, CAMPOS_TEXTO, MAX_FOTOS, QTD_MAXIMA, QTD_CONDICAO_ESPECIAL,
+    MOLDES, LETRAS, ARTES, CAMPOS_TEXTO, MAX_FOTOS, QTD_MAXIMA, QTD_CONDICAO_ESPECIAL, ID_ESTAMPA, MOLDES_COM_ESTAMPA,
+    estampasDoProduto, estampaEscolhida,
     round2, normalizarConfig, normalizarVariacoes, normalizarPersonalizacao,
     precoBase, precoUnitario, escolhasPadrao, validarEscolhas, resumoDasEscolhas, chaveDaLinha,
     nomeDaLetra, nomeDaArte,

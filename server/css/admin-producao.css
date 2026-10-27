@@ -185,3 +185,24 @@
 @keyframes prod-chegou{ from{ box-shadow:0 0 0 4px rgba(158,74,24,.35), var(--shadow-card); transform:translateY(-4px); } to{ box-shadow:var(--shadow-card); transform:none; } }
 .prod-card-chegou{ animation:prod-chegou 1.2s ease-out; }
 @media (prefers-reduced-motion: reduce){ .prod-card-chegou{ animation:none; } }
+.estampa-form{ display:grid; gap:.7rem; padding:1rem; border:1px solid var(--blush-100); border-radius:var(--radius-lg, 16px); background:#fff; margin:1rem 0 1.4rem; }
+.estampa-form-linha{ display:grid; gap:.35rem; }
+.estampa-form-campos{ grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:.6rem; }
+.estampa-form-campos label{ display:grid; gap:.25rem; }
+.estampa-lista{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:1rem; }
+.estampa-cartao{ display:grid; grid-template-columns:120px 1fr; gap:.8rem; padding:.8rem; border:1px solid var(--blush-100); border-radius:16px; background:#fff; }
+.estampa-cartao.is-oculta{ opacity:.7; }
+.estampa-cartao img{ width:120px; height:80px; object-fit:cover; border-radius:10px; }
+.estampa-cartao-corpo{ display:grid; gap:.4rem; min-width:0; }
+.estampa-cartao-corpo label{ display:grid; gap:.2rem; }
+.estampa-ativa{ display:flex !important; align-items:center; gap:.4rem; }
+.estampa-selo{ justify-self:start; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; padding:.1rem .5rem; border-radius:999px; background:var(--blush-50); color:var(--blush-700, #9E4A18); }
+.estampa-aviso{ font-size:.78rem; color:#8a5a00; margin:0; }
+.estampa-acoes{ display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; }
+.al-estampas{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:.5rem; margin-top:.4rem; }
+.al-estampa{ display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; gap:.3rem .5rem; align-items:center; padding:.45rem; border:1px solid var(--blush-100); border-radius:12px; font-size:.82rem; cursor:pointer; }
+.al-estampa img{ grid-column:1 / -1; width:100%; height:64px; object-fit:cover; border-radius:8px; }
+.al-estampa span{ display:grid; line-height:1.2; }
+.al-estampa small{ color:var(--ink-soft, #6B6259); }
+.al-estampa.is-oculta{ opacity:.6; }
+@media (max-width:560px){ .estampa-cartao{ grid-template-columns:1fr; } .estampa-cartao img{ width:100%; height:110px; } }

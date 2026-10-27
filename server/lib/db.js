@@ -319,6 +319,24 @@ db.exec(`
     PRIMARY KEY (photo_id, width, format)
   );
 
+  CREATE TABLE IF NOT EXISTS estampas (
+    id             TEXT PRIMARY KEY,
+    nome           TEXT NOT NULL,
+    colecao        TEXT NOT NULL,
+    preco          REAL NOT NULL DEFAULT 0,
+    ativa          INTEGER NOT NULL DEFAULT 1,
+    exemplo        INTEGER NOT NULL DEFAULT 0,
+    position       INTEGER NOT NULL DEFAULT 0,
+    largura        INTEGER NOT NULL,
+    altura         INTEGER NOT NULL,
+    original_mime  TEXT NOT NULL,
+    original       BLOB NOT NULL,
+    textura        BLOB NOT NULL,
+    miniatura      BLOB NOT NULL,
+    created_at     INTEGER NOT NULL,
+    updated_at     INTEGER NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS depoimentos (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     texto            TEXT NOT NULL,
@@ -1909,7 +1927,65 @@ function hashCurto(texto){
   return h.toString(36);
 }
 
+const COLUNAS_DA_ESTAMPA = `id, nome, colecao, preco, ativa, exemplo, position, largura, altura, original_mime, created_at, updated_at`;
+const stmtListaEstampas = db.prepare(`SELECT ${COLUNAS_DA_ESTAMPA} FROM estampas ORDER BY position, created_at`);
+const stmtLeEstampa = db.prepare(`SELECT ${COLUNAS_DA_ESTAMPA} FROM estampas WHERE id = ?`);
+const stmtImagensDaEstampa = {
+  original: db.prepare(`SELECT original_mime AS mime, original AS data FROM estampas WHERE id = ?`),
+  textura: db.prepare(`SELECT 'image/jpeg' AS mime, textura AS data FROM estampas WHERE id = ?`),
+  miniatura: db.prepare(`SELECT 'image/webp' AS mime, miniatura AS data FROM estampas WHERE id = ?`),
+};
+const stmtInsereEstampa = db.prepare(
+  `INSERT INTO estampas (id, nome, colecao, preco, ativa, exemplo, position, largura, altura, original_mime, original, textura, miniatura, created_at, updated_at)
+   VALUES (?, ?, ?, ?, ?, ?, (SELECT IFNULL(MAX(position), -1) + 1 FROM estampas), ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+const stmtAtualizaEstampa = db.prepare(`UPDATE estampas SET nome = ?, colecao = ?, preco = ?, ativa = ?, updated_at = ? WHERE id = ?`);
+const stmtApagaEstampa = db.prepare(`DELETE FROM estampas WHERE id = ?`);
+const stmtMoveEstampa = db.prepare(`UPDATE estampas SET position = ?, updated_at = ? WHERE id = ?`);
+const stmtPedidosComEstampa = db.prepare(
+  `SELECT COUNT(*) AS n FROM orders WHERE status = 'pago' AND IFNULL(fulfillment_status, '') <> 'entregue' AND items_json LIKE ?`
+);
+const stmtVersaoEstampas = db.prepare(`SELECT COUNT(*) AS n, IFNULL(MAX(updated_at), 0) AS t FROM estampas`);
+
+function linhaDeEstampa(l){
+  return l ? { ...l, ativa: Boolean(l.ativa), exemplo: Boolean(l.exemplo) } : null;
+}
+function listarEstampas(){ return stmtListaEstampas.all().map(linhaDeEstampa); }
+function lerEstampa(id){ return linhaDeEstampa(stmtLeEstampa.get(id)); }
+function imagemDaEstampa(id, tipo){
+  const stmt = stmtImagensDaEstampa[tipo];
+  return stmt ? stmt.get(id) || null : null;
+}
+function inserirEstampa(e){
+  const agora = Date.now();
+  stmtInsereEstampa.run(e.id, e.nome, e.colecao, e.preco || 0, e.ativa === false ? 0 : 1, e.exemplo ? 1 : 0, e.largura, e.altura, e.originalMime, e.original, e.textura, e.miniatura, agora, agora);
+}
+function atualizarEstampa(id, campos){
+  return stmtAtualizaEstampa.run(campos.nome, campos.colecao, campos.preco || 0, campos.ativa ? 1 : 0, Date.now(), id).changes > 0;
+}
+function apagarEstampa(id){ return stmtApagaEstampa.run(id).changes > 0; }
+function pedidosAbertosComEstampa(id){ return stmtPedidosComEstampa.get(`%"estampa":"${id}"%`).n; }
+function ordenarEstampas(ids){
+  const agora = Date.now();
+  db.exec("BEGIN");
+  try { ids.forEach((id, i) => stmtMoveEstampa.run(i, agora, id)); db.exec("COMMIT"); }
+  catch (err) { db.exec("ROLLBACK"); throw err; }
+}
+function versaoDasEstampas(){
+  const v = stmtVersaoEstampas.get();
+  return `${v.n}.${v.t}`;
+}
+
 module.exports = {
+  listarEstampas,
+  lerEstampa,
+  imagemDaEstampa,
+  inserirEstampa,
+  atualizarEstampa,
+  apagarEstampa,
+  pedidosAbertosComEstampa,
+  ordenarEstampas,
+  versaoDasEstampas,
   avaliacoesDoProduto,
   DIAS_FOTOS_APOS_ENTREGA,
   inserirFotoPersonalizacao,
