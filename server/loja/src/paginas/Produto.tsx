@@ -28,6 +28,43 @@ function usaFotos(produto: TipoProduto, escolhas: Escolhas): boolean {
   return escolhas.personalizacao.arte === "fotos";
 }
 
+function MiniPrevia({ produto, escolhas, lado, aquecida }: { produto: TipoProduto; escolhas: Escolhas; lado: Lado; aquecida: boolean }) {
+  const [mostrar, setMostrar] = useState(false);
+  const medir = useMedirTexto();
+  useEffect(() => {
+    const palco = document.querySelector(".galeria-palco");
+    const caixa = document.querySelector(".caixa-personalizar");
+    if (!palco || !caixa || !("IntersectionObserver" in window)) return;
+    const estreita = window.matchMedia("(max-width: 1099px)");
+    let palcoVisivel = true;
+    let mexendo = false;
+    const atualizar = () => setMostrar(estreita.matches && mexendo && !palcoVisivel);
+    const observador = new IntersectionObserver(([e]) => { palcoVisivel = e.isIntersecting; atualizar(); }, { threshold: 0.2 });
+    observador.observe(palco);
+    const mexeu = () => { mexendo = true; atualizar(); };
+    caixa.addEventListener("focusin", mexeu);
+    caixa.addEventListener("input", mexeu);
+    caixa.addEventListener("click", mexeu);
+    estreita.addEventListener("change", atualizar);
+    return () => {
+      observador.disconnect();
+      caixa.removeEventListener("focusin", mexeu);
+      caixa.removeEventListener("input", mexeu);
+      caixa.removeEventListener("click", mexeu);
+      estreita.removeEventListener("change", atualizar);
+    };
+  }, []);
+  if (!mostrar) return null;
+  return (
+    <button type="button" className="mini-previa" onClick={() => document.querySelector(".galeria-palco")?.scrollIntoView({ behavior: "smooth", block: "center" })} aria-label="Ver a prévia grande">
+      <svg viewBox="0 0 360 380" aria-hidden="true">
+        <PecaSvg config={produto.config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} medir={medir} fatias={16} />
+      </svg>
+      <span>prévia</span>
+    </button>
+  );
+}
+
 function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, fotoSelecionada, aoTocarFoto }: {
   produto: TipoProduto;
   escolhas: Escolhas;
@@ -356,6 +393,7 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
 
       <div className="produto-grade">
         <Galeria produto={produto} escolhas={escolhas} lado={lado} setLado={setLado} aquecida={aquecida} setAquecida={setAquecida} fotoSelecionada={fotoSelecionada} aoTocarFoto={podeArrastar ? aoTocarFoto : undefined} />
+        {config.personalizacao.ativa && config.molde !== "nenhum" ? <MiniPrevia produto={produto} escolhas={escolhas} lado={lado} aquecida={aquecida} /> : null}
 
         <div className="produto-info">
           <p className="sobretitulo">{[categoria?.nome, produto.medida].filter(Boolean).join(" · ")}</p>
@@ -424,6 +462,12 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
               {produto.esgotado ? "Esgotado" : adicionado ? "Adicionado ao carrinho" : `Adicionar ao carrinho · ${dinheiro(total)}`}
             </button>
           </div>
+          <ul className="confianca" aria-label="Por que comprar aqui">
+            <li><Icone nome="cartao" tamanho={18} /><span><strong>10% off no Pix</strong> ou 3x sem juros</span></li>
+            {config.personalizacao.ativa ? <li><Icone nome="whatsapp" tamanho={18} /><span>Você <strong>aprova a arte</strong> antes da produção</span></li> : null}
+            {loja.retirada ? <li><Icone nome="local" tamanho={18} /><span><strong>Retirada grátis</strong> na Asa Norte</span></li> : null}
+            <li><Icone nome="cadeado" tamanho={18} /><span>Pagamento seguro pelo <strong>Mercado Pago</strong></span></li>
+          </ul>
           {qtdMinima > 1 ? <p className="dica">Pedido mínimo de {qtdMinima} unidades.</p> : null}
           {qtd > regras.QTD_CONDICAO_ESPECIAL ? (
             <p className="aviso-quantidade">
