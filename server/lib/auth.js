@@ -4,6 +4,7 @@ const db = require("./db");
 
 const SESSION_COOKIE_NAME = "plc_session";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const BCRYPT_COST = 12;
 
 const DUMMY_HASH = bcrypt.hashSync("senha-de-referencia-para-tempo-constante", BCRYPT_COST);
@@ -160,7 +161,7 @@ function checkLoginLockout(email, ip) {
 
 const TOTP_STEP_SECONDS = 30;
 const TOTP_DIGITS = 6;
-const TOTP_WINDOW = 4;
+const TOTP_WINDOW = 1;
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function base32Encode(buffer) {
@@ -360,7 +361,12 @@ function getUserFromRequest(req) {
   if (!session) return null;
   const user = db.getUserById(session.user_id);
   if (!user) return null;
-  return { id: user.id, name: user.name, email: user.email, cep: user.cep || null, cpf: user.cpf || null, isAdmin: isAdminEmail(user.email) };
+  const isAdmin = isAdminEmail(user.email);
+  if (isAdmin && Date.now() - session.created_at > ADMIN_SESSION_TTL_MS) {
+    db.deleteSession(session.token_hash);
+    return null;
+  }
+  return { id: user.id, name: user.name, email: user.email, cep: user.cep || null, cpf: user.cpf || null, isAdmin };
 }
 
 function attachUser(req, res, next) {
@@ -400,6 +406,7 @@ function requireAdminTwoFactor(req, res, next) {
 }
 
 module.exports = {
+  ADMIN_SESSION_TTL_MS,
   hashPassword,
   verifyPassword,
   isValidEmail,

@@ -11,6 +11,7 @@ const zlib = require("node:zlib");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const pagamento = require("./lib/pagamento.js");
 const compression = require("compression");
 const multer = require("multer");
 const sharp = require("sharp");
@@ -176,15 +177,15 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       baseUri: ["'self'"],
-      scriptSrc: ["'self'", "https://sdk.mercadopago.com", "https://accounts.google.com"],
+      scriptSrc: ["'self'", "https://accounts.google.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
       fontSrc: ["'self'"],
       imgSrc: ["'self'", "https:", "data:", "blob:"],
-      connectSrc: ["'self'", "https://api.mercadopago.com", "https://viacep.com.br", "https://accounts.google.com"],
-      frameSrc: ["https://www.mercadopago.com", "https://www.mercadopago.com.br", "https://accounts.google.com"],
+      connectSrc: ["'self'", "https://viacep.com.br", "https://accounts.google.com"],
+      frameSrc: ["https://accounts.google.com"],
       objectSrc: ["'none'"],
       formAction: ["'self'"],
-      frameAncestors: ["'self'"],
+      frameAncestors: ["'none'"],
       scriptSrcAttr: ["'none'"],
       ...(CLIENT_ORIGIN.startsWith("https://") ? {} : { upgradeInsecureRequests: null }),
     },
@@ -1835,34 +1836,17 @@ async function runApprovedOrderSideEffects(orderRow, info){
 }
 
 function verifyMpWebhookSignature(req, dataId) {
-  const secret = process.env.MP_WEBHOOK_SECRET;
-  if (!secret) return true;
-  const crypto = require("crypto");
-  const parts = Object.fromEntries(
-    String(req.get("x-signature") || "")
-      .split(",")
-      .map(kv => kv.split("=").map(s => s?.trim()))
-  );
-  const ts = parts.ts;
-  const v1 = parts.v1;
-  if (!ts || !v1) return false;
-  const requestId = req.get("x-request-id") || "";
-  const idForManifest = /[a-zA-Z]/.test(String(dataId)) ? String(dataId).toLowerCase() : String(dataId);
-  const manifest = `id:${idForManifest};request-id:${requestId};ts:${ts};`;
-  const expected = crypto.createHmac("sha256", secret).update(manifest).digest("hex");
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(v1, "hex"));
-  } catch {
-    return false;
-  }
+  return pagamento.assinaturaDoWebhookValida(process.env.MP_WEBHOOK_SECRET, req.get("x-signature"), req.get("x-request-id"), dataId);
 }
+
+const { pagamentoBateComPedido } = pagamento;
 
 app.post("/api/webhook", async (req, res) => {
   try {
     const paymentId = req.query?.["data.id"] || req.body?.data?.id;
     const topic = req.query?.type || req.body?.type;
 
-    if (topic === "payment" && paymentId) {
+    if (topic === "payment" && paymentId && /^[0-9]{1,24}$/.test(String(paymentId))) {
       if (!verifyMpWebhookSignature(req, paymentId)) {
         console.warn(`Webhook: assinatura x-signature inválida para ${paymentId} — ignorado.`);
         return res.sendStatus(401);
@@ -1877,6 +1861,12 @@ app.post("/api/webhook", async (req, res) => {
 
       if(!orderRow){
         console.warn(`Webhook: pagamento ${paymentId} não corresponde a nenhum pedido conhecido (external_reference=${info.external_reference || "ausente"}).`);
+        return res.sendStatus(200);
+      }
+
+      if(info.status === "approved" && !pagamentoBateComPedido(info, orderRow)){
+        console.error(`Webhook: pagamento ${paymentId} aprovado com valor ${info.transaction_amount} ${info.currency_id} diferente do pedido ${orderRow.external_reference} (R$ ${orderRow.total}) — pedido NÃO marcado como pago.`);
+        db.updateOrderStatus(info.external_reference, "em análise", String(paymentId));
         return res.sendStatus(200);
       }
 
@@ -2574,7 +2564,7 @@ app.post("/api/admin/2fa/setup", auth.requireAdmin, async (req, res) => {
   }
 });
 
-app.post("/api/admin/2fa/activate", auth.requireAdmin, async (req, res) => {
+app.post("/api/admin/2fa/activate", authLimiter, auth.requireAdmin, async (req, res) => {
   try {
     const secret = String(req.body?.secret || "").trim().toUpperCase();
     const code = String(req.body?.code || "").trim();
@@ -3367,7 +3357,7 @@ const uploadPersonalizacao = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: LIMITE_FOTO_PERSONALIZACAO, files: 1 },
 });
-const uploadPersonalizacaoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 80, handler: sendTooManyRequests });
+const uploadPersonalizacaoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 40, handler: sendTooManyRequests });
 const ID_FOTO_PERSONALIZACAO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 app.post("/api/personalizacao/fotos", uploadPersonalizacaoLimiter, (req, res) => {
@@ -3455,7 +3445,7 @@ app.get("/api/admin/pedidos/:reference/itens/:indice/:tipo.svg", auth.requireAdm
   const fotos = {};
   for(const id of item.fotos){
     const linha = db.lerFotoPersonalizacao(id);
-    if(!linha) continue;
+    if(!linha || linha.pedido !== pedido.external_reference) continue;
     fotos[id] = tipo === "arte"
       ? `data:${linha.mime_type};base64,${Buffer.from(linha.data).toString("base64")}`
       : `data:image/webp;base64,${Buffer.from(linha.miniatura).toString("base64")}`;

@@ -140,14 +140,14 @@ const CSP_ESPERADA = {
   "base-uri": "'self'",
   "font-src": "'self'",
   "form-action": "'self'",
-  "frame-ancestors": "'self'",
+  "frame-ancestors": "'none'",
   "img-src": "'self' https: data: blob:",
   "object-src": "'none'",
-  "script-src": "'self' https://sdk.mercadopago.com https://accounts.google.com",
+  "script-src": "'self' https://accounts.google.com",
   "script-src-attr": "'none'",
   "style-src": "'self' 'unsafe-inline' https://accounts.google.com",
-  "connect-src": "'self' https://api.mercadopago.com https://viacep.com.br https://accounts.google.com",
-  "frame-src": "https://www.mercadopago.com https://www.mercadopago.com.br https://accounts.google.com",
+  "connect-src": "'self' https://viacep.com.br https://accounts.google.com",
+  "frame-src": "https://accounts.google.com",
 };
 
 function lerCsp(texto){
@@ -213,12 +213,12 @@ test("nenhuma página pede no <meta> mais do que o cabeçalho permite", async ()
 const AUSENTE = "(diretiva ausente)";
 const DIVERGENCIAS_ACEITAS = {
   "admin.html": { "img-src": "'self' https: data: blob:" },
-  "avaliar.html": { "script-src": "'self'", "connect-src": "'self'", "frame-src": AUSENTE },
+  "avaliar.html": { "connect-src": "'self'" },
   "conta.html": {
-    "script-src": "'self' https://sdk.mercadopago.com https://accounts.google.com",
+    "script-src": "'self' https://accounts.google.com",
     "style-src": "'self' 'unsafe-inline' https://accounts.google.com",
-    "connect-src": "'self' https://api.mercadopago.com https://viacep.com.br https://accounts.google.com",
-    "frame-src": "https://www.mercadopago.com https://www.mercadopago.com.br https://accounts.google.com",
+    "connect-src": "'self' https://viacep.com.br https://accounts.google.com",
+    "frame-src": "https://accounts.google.com",
   },
 };
 

@@ -212,3 +212,41 @@ checagem não quebra o uso legítimo).
   pontos de extensão marcados com `TODO` em `server.js`.
 - **Cálculo automático de frete**: não solicitado explicitamente; hoje o
   carrinho informa que o frete é calculado na etapa de pagamento.
+
+## Rodada de 27/10/2026 — loja de canecas (do site inteiro até o pagamento)
+
+O que já estava certo e foi conferido: preço sempre calculado no servidor
+(inclusive variações, adicionais e personalização), origem conferida em toda
+chamada que muda dado (`verifyOrigin`), limites de tentativas por rota, senha
+com bcrypt e bloqueio após 5 erros, cookie de sessão `httpOnly` + `SameSite`
++ `Secure`, painel só com verificação em duas etapas, fotos validadas pelo
+`sharp` (não pelo nome do arquivo), CSP sem script em linha, `npm audit` sem
+nenhuma vulnerabilidade.
+
+O que mudou nesta rodada:
+
+- **Pagamento confirmado só se o valor bate.** O webhook já consultava o
+  pagamento direto no Mercado Pago; agora também confere moeda (BRL) e valor
+  contra o total do pedido. Se não bater, o pedido fica "em análise" e nada é
+  liberado (`lib/pagamento.js`, testes em `test/pagamento.test.js`). Isso
+  também cobre um Pix antigo pago depois de a cliente retomar o pagamento com
+  valor novo: a Janaina confere no painel.
+- **Webhook aceita só id numérico** antes de consultar o Mercado Pago.
+- **CSP mais fechada:** saíram `sdk.mercadopago.com` e `api.mercadopago.com`
+  (o site não usa o SDK; o Checkout Pro é um redirecionamento) e o
+  `frame-src` do Mercado Pago. `frame-ancestors 'none'`: nenhum site pode
+  embutir a loja num iframe (proteção contra clique sequestrado).
+- **Sessão do painel expira em 12 horas**, mesmo com o cookie valendo 7 dias
+  para clientes.
+- **Código do app autenticador vale só a janela atual ±30 s** (antes ±2 min).
+- **Ativar/trocar a verificação em duas etapas** passou a ter limite de
+  tentativas.
+- **Fotos de personalização:** limite de 40 envios a cada 15 minutos por
+  endereço; a prévia e a arte do painel só usam fotos ligadas àquele pedido.
+
+Pendências que dependem da hospedagem (⚠️ Caio):
+
+- Preencher `MP_WEBHOOK_SECRET` (sem ele o webhook não confere a assinatura;
+  o valor ainda é conferido no Mercado Pago, mas a assinatura fecha a porta).
+- Site só em HTTPS (o `Strict-Transport-Security` já vai no cabeçalho).
+- `ADMIN_EMAIL_HASHES` só com o e-mail da Janaina (e o do Caio, se quiser).
