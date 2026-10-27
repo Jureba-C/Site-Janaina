@@ -438,16 +438,18 @@ main:focus { outline: none; }
   .produto-grade { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; }
   .galeria { position: sticky; top: 16px; }
 }
-.galeria-palco { position: relative; background: var(--rosa-claro); border-radius: 32px; height: 560px; overflow: hidden; }
+.galeria-palco { position: relative; background: #F5E6E1; border-radius: 32px; height: 560px; overflow: hidden; }
 .galeria-palco.com-foto { background: var(--papel-2); }
 .galeria-foto { width: 100%; height: 100%; object-fit: contain; }
-.galeria-faixa { left: -10px; right: 18%; top: 230px; height: 190px; border-radius: 0 999px 999px 0; }
+.galeria-faixa { left: 0; right: 0; bottom: 0; height: 34%; border-radius: 0; background: #EAD7C3; box-shadow: inset 0 3px 0 #DCC3AA; }
 .galeria-lados { position: absolute; top: 20px; left: 20px; display: flex; background: var(--papel); border-radius: 999px; padding: 4px; z-index: 2; }
 .galeria-lados button { min-height: 40px; padding: 0 18px; border-radius: 999px; border: 0; background: transparent; font-weight: 600; font-size: 14px; cursor: pointer; color: var(--tinta); }
 .galeria-lados button.ativo { background: var(--tinta); color: var(--branco); }
 .galeria-rotulo { position: absolute; top: 24px; right: 24px; font-size: 30px; z-index: 2; }
 .galeria-previa { position: absolute; left: 50%; top: 84px; width: 380px; height: 400px; margin-left: -190px; touch-action: manipulation; }
-.galeria-3d { position: absolute; right: 20px; bottom: 52px; background: var(--papel); z-index: 2; min-height: 44px; }
+.galeria-acoes { position: absolute; left: 20px; right: 20px; bottom: 52px; z-index: 2; display: flex; justify-content: flex-end; gap: 10px; }
+.galeria-acoes .botao { background: var(--papel); min-height: 44px; white-space: nowrap; }
+.galeria-acoes .botao:hover, .galeria-acoes .galeria-calor[aria-pressed="true"] { background: var(--tinta); color: var(--branco); }
 .previa-3d { position: absolute; inset: 0; }
 .previa-3d-palco { position: absolute; inset: 0 0 64px; }
 .previa-3d-palco canvas { width: 100% !important; height: 100% !important; display: block; cursor: grab; touch-action: none; }
@@ -456,7 +458,6 @@ main:focus { outline: none; }
 .previa-3d-dica { position: absolute; left: 0; right: 0; bottom: 70px; text-align: center; font-size: 13px; color: #6B5A50; }
 .previa-3d-fechar { position: absolute; left: 50%; bottom: 14px; translate: -50% 0; background: var(--papel); min-height: 44px; }
 .arte-escondida-caixa { position: absolute; left: -10000px; top: 0; width: 1px; height: 1px; overflow: hidden; }
-.galeria-calor { position: absolute; left: 50%; bottom: 52px; translate: -50% 0; background: var(--papel); z-index: 2; min-height: 44px; }
 .galeria-nota { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font-size: 13px; color: #6B5A50; }
 .galeria-miniaturas { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 12px; }
 .galeria-miniatura { aspect-ratio: 1 / 1; border-radius: 18px; border: 1px solid var(--borda); overflow: hidden; padding: 0; background: var(--branco); cursor: pointer; }
@@ -574,18 +575,21 @@ main:focus { outline: none; }
 @media (max-width: 640px) {
   .galeria-palco { height: 420px; border-radius: 24px; }
   .galeria-previa { width: 300px; height: 316px; margin-left: -150px; top: 70px; }
-  .galeria-faixa { top: 170px; height: 140px; }
+  .galeria-faixa { height: 30%; }
   .galeria-rotulo { font-size: 24px; top: 70px; right: 16px; }
   .galeria-lados { top: 14px; left: 14px; }
-  .galeria-calor { bottom: 58px; left: 12px; translate: none; }
-  .galeria-calor, .galeria-3d { padding-left: 14px; padding-right: 14px; white-space: nowrap; }
-  .galeria-3d { right: 12px; bottom: 58px; }
+  .galeria-acoes { left: 12px; right: 12px; bottom: 58px; gap: 8px; }
+  .galeria-acoes .botao { padding-left: 14px; padding-right: 14px; }
   .galeria-nota { bottom: 12px; padding: 0 16px; font-size: 12px; line-height: 1.35; }
+
   .caixa-personalizar { padding: 18px; }
   .letras { gap: 6px; }
   .comprar { position: sticky; bottom: 0; background: var(--papel); padding: 10px 0; margin-left: calc(-1 * var(--margem)); margin-right: calc(-1 * var(--margem)); padding-left: var(--margem); padding-right: 84px; z-index: 5; box-shadow: 0 -8px 16px rgba(251, 248, 243, 0.9); }
   .botao-comprar { font-size: 15px; min-height: 52px; }
   .secao-produto { margin-top: 56px; }
+}
+@media (max-width: 359px) {
+  .galeria-previa { width: 264px; height: 278px; margin-left: -132px; top: 84px; }
 }
 
 .gaveta-direita { margin-left: auto; max-width: 480px; width: 100vw; }
@@ -748,6 +752,9 @@ main:focus { outline: none; }
   .filtros .campo { flex: 1 1 140px; }
 }
 
+
+.so-curto { display: none; }
+@media (max-width: 420px) { .so-largo { display: none; } .so-curto { display: inline; } }
 
 [data-entrada="espera"] { opacity: 0; transform: translateY(24px); }
 [data-entrada="visivel"] { opacity: 1; transform: none; transition: opacity .75s cubic-bezier(.2, .7, .2, 1), transform .75s cubic-bezier(.2, .7, .2, 1); }

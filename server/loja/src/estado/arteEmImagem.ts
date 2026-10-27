@@ -17,8 +17,26 @@ function lerComoDataUri(blob: Blob): Promise<string> {
   });
 }
 
+function imagemComoDataUri(url: string): Promise<string> {
+  return new Promise((resolver, rejeitar) => {
+    const imagem = new Image();
+    imagem.onload = () => {
+      const tela = document.createElement("canvas");
+      tela.width = imagem.naturalWidth;
+      tela.height = imagem.naturalHeight;
+      const contexto = tela.getContext("2d");
+      if (!contexto) return rejeitar(new Error("sem canvas"));
+      contexto.drawImage(imagem, 0, 0);
+      resolver(tela.toDataURL("image/jpeg", 0.92));
+    };
+    imagem.onerror = () => rejeitar(new Error(`não carregou ${url}`));
+    imagem.src = url;
+  });
+}
+
 function dataUriDe(url: string): Promise<string> {
   if (url.startsWith("data:")) return Promise.resolve(url);
+  if (url.startsWith("blob:")) return imagemComoDataUri(url);
   let pedido = dataUris.get(url);
   if (!pedido) {
     pedido = fetch(url).then(r => {

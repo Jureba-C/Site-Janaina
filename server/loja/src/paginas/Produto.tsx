@@ -77,15 +77,19 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
               <PecaSvg config={config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} medir={medir} fotoSelecionada={aoTocarFoto ? fotoSelecionada : undefined} aoTocarFoto={aoTocarFoto} urlDaFotoDoMolde={config.moldeFoto?.foto ? urlDaFotoDoProduto(config.moldeFoto.foto, 900) : null} />
             </svg>
             <p className="visualmente-oculto" aria-live="polite">{descricao}</p>
-            {pode3d ? (
-              <button type="button" className="botao botao-escuro galeria-3d" onClick={() => setModo3d(true)}>
-                <Icone nome="girar" tamanho={18} />Ver em 3D
-              </button>
-            ) : null}
-            {config.magica ? (
-              <button type="button" className="botao botao-escuro galeria-calor" aria-pressed={aquecida} onClick={() => setAquecida(!aquecida)}>
-                <Icone nome="calor" tamanho={18} />{aquecida ? "Ver fria" : "Ver aquecida"}
-              </button>
+            {pode3d || config.magica ? (
+              <div className="galeria-acoes">
+                {config.magica ? (
+                  <button type="button" className="botao botao-escuro galeria-calor" aria-pressed={aquecida} onClick={() => setAquecida(!aquecida)}>
+                    <Icone nome="calor" tamanho={18} />{aquecida ? <>Ver <span className="so-largo">a caneca </span>fria</> : <><span className="so-largo">Ver com bebida quente</span><span className="so-curto">Bebida quente</span></>}
+                  </button>
+                ) : null}
+                {pode3d ? (
+                  <button type="button" className="botao botao-escuro galeria-3d" onClick={() => setModo3d(true)} aria-label="Ver em 3D">
+                    <Icone nome="girar" tamanho={18} /><span className="so-largo">Ver em </span>3D
+                  </button>
+                ) : null}
+              </div>
             ) : null}
             {config.personalizacao.ativa ? <p className="galeria-nota">Prévia ilustrativa. A arte final é ajustada à mão pela Janaina.</p> : null}
           </>

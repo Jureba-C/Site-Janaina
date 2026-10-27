@@ -205,6 +205,9 @@ async function conferirInteracoes(contexto, tela, rotaProduto, rotaMagica, probl
   const pagina = await contexto.newPage();
   const anotar = (texto) => problemas.push(`[${tela.nome}] interação: ${texto}`);
   pagina.on("pageerror", erro => anotar(`erro de JavaScript — ${erro.message}`));
+  pagina.on("console", msg => {
+    if(msg.type() === "error" && /Content Security Policy|violates/i.test(msg.text())) anotar(`bloqueado pela política de segurança — ${msg.text().slice(0, 140)}`);
+  });
   const celular = tela.viewport.width < 900;
 
   await pagina.goto(ORIGEM + "/", { waitUntil: "networkidle" });
@@ -245,10 +248,16 @@ async function conferirInteracoes(contexto, tela, rotaProduto, rotaMagica, probl
     if(await verso.count() && await clicar(pagina, verso, anotar, "Verso")){
       if((await verso.getAttribute("aria-selected")) !== "true") anotar("o botão Verso não virou a prévia");
     }
+    const campoNome = pagina.locator("#pers-nome");
+    if(await campoNome.count()) await campoNome.fill("Madrinha Lara");
     const tresD = pagina.getByRole("button", { name: "Ver em 3D" });
     if(await tresD.count() && await clicar(pagina, tresD, anotar, "Ver em 3D")){
       try{ await pagina.locator(".galeria-palco canvas").waitFor({ timeout: 8000 }); }
       catch{ anotar("a prévia em 3D não abriu"); }
+      if(await campoNome.count()){
+        const textos = await pagina.locator(".arte-escondida text").allTextContents().catch(() => []);
+        if(!textos.join(" ").replace(/\s+/g, "").includes("MadrinhaLara")) anotar("a prévia em 3D não recebeu o nome digitado");
+      }
     }
   }
   if(rotaMagica){

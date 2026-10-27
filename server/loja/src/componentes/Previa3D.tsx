@@ -29,6 +29,7 @@ export function temPrevia3D(config: ConfigProduto): boolean {
 }
 
 const ESCALA = 100;
+const FOLGA = 0.16;
 const LARGURA_TEXTURA = 2048;
 
 function ArteEscondida({ config, escolhas, lado, forma, tinta, medir, aoMontar }: {
@@ -42,8 +43,10 @@ function ArteEscondida({ config, escolhas, lado, forma, tinta, medir, aoMontar }
 }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
   const { largura, altura } = forma.arte;
+  const fx = largura * FOLGA;
+  const fy = altura * FOLGA;
   return (
-    <svg ref={aoMontar} viewBox={`${-largura / 2} ${-altura / 2} ${largura} ${altura}`} width={largura} height={altura} aria-hidden="true" className="arte-escondida">
+    <svg ref={aoMontar} viewBox={`${-largura / 2 - fx} ${-altura / 2 - fy} ${largura + 2 * fx} ${altura + 2 * fy}`} width={largura + 2 * fx} height={altura + 2 * fy} aria-hidden="true" className="arte-escondida">
       <Arte config={config} escolhas={escolhas} lado={lado} largura={largura} altura={altura} tinta={tinta} urlDaFoto={urlDaFotoEnviada} medir={medir} idBase={`${id}-${lado}`} exemplos={false} />
     </svg>
   );
@@ -240,8 +243,8 @@ export default function Previa3D({ config, escolhas, aquecida, rotulo, fechar }:
       if (!contexto) return;
       try {
         const escala = LARGURA_TEXTURA / (2 * Math.PI * forma.raio);
-        const w = forma.arte.largura * escala;
-        const h = forma.arte.altura * escala;
+        const w = forma.arte.largura * (1 + 2 * FOLGA) * escala;
+        const h = forma.arte.altura * (1 + 2 * FOLGA) * escala;
         const cy = forma.altura * forma.arte.cy * escala;
         const [frente, verso] = await Promise.all([
           svgFrente.current && arteVisivel ? svgComoImagem(svgFrente.current, Math.round(w), Math.round(h)) : null,

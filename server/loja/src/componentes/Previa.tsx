@@ -505,9 +505,11 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
   };
 }
 
-function Sombra({ molde }: { molde: Molde }) {
+function Sombra({ molde, formato, centro, raio }: { molde: Molde; formato: string; centro: number | null; raio: number | null }) {
   if (molde === "foto" || molde === "nenhum") return null;
-  return <ellipse cx={180} cy={molde === "xicara" ? 290 : 362} rx={molde === "garrafa" ? 90 : 140} ry={10} fill="rgba(80, 40, 20, 0.12)" />;
+  const rx = raio ? raio * 1.18 : molde === "garrafa" ? 90 : 140;
+  const cy = molde === "xicara" ? 290 : molde === "caneca" ? 340 : molde === "copo" ? (formato === "cerveja" ? 373 : 343) : 362;
+  return <ellipse cx={centro ?? 180} cy={cy} rx={rx} ry={raio ? 9 : 10} fill="rgba(80, 40, 20, 0.16)" />;
 }
 
 export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fotoSelecionada, aoTocarFoto, urlDaFotoDoMolde = null, comArte = true, exemplos = true, fatias = 28 }: PropsPeca) {
@@ -523,7 +525,7 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
   ) : null;
   return (
     <g>
-      <Sombra molde={molde} />
+      <Sombra molde={molde} formato={config.formato} centro={area.raio ? area.cx : null} raio={area.raio} />
       {g.sob}
       {g.corpo}
       {arte ? (
@@ -533,7 +535,10 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
       ) : null}
       {g.sobre}
       {config.magica && !aquecida && comArte ? (
-        <text x={molde === "xicara" ? 176 : 170} y={molde === "xicara" ? 190 : 216} textAnchor="middle" fill="#F6F1EA" opacity={0.75} fontFamily="Josefin Sans, sans-serif" fontSize={10.5} letterSpacing="0.14em">A ARTE APARECE COM O CALOR</text>
+        <text x={area.cx} y={area.cy - 6} textAnchor="middle" fill="#F6F1EA" opacity={0.8} fontFamily="Josefin Sans, sans-serif" fontSize={12} letterSpacing="0.16em">
+          <tspan x={area.cx} dy={0}>A ARTE APARECE</tspan>
+          <tspan x={area.cx} dy={18}>COM O CALOR</tspan>
+        </text>
       ) : null}
     </g>
   );
