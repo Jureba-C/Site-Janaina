@@ -29,7 +29,7 @@ export function CartaoProduto({ produto, prioridade = false }: { produto: Produt
   const [pulso, setPulso] = useState(0);
   const favorito = favoritos.includes(produto.id);
   const pix = precoNoPix(produto.precoMinimo);
-  const selo = produto.esgotado ? "Esgotado" : produto.aviso === "ultimas" ? "Últimas unidades" : produto.selos[0];
+  const selo = produto.esgotado ? "Esgotado" : produto.aviso === "ultimas" ? "Últimas peças" : produto.selos[0];
   return (
     <article className={`cartao-produto${produto.esgotado ? " esgotado" : ""}`}>
       <a className="cartao-produto-foto" href={produto.endereco} tabIndex={-1} aria-hidden="true">

@@ -621,6 +621,8 @@ main:focus { outline: none; }
 }
 @media (max-width: 359px) {
   .galeria-previa { width: 264px; height: 278px; margin-left: -132px; top: 84px; }
+  .destaque-acoes { flex-wrap: wrap !important; }
+  .destaque-acoes .botao { flex: 1 1 100% !important; }
 }
 
 .gaveta-direita { margin-left: auto; max-width: 480px; width: 100vw; }
@@ -702,7 +704,7 @@ main:focus { outline: none; }
   .so-computador { display: none !important; }
   .so-celular { display: block; }
   .botao-icone.so-celular { display: inline-grid; }
-  .chips-categorias.so-celular { display: flex; }
+  .chips-categorias.so-celular { display: none; }
   .cabecalho-grade { grid-template-columns: 44px 1fr 48px; padding: 14px 16px; gap: 12px; }
   .cabecalho-atalhos { gap: 0; }
   .cabecalho-busca-celular { padding: 0 16px 12px; }
@@ -755,8 +757,8 @@ main:focus { outline: none; }
   .cartao-ver-todos svg { width: 34px; height: 34px; padding: 7px; }
   .cartao-produto { border-radius: 20px; padding: 8px; }
   .cartao-produto-foto { border-radius: 14px; }
-  .selo { top: 14px; left: 14px; font-size: 10px; padding: 4px 8px; }
-  .botao-favorito { top: 10px; right: 10px; }
+  .selo { top: 14px; left: 14px; font-size: 9px; letter-spacing: 0.04em; padding: 4px 7px; white-space: nowrap; }
+  .botao-favorito { top: 10px; right: 10px; width: 38px; height: 38px; }
   .cartao-produto-corpo { padding: 10px 4px 2px; }
   .cartao-produto-nome { font-size: 16px; }
   .cartao-produto-medida, .cartao-produto-cartao { font-size: 12px; }
@@ -850,4 +852,9 @@ main:focus { outline: none; }
   [data-entrada] { opacity: 1 !important; transform: none !important; }
   .voo-trilho { display: none; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
+
+@media (max-width: 359px) {
+  .selo { font-size: 8.5px; letter-spacing: 0; padding: 4px 5px; top: 10px; left: 10px; }
+  .botao-favorito { width: 32px; height: 32px; top: 10px; right: 10px; }
 }
