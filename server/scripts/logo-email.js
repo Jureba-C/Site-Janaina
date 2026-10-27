@@ -5,7 +5,7 @@ const sharp = require("sharp");
 const ORIGEM = path.join(__dirname, "..", "img", "logo-loja.png");
 const DESTINO = path.join(__dirname, "..", "img", "logo-loja-email.png");
 
-const FUNDO = "#FBDCE8";
+const FUNDO = "#FBF8F3";
 const RESPIRO = 24;
 const RAIO = 18;
 

@@ -292,6 +292,31 @@ const LISTA = [
   acessorio("Cesta de presente", 35, "caixa", { codigo: "ACE-CES", medida: "12×24×16 cm", peso: 0.3, caixa: { largura: 24, altura: 16, comprimento: 12 } }),
 ];
 
+const MOLDE_DA_CATEGORIA = {
+  "canecas": "caneca",
+  "xicaras-e-kits": "xicara",
+  "vidros-e-copos": "copo",
+  "garrafas-e-termicos": "garrafa",
+  "ipes-brasilia": "flor",
+  "lembrancas": "plano",
+  "acessorios-e-embalagens": "caixa",
+};
+
+function configPadrao(categoria){
+  const molde = MOLDE_DA_CATEGORIA[categoria] || "caneca";
+  const modelo = {
+    caneca: caneca("", 325, 0).config,
+    xicara: xicara("", "", 0).config,
+    copo: vidro("", 0, 0).config,
+    garrafa: garrafa("", 0, 0).config,
+    plano: lembranca("", 0, "plano").config,
+    flor: { ...acessorio("", 0, "flor").config },
+    caixa: acessorio("", 0, "caixa").config,
+  }[molde];
+  const { fotos, badges, codigo, ...resto } = modelo;
+  return regras.normalizarConfig({ ...resto, medida: "", adicionais: molde === "caneca" ? resto.adicionais : [], categorias: categoria ? [categoria] : [] });
+}
+
 const PRODUCTS = {};
 LISTA.forEach((bruto, i) => {
   const { fotos, badges, ...restoConfig } = bruto.config;
@@ -431,6 +456,8 @@ function effectiveProduct(id, overridesMap){
 
 module.exports = {
   CORES_ALCA,
+  MOLDE_DA_CATEGORIA,
+  configPadrao,
   buildPackage,
   PRODUCTS,
   BUILTIN_CATEGORIES,

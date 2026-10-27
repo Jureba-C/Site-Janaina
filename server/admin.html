@@ -21,18 +21,18 @@
 
 <svg width="0" height="0" style="position:absolute">
   <symbol id="bow-shape" viewBox="0 0 100 70">
-    <path d="M50 35 C50 35 38 6 15 10 C-4 13 -4 47 15 51 C36 56 50 35 50 35 Z"/>
-    <path d="M50 35 C50 35 62 6 85 10 C104 13 104 47 85 51 C64 56 50 35 50 35 Z"/>
-    <rect x="42" y="26" width="16" height="18" rx="5"/>
-    <path d="M45 44 L38 68 L48 60 Z"/>
-    <path d="M55 44 L62 68 L52 60 Z"/>
+    <ellipse cx="50" cy="18" rx="8.5" ry="15"/>
+    <ellipse cx="50" cy="18" rx="8.5" ry="15" transform="rotate(72 50 35)"/>
+    <ellipse cx="50" cy="18" rx="8.5" ry="15" transform="rotate(144 50 35)"/>
+    <ellipse cx="50" cy="18" rx="8.5" ry="15" transform="rotate(216 50 35)"/>
+    <ellipse cx="50" cy="18" rx="8.5" ry="15" transform="rotate(288 50 35)"/>
   </symbol>
 </svg>
 
 <header class="simple-header">
   <div class="container d-flex align-items-center justify-content-between">
     <a href="index.html" class="plc-brand" aria-label="Arte Canecas — página inicial">
-      <img src="img/logo-loja.png" alt="Arte Canecas" width="168" height="54">
+      <img src="img/logo-loja.png" alt="Arte Canecas" width="84" height="54">
     </a>
     <div id="navAccount" class="d-flex align-items-center gap-2"></div>
   </div>
@@ -243,6 +243,12 @@
               loja. Use o <i class="bi bi-eye-slash" aria-hidden="true"></i> para tirar um produto da vitrine sem
               apagar nada — dá pra trazer de volta quando quiser.
             </p>
+            <form class="prazo-producao" id="prazoProducaoForm">
+              <label for="prazoProducao" class="small fw-semibold">Prazo de produção (dias úteis)</label>
+              <input type="number" class="form-control form-control-sm" id="prazoProducao" min="1" max="90" placeholder="a confirmar">
+              <button type="submit" class="btn-outline-blush btn-sm-blush">Salvar prazo</button>
+              <span class="small" id="prazoProducaoMsg" role="status" aria-live="polite"></span>
+            </form>
             <div class="small mb-2 account-msg" id="productsOrderMsg" role="status" aria-live="polite"></div>
             <div class="admin-table-wrap">
               <div class="table-responsive">
@@ -732,15 +738,8 @@
           </div>
 
           <div class="mb-1">
-            <label class="form-label small fw-semibold d-block">Selos de destaque</label>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="checkbox" id="epBadgeBestseller" value="Mais vendido">
-              <label class="form-check-label" for="epBadgeBestseller">Mais vendido</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="checkbox" id="epBadgeNew" value="Novo">
-              <label class="form-check-label" for="epBadgeNew">Novo</label>
-            </div>
+            <p class="form-label small fw-semibold d-block mb-1" id="epSelosRotulo">Selos de destaque</p>
+            <div class="d-flex flex-wrap gap-2" id="epSelos" role="group" aria-labelledby="epSelosRotulo"></div>
           </div>
 
           <div class="mb-1 form-check">
@@ -748,6 +747,8 @@
             <label class="form-check-label small" for="epSoldOut">Esgotado</label>
             <div class="form-text">O produto continua aparecendo na loja, com o selo "Esgotado", mas ninguém consegue comprar. Para tirar da vitrine de vez, use o botão de ocultar.</div>
           </div>
+
+          <div id="epLoja" class="admin-loja"></div>
 
           <div id="epMsg" class="small account-msg" role="alert"></div>
         </div>
@@ -835,17 +836,7 @@
             <input type="number" class="form-control" id="apPrice" required min="0.01" max="99999" step="0.01" inputmode="decimal">
           </div>
 
-          <div class="mb-3">
-            <label class="form-label small fw-semibold d-block">Embalagem</label>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="apCaixa" id="apCaixaPadrao" value="padrao" checked>
-              <label class="form-check-label" for="apCaixaPadrao">Caixa padrão</label>
-            </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" name="apCaixa" id="apCaixaMaior" value="maior">
-              <label class="form-check-label" for="apCaixaMaior">Caixa maior (para cabide)</label>
-            </div>
-          </div>
+          <p class="form-text">Peso, caixa do frete, variações e campos de personalização já vêm prontos pela categoria. Depois de criar, ajuste tudo em <strong>Editar</strong>.</p>
 
           <div class="mb-3">
             <label class="form-label small fw-semibold" for="apCategory">Categoria</label>
@@ -859,12 +850,12 @@
           <div class="mb-1">
             <label class="form-label small fw-semibold d-block">Selos de destaque</label>
             <div class="form-check form-check-inline">
-              <input class="form-check-input" type="checkbox" id="apBadgeBestseller" value="Mais vendido">
-              <label class="form-check-label" for="apBadgeBestseller">Mais vendido</label>
+              <input class="form-check-input" type="checkbox" id="apBadgeBestseller" value="Mais pedida">
+              <label class="form-check-label" for="apBadgeBestseller">Mais pedida</label>
             </div>
             <div class="form-check form-check-inline">
-              <input class="form-check-input" type="checkbox" id="apBadgeNew" value="Novo">
-              <label class="form-check-label" for="apBadgeNew">Novo</label>
+              <input class="form-check-input" type="checkbox" id="apBadgeNew" value="Novidade">
+              <label class="form-check-label" for="apBadgeNew">Novidade</label>
             </div>
           </div>
 
@@ -899,6 +890,7 @@
 <script src="js/vendor/bootstrap.min.js" defer></script>
 <script src="js/auth.js" defer></script>
 <script src="js/pricing.js" defer></script>
+<script src="js/admin-loja.js" defer></script>
 <script src="js/admin.js" defer></script>
 </body>
 </html>

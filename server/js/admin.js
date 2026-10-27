@@ -51,20 +51,20 @@
   function imageFor(product){
     return product.photoUrl || "";
   }
-  const BOW_PLACEHOLDER = `<span class="admin-thumb-placeholder" aria-hidden="true"><svg class="bow-icon"><use href="#bow-shape"/></svg></span>`;
+  const BOW_PLACEHOLDER = `<span class="admin-thumb-placeholder" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.2"><ellipse cx="12" cy="6.5" rx="3" ry="5"/><ellipse cx="12" cy="6.5" rx="3" ry="5" transform="rotate(72 12 12)"/><ellipse cx="12" cy="6.5" rx="3" ry="5" transform="rotate(144 12 12)"/><ellipse cx="12" cy="6.5" rx="3" ry="5" transform="rotate(216 12 12)"/><ellipse cx="12" cy="6.5" rx="3" ry="5" transform="rotate(288 12 12)"/></svg></span>`;
 
   const PAYMENT_METHOD_LABELS = { pix: "Pix", card: "Cartão ou boleto" };
 
   let CATEGORY_LABELS = {
-    "laco-unico":  "Laço Único",
-    "parzinho":    "Parzinho",
-    "laco-g":      "Laço G",
-    "laco-pompom": "Laço Pompom",
-    "tiara":       "Tiara",
-    "kit":         "Kit",
-    "bolsa":       "Bolsa",
-    "cabide":      "Cabide",
+    "canecas": "Canecas",
+    "xicaras-e-kits": "Xícaras e kits",
+    "vidros-e-copos": "Vidros e copos",
+    "garrafas-e-termicos": "Garrafas e térmicos",
+    "ipes-brasilia": "Ipês Brasília",
+    "lembrancas": "Lembranças",
+    "acessorios-e-embalagens": "Acessórios e embalagens",
   };
+  let availableBadges = [];
   let currentCategories = Object.entries(CATEGORY_LABELS).map(([slug, label]) => ({ slug, label, builtin: true }));
   function applyCategories(categories){
     if(!Array.isArray(categories) || categories.length === 0) return;
@@ -88,14 +88,13 @@
       .replace(/ç/g, "c");
   }
   const DETECTORES_DE_CATEGORIA = [
-    { rotulo: "Laço G",       regex: /\(\s*g\s*\)|\bgrande\b/ },
-    { rotulo: "Laço Pompom",  regex: /\bpompom\b/ },
-    { rotulo: "Parzinho",     regex: /\bparzinhos?\b/ },
-    { rotulo: "Tiara",        regex: /\btiaras?\b/ },
-    { rotulo: "Cabide",       regex: /\bcabides?\b/ },
-    { rotulo: "Kit",          regex: /\bkits?\b/ },
-    { rotulo: "Bolsa",        regex: /\bbolsas?\b/ },
-    { rotulo: "Laço Único",   regex: /\bunico\b|\blac[oa]s?\b|\blacinhos?\b/ },
+    { rotulo: "Garrafas e térmicos", regex: /\bgarrafas?\b|\btermic[oa]s?\b|\bsqueeze\b/ },
+    { rotulo: "Xícaras e kits", regex: /\bxicaras?\b|\bpires\b/ },
+    { rotulo: "Vidros e copos", regex: /\bcopos?\b|\bvidro\b|\bchopp\b|\bwhisky\b|\bmason\b|\btacas?\b/ },
+    { rotulo: "Ipês Brasília", regex: /\bipes?\b/ },
+    { rotulo: "Acessórios e embalagens", regex: /\bcaixas?\b|\btampas?\b|\bbuque\b|\bcoador\b|\bdifusor\b|\bcesta\b|\btessel\b/ },
+    { rotulo: "Lembranças", regex: /\bazulejos?\b|\bchaveiros?\b|\bquebra-cabeca\b|\bmousepad\b|\bbottons?\b|\bimas?\b|\bpolaroid\b|\bagenda\b|\bcaderno\b/ },
+    { rotulo: "Canecas", regex: /\bcanecas?\b/ },
   ];
   function detectarCategoriaPorNome(nome){
     const texto = normalizarTexto(nome);
@@ -704,8 +703,8 @@
   const epPhotosListEl = document.getElementById("epPhotosList");
   const epPhotoStatus = document.getElementById("epPhotoStatus");
   const epCategory = document.getElementById("epCategory");
-  const epBadgeBestseller = document.getElementById("epBadgeBestseller");
-  const epBadgeNew = document.getElementById("epBadgeNew");
+  const epSelos = document.getElementById("epSelos");
+  const epLoja = document.getElementById("epLoja");
   const epSoldOut = document.getElementById("epSoldOut");
   const epPreview = document.getElementById("epPreview");
   const epPreviewPlaceholder = document.getElementById("epPreviewPlaceholder");
@@ -727,7 +726,15 @@
   let photoUploadInFlight = false;
 
   function selectedBadges(){
-    return [epBadgeBestseller, epBadgeNew].filter(cb => cb.checked).map(cb => cb.value);
+    return [...epSelos.querySelectorAll("input:checked")].map(cb => cb.value);
+  }
+
+  function renderSelos(marcados){
+    epSelos.innerHTML = availableBadges.map((selo, i) => `
+      <label class="form-check form-check-inline m-0">
+        <input class="form-check-input" type="checkbox" value="${escapeHTML(selo)}" id="epSelo${i}"${marcados.includes(selo) ? " checked" : ""}>
+        <span class="form-check-label">${escapeHTML(selo)}</span>
+      </label>`).join("");
   }
 
   function setPreviewPhoto(url){
@@ -809,14 +816,14 @@
     epPhotoFile.value = "";
     epCategory.dataset.categoriaManual = "false";
     renderCategoryOptions(epCategory, product.category || "");
-    epBadgeBestseller.checked = (product.badges || []).includes("Mais vendido");
-    epBadgeNew.checked = (product.badges || []).includes("Novo");
+    renderSelos(product.badges || []);
     epSoldOut.checked = Boolean(product.soldOut);
 
     pendingPhotos = Array.isArray(product.photos) ? [...product.photos] : (product.photoUrl ? [product.photoUrl] : []);
     photoCropTarget = null;
     renderPhotoList();
     syncPreviewText();
+    if(window.ArteAdminLoja && product.config) window.ArteAdminLoja.abrir(product, currentCategories, epLoja);
 
     closeCropper();
     epMsg.textContent = "";
@@ -832,6 +839,7 @@
       category: product.category || "",
       badges: [...(product.badges || [])].sort(),
       soldOut: Boolean(product.soldOut),
+      config: product.config ? JSON.stringify(window.ArteAdminLoja.ler(product.category || "")) : null,
     };
     editModal.show();
   }
@@ -1235,6 +1243,13 @@
     const sortedBadges = [...badges].sort();
     if(JSON.stringify(sortedBadges) !== JSON.stringify(editOriginal.badges)) patch.badges = badges;
     if(epSoldOut.checked !== editOriginal.soldOut) patch.soldOut = epSoldOut.checked;
+    if(editOriginal.config && window.ArteAdminLoja){
+      const config = window.ArteAdminLoja.ler(category);
+      if(JSON.stringify(config) !== editOriginal.config){
+        patch.config = config;
+        delete patch.category;
+      }
+    }
 
     if(Object.keys(patch).length === 0){
       editModal.hide();
@@ -1270,13 +1285,14 @@
   });
 
   async function promptNewCategory(selectToUpdate){
-    const label = prompt("Nome da nova categoria (ex.: Aniversário):");
+    const label = prompt("Nome da nova categoria (ex.: Formatura ou Porta-retratos):");
     if(!label || !label.trim()) return;
+    const ehOcasiao = confirm(`"${label.trim()}" é uma ocasião (como Formatura ou Natal)?\n\nOK = ocasião · Cancelar = tipo de produto`);
     try{
       const res = await fetchWithTimeout("/api/admin/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: label.trim() }),
+        body: JSON.stringify({ label: label.trim(), grupo: ehOcasiao ? "ocasiao" : "tipo" }),
       });
       const data = await res.json().catch(() => ({}));
       if(!res.ok) throw new Error(data.error || "Não foi possível criar a categoria.");
@@ -1290,6 +1306,25 @@
   }
   document.getElementById("epNewCategoryBtn").addEventListener("click", () => promptNewCategory(epCategory));
 
+  document.getElementById("prazoProducaoForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const campo = document.getElementById("prazoProducao");
+    const aviso = document.getElementById("prazoProducaoMsg");
+    aviso.textContent = "Salvando…";
+    try{
+      const res = await fetchWithTimeout("/api/admin/prazo-producao", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dias: campo.value === "" ? null : Number(campo.value) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok) throw new Error(data.error || "Não foi possível salvar o prazo.");
+      aviso.textContent = data.prazoProducao ? `Salvo: ${data.prazoProducao} dias úteis na loja.` : "Salvo: a loja mostra \"a confirmar\".";
+    }catch(err){
+      aviso.textContent = err.message;
+    }
+  });
+
   const addProductModalEl = document.getElementById("addProductModal");
   const addProductModal = new bootstrap.Modal(addProductModalEl);
   const addProductForm = document.getElementById("addProductForm");
@@ -1297,16 +1332,6 @@
   const apDescription = document.getElementById("apDescription");
   const apPrice = document.getElementById("apPrice");
   const apCategory = document.getElementById("apCategory");
-  const apCaixaPadrao = document.getElementById("apCaixaPadrao");
-  const apCaixaMaior = document.getElementById("apCaixaMaior");
-
-  function ajustarCaixaPelaCategoria(){
-    if(addProductForm.dataset.caixaManual === "true") return;
-    const maior = apCategory.value === "cabide";
-    apCaixaMaior.checked = maior;
-    apCaixaPadrao.checked = !maior;
-  }
-  [apCaixaPadrao, apCaixaMaior].forEach(r => r.addEventListener("change", () => { addProductForm.dataset.caixaManual = "true"; }));
 
   function atualizarDescricaoAutomatica(){
     if(apDescription.dataset.descricaoManual === "true") return;
@@ -1314,21 +1339,19 @@
     if(!nome){ apDescription.value = ""; return; }
     const categoria = currentCategories.find(c => c.slug === apCategory.value);
     apDescription.value = categoria
-      ? `${nome} — laço artesanal feito à mão pela Arte Canecas, ideal para ${categoria.label.toLowerCase()}.`
-      : `${nome} — laço artesanal feito à mão pela Arte Canecas.`;
+      ? `${nome}, personalizado pela Arte Canecas em Brasília. Da linha ${categoria.label.toLowerCase()}, com a personalização inclusa no valor.`
+      : `${nome}, personalizado pela Arte Canecas em Brasília, com a personalização inclusa no valor.`;
   }
   apDescription.addEventListener("input", () => { apDescription.dataset.descricaoManual = "true"; });
 
   async function aoDigitarNomeAdicionar(){
     await autoDetectarCategoria(apName.value, apCategory);
-    ajustarCaixaPelaCategoria();
     atualizarDescricaoAutomatica();
   }
   const aoDigitarNomeAdicionarComAtraso = comAtraso(aoDigitarNomeAdicionar, 400);
   apName.addEventListener("input", aoDigitarNomeAdicionarComAtraso);
   apCategory.addEventListener("change", () => {
     apCategory.dataset.categoriaManual = "true";
-    ajustarCaixaPelaCategoria();
     atualizarDescricaoAutomatica();
   });
   const apBadgeBestseller = document.getElementById("apBadgeBestseller");
@@ -1552,7 +1575,6 @@
     resetApPhotos();
     apCategory.dataset.categoriaManual = "false";
     apDescription.dataset.descricaoManual = "false";
-    addProductForm.dataset.caixaManual = "false";
     renderCategoryOptions(apCategory, "");
     apMsg.textContent = "";
     apMsg.className = "small account-msg";
@@ -1566,7 +1588,6 @@
       description: apDescription.value.trim(),
       price: Number(apPrice.value),
       category: apCategory.value,
-      caixa: apCaixaMaior.checked ? "maior" : "padrao",
       badges: [apBadgeBestseller, apBadgeNew].filter(cb => cb.checked).map(cb => cb.value),
     };
 
@@ -2598,6 +2619,9 @@
       showOnly(contentEl);
       const products = Array.isArray(productsData.products) ? productsData.products : [];
       applyCategories(productsData.categories);
+      availableBadges = Array.isArray(productsData.availableBadges) ? productsData.availableBadges : [];
+      const prazoInput = document.getElementById("prazoProducao");
+      if(prazoInput) prazoInput.value = productsData.prazoProducao || "";
       renderStats(ordersData.stats || { totalRevenue: 0, totalOrders: 0 });
       renderSalesChart(orders);
       renderCategoryChart(orders, products);

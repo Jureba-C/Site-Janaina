@@ -95,7 +95,7 @@ const mpClient = new MercadoPagoConfig({
 const {
   buildPackage,
   PRODUCTS, BUILTIN_CATEGORIES, PRODUCT_CATEGORIES, PRODUCT_BADGES,
-  CUSTOM_PRODUCT_ID_START,
+  CUSTOM_PRODUCT_ID_START, configPadrao,
   getAllCategories, isValidCategorySlug,
   getProductOverridesMap, getAllProductIds, photosFromRow, effectiveProduct,
 } = require("./lib/catalogo.js");
@@ -3695,7 +3695,7 @@ app.post("/api/admin/products", auth.requireAdmin, auth.requireAdminTwoFactor, (
     }
     let config;
     try {
-      config = configDoPainel(body.config || { categorias: category ? [category] : [], molde: "caneca", personalizacao: { ativa: false } });
+      config = configDoPainel(body.config || configPadrao(category));
     } catch (erro) {
       return res.status(erro.status || 400).json({ error: erro.message });
     }

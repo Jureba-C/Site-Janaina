@@ -4215,3 +4215,25 @@ a.pedido-avaliar:focus-visible{ outline:2px solid var(--blush-600); outline-offs
 .previa-pedido-imagens{ display:flex; flex-wrap:wrap; gap:16px; justify-content:center; margin-bottom:12px; }
 .previa-pedido-imagens figure{ margin:0; flex:1 1 280px; max-width:360px; }
 .previa-pedido-imagens img{ width:100%; height:auto; border-radius:18px; background:var(--blush-50); }
+
+.prazo-producao{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px; }
+.prazo-producao input{ width:110px; }
+.admin-loja{ margin-top:16px; display:grid; gap:10px; }
+.al-secao{ border:1px solid var(--blush-100); border-radius:14px; padding:10px 14px; background:var(--white); }
+.al-secao > summary{ cursor:pointer; font-weight:600; min-height:32px; display:flex; align-items:center; }
+.al-linha{ display:flex; flex-wrap:wrap; gap:8px 12px; align-items:flex-end; margin:8px 0; }
+.al-campo{ display:flex; flex-direction:column; gap:2px; font-size:.8rem; min-width:120px; flex:1 1 140px; }
+.al-numero{ flex:0 1 110px; min-width:90px; }
+.al-largo{ width:100%; }
+.al-check{ display:inline-flex; gap:6px; align-items:center; font-size:.85rem; min-height:32px; margin-right:10px; }
+.al-colunas{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:4px 16px; }
+.al-colunas .al-check{ display:flex; }
+.al-subtitulo{ font-size:.75rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); margin:8px 0 2px; }
+.al-grupo{ border:1px dashed var(--blush-300); border-radius:12px; padding:8px 10px; margin:8px 0; }
+.al-opcao{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:4px 0; }
+.al-opcao input[data-campo=nome]{ flex:1 1 140px; }
+.al-preco{ width:90px; }
+.al-esgotado{ font-size:.8rem; display:inline-flex; gap:4px; align-items:center; }
+.al-molde-foto{ position:relative; max-width:260px; }
+.al-molde-foto img{ width:100%; border-radius:12px; display:block; }
+.al-molde-foto span{ position:absolute; border:2px dashed var(--blush-600); background:rgba(169,82,29,.12); border-radius:6px; }
