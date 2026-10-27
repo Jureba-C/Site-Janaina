@@ -192,6 +192,9 @@ db.exec(`CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(customer_phone);`
 ensureColumn("orders", "fulfillment_status", "TEXT");
 ensureColumn("orders", "shipped_at", "INTEGER");
 ensureColumn("orders", "delivered_at", "INTEGER");
+ensureColumn("orders", "pago_em", "INTEGER");
+ensureColumn("orders", "arte_aprovada_em", "INTEGER");
+ensureColumn("orders", "pronto_em", "INTEGER");
 ensureColumn("orders", "melhor_envio_shipment_id", "TEXT");
 ensureColumn("orders", "nfe_status", "TEXT");
 ensureColumn("orders", "nfe_number", "TEXT");
@@ -704,7 +707,13 @@ const stmtUpdateOrderTracking = db.prepare(`
   WHERE external_reference = ?
 `);
 const stmtMarkOrderInProduction = db.prepare(
-  `UPDATE orders SET fulfillment_status = 'em_producao', updated_at = ? WHERE external_reference = ?`
+  `UPDATE orders SET fulfillment_status = 'em_producao', pago_em = COALESCE(pago_em, ?), updated_at = ? WHERE external_reference = ?`
+);
+const stmtMarcarArteAprovada = db.prepare(
+  `UPDATE orders SET arte_aprovada_em = COALESCE(arte_aprovada_em, ?), updated_at = ? WHERE external_reference = ?`
+);
+const stmtMarcarPronto = db.prepare(
+  `UPDATE orders SET fulfillment_status = 'pronto', pronto_em = COALESCE(pronto_em, ?), updated_at = ? WHERE external_reference = ?`
 );
 const stmtMarkOrderDelivered = db.prepare(
   `UPDATE orders SET fulfillment_status = 'entregue', delivered_at = ?, updated_at = ? WHERE external_reference = ?`
@@ -818,7 +827,16 @@ function updateOrderTracking(ref, trackingCode) {
   return getOrderByExternalReference(ref);
 }
 function markOrderInProduction(ref) {
-  stmtMarkOrderInProduction.run(Date.now(), ref);
+  const now = Date.now();
+  stmtMarkOrderInProduction.run(now, now, ref);
+}
+function marcarArteAprovada(ref) {
+  const now = Date.now();
+  stmtMarcarArteAprovada.run(now, now, ref);
+}
+function marcarPronto(ref) {
+  const now = Date.now();
+  stmtMarcarPronto.run(now, now, ref);
 }
 function markOrderDelivered(ref, quando) {
   const now = Date.now();
@@ -1986,6 +2004,8 @@ module.exports = {
   listAllOrders,
   updateOrderTracking,
   markOrderInProduction,
+  marcarArteAprovada,
+  marcarPronto,
   listOrdersAwaitingDelivery,
   markOrderDelivered,
   setMelhorEnvioShipmentId,

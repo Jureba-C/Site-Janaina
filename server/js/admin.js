@@ -263,14 +263,24 @@
   function switchTab(tabName){
     const target = tabPanels.find(p => p.dataset.tabPanel === tabName);
     if(!target) return;
-    tabButtons.forEach(btn => btn.classList.toggle("is-active", btn.dataset.tab === tabName));
+    const destacada = target.dataset.grupo || tabName;
+    tabButtons.forEach(btn => btn.classList.toggle("is-active", btn.dataset.tab === destacada));
     tabPanels.forEach(panel => panel.classList.toggle("d-none", panel !== target));
+    document.querySelector(".admin-wrap")?.classList.toggle("is-largo", tabName === "producao");
   }
 
   adminTabsEl.addEventListener("click", (e) => {
     const btn = e.target.closest(".admin-tab-btn");
     if(btn) switchTab(btn.dataset.tab);
   });
+
+  contentEl.addEventListener("click", (e) => {
+    const atalho = e.target.closest("[data-tab-ir]");
+    if(!atalho) return;
+    switchTab(atalho.dataset.tabIr);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  document.querySelector(".admin-wrap")?.classList.add("is-largo");
 
   function renderStats(stats){
 
@@ -1972,7 +1982,7 @@
       if(!res.ok) throw new Error(data.error || "Não foi possível salvar.");
       feedbackEl.textContent = "Salvo! Avisando a cliente...";
       feedbackEl.classList.add("is-success");
-      setTimeout(loadDashboard, 1200);
+      setTimeout(recarregarPedidos, 1200);
     }catch(err){
       feedbackEl.textContent = err.message || "Erro ao salvar.";
       feedbackEl.classList.add("is-error");
@@ -2600,6 +2610,45 @@
     }
   }
 
+  function verPedidoCompleto(ref){
+    switchTab("pedidos");
+    if(!document.getElementById(`pedido-${ref}`)) document.querySelector('#ordersFilter .chip[data-situacao="todos"]')?.click();
+    const card = document.getElementById(`pedido-${ref}`);
+    if(!card) return;
+    abrirPedido(ref);
+    card.scrollIntoView({ behavior:"smooth", block:"start" });
+    card.classList.add("is-highlighted");
+    setTimeout(() => card.classList.remove("is-highlighted"), 4000);
+  }
+
+  const ajudantesDaProducao = {
+    escapeHTML, formatMoney, formatDate, fetchWithTimeout, copiarTexto, whatsappUrl, whatsappPostagemUrl,
+    mascararCep, mascararCpf, baixarArtePng, abrirPreviaDoPedido, saveTracking, generateLabel, conferirEntrega,
+    verPedidoCompleto, recarregar: () => recarregarPedidos(),
+  };
+
+  function renderProducao(orders, diasDeProducao){
+    window.ArteAdminProducao?.render(orders, { diasDeProducao, ajudantes: ajudantesDaProducao });
+  }
+
+  async function recarregarPedidos(){
+    try{
+      const res = await fetchWithTimeout("/api/admin/orders");
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const dados = await res.json();
+      const orders = Array.isArray(dados.orders) ? dados.orders : [];
+      todosOsPedidos = orders;
+      atualizarContagemDeSituacoes();
+      renderOrders(pedidosDaSituacao(situacaoDePedidos));
+      renderPendingCarts(orders);
+      renderStats(dados.stats || { totalRevenue: 0, totalOrders: 0 });
+      renderProducao(orders, dados.diasDeProducao);
+    }catch(err){
+      console.error("Erro ao atualizar os pedidos:", err);
+      loadDashboard();
+    }
+  }
+
   async function loadDashboard(){
     showOnly(stateLoading);
     try{
@@ -2649,6 +2698,7 @@
       todosOsPedidos = orders;
       atualizarContagemDeSituacoes();
       renderOrders(pedidosDaSituacao(situacaoDePedidos));
+      renderProducao(orders, ordersData.diasDeProducao);
 
       const customers = Array.isArray(customersData.customers) ? customersData.customers : [];
       const subscribers = Array.isArray(leadsData.subscribers) ? leadsData.subscribers : [];

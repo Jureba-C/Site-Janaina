@@ -41,6 +41,7 @@ const produtoUrl = require("./js/produto-url.js");
 const lojaDados = require("./lib/loja-dados.js");
 const lojaSsr = require("./lib/loja-ssr.js");
 const producao = require("./lib/producao.js");
+const etapas = require("./lib/etapas-pedido.js");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -2716,11 +2717,14 @@ app.get("/api/admin/orders", auth.requireAdmin, auth.requireAdminTwoFactor, (req
     const rows = db.listAllOrders();
     const overridesMap = getProductOverridesMap();
     const notas = db.notasPorPedido();
+    const diasDeProducao = db.prazoDeProducao() || etapas.PRAZO_PADRAO_DIAS_UTEIS;
     const orders = rows.map(row => {
       const items = JSON.parse(row.items_json).map(item => {
         const { config, ...resto } = itemParaExibir(item, overridesMap);
-        return { ...resto, temArte: Boolean(config?.personalizacao?.ativa && item.escolhas), temVerso: Boolean(config?.personalizacao?.verso && item.escolhas?.personalizacao?.frase) };
+        return { ...resto, peca: etapas.pecaDoItem(item, overridesMap), temArte: Boolean(config?.personalizacao?.ativa && item.escolhas), temVerso: Boolean(config?.personalizacao?.verso && item.escolhas?.personalizacao?.frase) };
       });
+      const etapa = etapas.etapaDoPedido(row);
+      const pagoEm = row.status === "pago" ? (row.pago_em || row.created_at) : null;
       const address = JSON.parse(row.address_json);
       const shipping = JSON.parse(row.shipping_json);
       const account = row.user_id ? db.getUserById(row.user_id) : null;
@@ -2738,6 +2742,12 @@ app.get("/api/admin/orders", auth.requireAdmin, auth.requireAdminTwoFactor, (req
         shipping: { name: shipping.name, deliveryTime: shipping.delivery_time, retirada: shipping.service_id === "retirada" },
         trackingCode: row.tracking_code || "",
         fulfillmentStatus: row.fulfillment_status || null,
+        etapa,
+        aprovarArte: etapas.precisaAprovarArte(JSON.parse(row.items_json)),
+        pagoEm,
+        prazo: pagoEm ? etapas.prazoDoPedido(pagoEm, diasDeProducao) : null,
+        arteAprovadaEm: row.arte_aprovada_em || null,
+        prontoEm: row.pronto_em || null,
         shippedAt: row.shipped_at || null,
         deliveredAt: row.delivered_at || null,
         avisoDePostagem: estadoDoAvisoDePostagem(row.external_reference),
@@ -2752,7 +2762,7 @@ app.get("/api/admin/orders", auth.requireAdmin, auth.requireAdminTwoFactor, (req
       };
     });
     const stats = db.getOrderStats();
-    res.json({ orders, stats: { totalRevenue: stats.revenue, totalOrders: stats.count } });
+    res.json({ orders, stats: { totalRevenue: stats.revenue, totalOrders: stats.count }, diasDeProducao });
   } catch (err) {
     console.error("Erro ao listar pedidos (admin):", err);
     res.status(500).json({ error: "Não foi possível carregar os pedidos agora." });
@@ -2864,6 +2874,38 @@ app.get("/api/admin/export.xlsx", auth.requireAdmin, auth.requireAdminTwoFactor,
     res.send(buffer);
   } catch (err) {
     console.error("Erro ao gerar planilha de exportação (admin):", err);
+    res.status(500).json({ error: "Não foi possível gerar a planilha agora." });
+  }
+});
+
+function enviarPlanilha(res, nome, buffer){
+  const stamp = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", `attachment; filename="${nome}-${stamp}.xlsx"`);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(buffer);
+}
+
+app.get("/api/admin/planilha-producao.xlsx", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  try {
+    const buffer = spreadsheetExport.planilhaDeProducao({
+      overridesMap: getProductOverridesMap(),
+      diasDeProducao: db.prazoDeProducao() || etapas.PRAZO_PADRAO_DIAS_UTEIS,
+    });
+    enviarPlanilha(res, "producao", buffer);
+  } catch (err) {
+    console.error("Erro ao gerar planilha de produção:", err);
+    res.status(500).json({ error: "Não foi possível gerar a planilha agora." });
+  }
+});
+
+app.get("/api/admin/planilha-envios.xlsx", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  try {
+    enviarPlanilha(res, "envios", spreadsheetExport.planilhaDeEnvios());
+  } catch (err) {
+    console.error("Erro ao gerar planilha de envios:", err);
     res.status(500).json({ error: "Não foi possível gerar a planilha agora." });
   }
 });
@@ -3009,6 +3051,33 @@ app.post("/api/admin/orders/:reference/avisar-postagem", auth.requireAdmin, auth
     res.status(500).json({ error: "Não foi possível reenviar o aviso agora." });
   }
 });
+
+function avancarEtapa(acao){
+  return (req, res) => {
+    try {
+      const reference = String(req.params.reference || "");
+      const order = db.getOrderByExternalReference(reference);
+      if(!order){
+        return res.status(404).json({ error: "Pedido não encontrado." });
+      }
+      if(order.status !== "pago"){
+        return res.status(409).json({ error: "Só pedidos pagos entram na produção." });
+      }
+      if(["postado", "entregue"].includes(order.fulfillment_status)){
+        return res.status(409).json({ error: "Este pedido já saiu da produção." });
+      }
+      acao(reference);
+      const atualizado = db.getOrderByExternalReference(reference);
+      res.json({ ok: true, etapa: etapas.etapaDoPedido(atualizado) });
+    } catch (err) {
+      console.error("Erro ao avançar a etapa do pedido:", err);
+      res.status(500).json({ error: "Não foi possível salvar a etapa agora." });
+    }
+  };
+}
+
+app.post("/api/admin/orders/:reference/arte-aprovada", auth.requireAdmin, auth.requireAdminTwoFactor, avancarEtapa(db.marcarArteAprovada));
+app.post("/api/admin/orders/:reference/pronto", auth.requireAdmin, auth.requireAdminTwoFactor, avancarEtapa(db.marcarPronto));
 
 app.patch("/api/admin/orders/:reference/delivered", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
   try {

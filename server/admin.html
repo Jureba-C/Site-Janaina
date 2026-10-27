@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="css/vendor/bootstrap-icons.subset.css">
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/admin-producao.css">
 </head>
 <body>
 
@@ -139,21 +140,79 @@
       <div id="adminContent" class="d-none admin-layout">
 
         <nav class="admin-sidebar" id="adminTabs" aria-label="Seções do painel">
-          <button type="button" class="admin-tab-btn is-active" data-tab="dashboard"><i class="bi bi-speedometer2"></i> Dashboard</button>
-          <button type="button" class="admin-tab-btn" data-tab="produtos"><i class="bi bi-tags"></i> Produtos</button>
-          <button type="button" class="admin-tab-btn" data-tab="cupons"><i class="bi bi-ticket-perforated"></i> Cupons</button>
+          <button type="button" class="admin-tab-btn is-active" data-tab="producao"><i class="bi bi-clipboard-check"></i> Produção <span class="admin-tab-contador d-none" id="producaoContador"></span></button>
           <button type="button" class="admin-tab-btn" data-tab="pedidos"><i class="bi bi-bag-check"></i> Vendas e pedidos</button>
+          <button type="button" class="admin-tab-btn" data-tab="produtos"><i class="bi bi-tags"></i> Produtos</button>
+          <button type="button" class="admin-tab-btn" data-tab="dashboard"><i class="bi bi-speedometer2"></i> Dashboard</button>
+          <button type="button" class="admin-tab-btn" data-tab="cupons"><i class="bi bi-ticket-perforated"></i> Cupons</button>
           <button type="button" class="admin-tab-btn" data-tab="clientes"><i class="bi bi-people"></i> Clientes</button>
-          <button type="button" class="admin-tab-btn" data-tab="mensagens"><i class="bi bi-chat-dots"></i> Mensagens</button>
           <button type="button" class="admin-tab-btn" data-tab="avaliacoes"><i class="bi bi-star-fill"></i> Avaliações <span class="admin-tab-contador d-none" id="avaliacoesContador"></span></button>
-          <button type="button" class="admin-tab-btn" data-tab="topo"><i class="bi bi-image"></i> Fotos do topo</button>
-          <button type="button" class="admin-tab-btn" data-tab="depoimentos"><i class="bi bi-chat-heart"></i> Depoimentos</button>
-          <button type="button" class="admin-tab-btn" data-tab="novidades"><i class="bi bi-send"></i> Novidades</button>
+          <button type="button" class="admin-tab-btn" data-tab="loja"><i class="bi bi-gear"></i> Loja e configurações</button>
         </nav>
 
         <div class="admin-tab-panels">
 
-          <section class="admin-tab-panel" data-tab-panel="dashboard">
+          <section class="admin-tab-panel" data-tab-panel="producao">
+            <div class="admin-section-head">
+              <h2 class="admin-section-title">Produção</h2>
+              <span class="admin-hint mb-0" id="prodPrazoInfo"></span>
+            </div>
+
+            <div class="prod-contadores" id="prodContadores" role="group" aria-label="Resumo da produção"></div>
+
+            <div class="prod-ferramentas">
+              <label class="visually-hidden" for="prodBusca">Buscar pedido por nome ou número</label>
+              <input type="search" class="form-control prod-busca" id="prodBusca" placeholder="Buscar por nome ou número do pedido" autocomplete="off">
+              <div class="prod-ferramentas-botoes">
+                <button type="button" class="btn-outline-blush btn-sm-blush" id="prodLoteBtn" aria-expanded="false" aria-controls="prodLote"><i class="bi bi-stack me-1" aria-hidden="true"></i>Produzir em lote</button>
+                <button type="button" class="btn-outline-blush btn-sm-blush" data-planilha="planilha-producao"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Planilha de produção</button>
+                <button type="button" class="btn-outline-blush btn-sm-blush" data-planilha="planilha-envios"><i class="bi bi-truck me-1" aria-hidden="true"></i>Planilha de envios</button>
+                <button type="button" class="btn-outline-blush btn-sm-blush" id="prodImprimirBtn"><i class="bi bi-printer me-1" aria-hidden="true"></i>Lista de postagem</button>
+              </div>
+            </div>
+
+            <div class="prod-lote" id="prodLote" hidden></div>
+
+            <div class="prod-abas" id="prodAbas" role="tablist" aria-label="Etapas da produção"></div>
+            <div class="prod-quadro" id="prodQuadro"></div>
+          </section>
+
+          <section class="admin-tab-panel d-none" data-tab-panel="loja">
+            <h2 class="admin-section-title">Loja e configurações</h2>
+            <p class="admin-hint">O que você mexe de vez em quando: o que aparece no site, e-mails para as clientes e as configurações do painel.</p>
+            <div class="loja-atalhos">
+              <button type="button" class="loja-atalho" data-tab-ir="topo"><i class="bi bi-image" aria-hidden="true"></i><span><strong>Fotos do topo</strong><small>As fotos da primeira tela do site</small></span></button>
+              <button type="button" class="loja-atalho" data-tab-ir="depoimentos"><i class="bi bi-chat-heart" aria-hidden="true"></i><span><strong>Depoimentos</strong><small>Elogios recebidos por WhatsApp ou Instagram</small></span></button>
+              <button type="button" class="loja-atalho" data-tab-ir="novidades"><i class="bi bi-send" aria-hidden="true"></i><span><strong>Novidades por e-mail</strong><small>Mandar novidades para quem deixou o e-mail</small></span></button>
+              <button type="button" class="loja-atalho" data-tab-ir="mensagens"><i class="bi bi-chat-dots" aria-hidden="true"></i><span><strong>Mensagens</strong><small>Recebidas pelo formulário de contato</small></span></button>
+            </div>
+
+            <h3 class="admin-subtitulo">Configurações</h3>
+            <div class="admin-export-row">
+              <p class="admin-hint">Backup completo: baixa toda a base — clientes, compras, pagamentos, endereços e mensagens — num arquivo Excel (abre no Excel e no Google Sheets).</p>
+              <button type="button" class="btn-outline-blush btn-sm-blush" id="exportAllBtn">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Backup completo (Excel)
+              </button>
+            </div>
+
+            <div class="admin-export-row">
+              <p class="admin-hint">Se o feed do Instagram parou de aparecer na home depois de trocar o token: clique aqui para o site esquecer o token antigo e testar o novo agora.</p>
+              <button type="button" class="btn-outline-blush btn-sm-blush" id="instagramReconnectBtn">
+                <i class="bi bi-instagram me-1"></i>Reconectar Instagram
+              </button>
+              <span id="instagramReconnectResult" class="admin-hint tracking-feedback" role="status"></span>
+            </div>
+
+            <div class="admin-export-row">
+              <p class="admin-hint" id="avisoVendaResumo">Conferindo como você é avisada das vendas...</p>
+              <button type="button" class="btn-outline-blush btn-sm-blush" id="testarAvisoBtn">
+                <i class="bi bi-send me-1"></i>Enviar teste agora
+              </button>
+              <span id="testarAvisoResult" class="admin-hint tracking-feedback" role="status"></span>
+            </div>
+          </section>
+
+          <section class="admin-tab-panel d-none" data-tab-panel="dashboard">
             <h2 class="admin-section-title">Visão geral</h2>
             <div class="stats-row" id="statsRow"></div>
 
@@ -199,28 +258,6 @@
               </div>
             </div>
 
-            <div class="admin-export-row">
-              <p class="admin-hint">Baixa toda a base — clientes, compras, pagamentos, endereços e mensagens — num arquivo Excel (abre no Excel e no Google Sheets).</p>
-              <button type="button" class="btn-outline-blush btn-sm-blush" id="exportAllBtn">
-                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Baixar planilha (Excel)
-              </button>
-            </div>
-
-            <div class="admin-export-row">
-              <p class="admin-hint">Se o feed do Instagram parou de aparecer na home depois de trocar o token: clique aqui para o site esquecer o token antigo e testar o novo agora.</p>
-              <button type="button" class="btn-outline-blush btn-sm-blush" id="instagramReconnectBtn">
-                <i class="bi bi-instagram me-1"></i>Reconectar Instagram
-              </button>
-              <span id="instagramReconnectResult" class="admin-hint tracking-feedback" role="status"></span>
-            </div>
-
-            <div class="admin-export-row">
-              <p class="admin-hint" id="avisoVendaResumo">Conferindo como você é avisada das vendas...</p>
-              <button type="button" class="btn-outline-blush btn-sm-blush" id="testarAvisoBtn">
-                <i class="bi bi-send me-1"></i>Enviar teste agora
-              </button>
-              <span id="testarAvisoResult" class="admin-hint tracking-feedback" role="status"></span>
-            </div>
           </section>
 
           <section class="admin-tab-panel d-none" data-tab-panel="produtos">
@@ -395,7 +432,8 @@
             </div>
           </section>
 
-          <section class="admin-tab-panel d-none" data-tab-panel="mensagens">
+          <section class="admin-tab-panel d-none" data-tab-panel="mensagens" data-grupo="loja">
+            <button type="button" class="admin-voltar" data-tab-ir="loja"><i class="bi bi-arrow-left" aria-hidden="true"></i> Loja e configurações</button>
             <h2 class="admin-section-title">Mensagens recebidas</h2>
             <p class="admin-hint">Enviadas pelo formulário de contato do site.</p>
             <div id="messagesEmpty" class="admin-empty d-none">
@@ -415,7 +453,8 @@
             <div id="avaliacoesLista" class="orders-list d-none"></div>
           </section>
 
-          <section class="admin-tab-panel d-none" data-tab-panel="topo">
+          <section class="admin-tab-panel d-none" data-tab-panel="topo" data-grupo="loja">
+            <button type="button" class="admin-voltar" data-tab-ir="loja"><i class="bi bi-arrow-left" aria-hidden="true"></i> Loja e configurações</button>
             <div class="admin-section-head">
               <h2 class="admin-section-title">Fotos do topo</h2>
               <button type="button" class="btn-blush btn-sm-blush" id="heroAddBtn">
@@ -439,7 +478,8 @@
             <div class="hero-admin-grade" id="heroGrade"></div>
           </section>
 
-          <section class="admin-tab-panel d-none" data-tab-panel="depoimentos">
+          <section class="admin-tab-panel d-none" data-tab-panel="depoimentos" data-grupo="loja">
+            <button type="button" class="admin-voltar" data-tab-ir="loja"><i class="bi bi-arrow-left" aria-hidden="true"></i> Loja e configurações</button>
             <div class="admin-section-head">
               <h2 class="admin-section-title">Depoimentos</h2>
               <button type="button" class="btn-blush btn-sm-blush" id="depAddBtn">
@@ -463,7 +503,8 @@
             <div class="hero-admin-grade" id="depGrade"></div>
           </section>
 
-          <section class="admin-tab-panel d-none" data-tab-panel="novidades">
+          <section class="admin-tab-panel d-none" data-tab-panel="novidades" data-grupo="loja">
+            <button type="button" class="admin-voltar" data-tab-ir="loja"><i class="bi bi-arrow-left" aria-hidden="true"></i> Loja e configurações</button>
             <div class="admin-section-head">
               <h2 class="admin-section-title">Novidades por e-mail</h2>
               <button type="button" class="btn-blush btn-sm-blush" id="campanhaAddBtn">
@@ -885,12 +926,15 @@
   </div>
 </div>
 
+<div class="lista-postagem" id="listaPostagem" hidden></div>
+
 <script src="js/error-boundary.js" defer></script>
 <script src="js/loading.js" defer></script>
 <script src="js/vendor/bootstrap.min.js" defer></script>
 <script src="js/auth.js" defer></script>
 <script src="js/pricing.js" defer></script>
 <script src="js/admin-loja.js" defer></script>
+<script src="js/admin-producao.js" defer></script>
 <script src="js/admin.js" defer></script>
 </body>
 </html>
