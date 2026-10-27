@@ -45,6 +45,11 @@ Selo em cada cartão: **Atrasado X dias** (vermelho), **Vence hoje** /
   para postar (sem retirada), com endereço completo, CPF e serviço.
 - **Lista de postagem**: página para imprimir com os pacotes prontos para
   postar e um quadradinho para marcar na agência.
+- **Estampa**: a peça mostra "Estampa: nome" e um link "Estampa original"
+  para baixar o arquivo em alta. O arquivo de produção (SVG em mm, 240 × 95
+  na caneca) já traz a estampa cobrindo o gabarito, com o nome/frase em
+  curvas por cima, numa etiqueta lisa. A planilha de produção tem a coluna
+  "Estampa".
 - **Backup completo** (a planilha antiga com todas as tabelas) foi para
   "Loja e configurações".
 

@@ -24,6 +24,13 @@ idas e vindas.
 - [ ] Produz sob encomenda ou tem estoque pronto? Prazo de produção
 - [ ] Tamanho e peso da embalagem mais comum (para o frete) e se algum produto vai em caixa diferente
 - [ ] Moldes de impressão de cada peça (área útil em mm de caneca, xícara, garrafa, copo, azulejo) para conferir os gabaritos do arquivo de Corel/Illustrator
+- [ ] **Estampas** (flores, monumentos de Brasília…): os arquivos das artes,
+  em PNG ou JPG, com **2835 × 1122 px** para caneca 325 ml (240 × 95 mm a
+  300 dpi, dando a volta até a alça; o site corta pelo centro se vier em outra
+  proporção). Confirmar se a prensa dela imprime 24 cm; se for o papel de
+  20 cm, ajustar `COBERTURA_DA_VOLTA` em `js/regras-produto.js` e os gabaritos.
+  Ela sobe pelo painel (Loja e configurações → Estampas) e apaga as 3 de
+  exemplo.
 - [ ] Fotos originais em boa resolução (hoje são as do Instagram/catálogos) — fotos do topo trocam pelo painel
 
 ## Venda

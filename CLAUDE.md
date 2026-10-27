@@ -140,6 +140,17 @@ Tudo fica em `server/` (é a pasta que a hospedagem usa como raiz). O
   esgotado, oculto), Dashboard, Cupons, Clientes, Avaliações e "Loja e
   configurações" (Fotos do topo, Depoimentos, Novidades, Mensagens, backup
   completo, Instagram, aviso de venda).
+- **Estampas** (padrão que dá a volta na peça: flores, Brasília…): biblioteca
+  no banco (`estampas` em `lib/db.js`, imagens em `lib/estampas.js`, 3
+  exemplos em `lib/estampas-exemplo.js`, painel em `js/admin-estampas.js`),
+  ligadas no produto em Produtos → Estampas (`config.estampas`). Regras e
+  geometria da volta em `js/regras-produto.js` (`COBERTURA_DA_VOLTA`,
+  `voltaDaPeca`): caneca 240 × 95 mm até a alça, emenda atrás da alça. Prévia
+  2D (`EstampaNaPeca` em `Previa.tsx`), 3D (`Previa3D.tsx`) e arquivo de
+  produção (`lib/producao.js`, camada "Estampa" com a imagem original) usam
+  a mesma conta. Nome e frase sobre estampa ganham uma etiqueta lisa atrás
+  para dar para ler. O servidor mede as letras com as fontes reais
+  (`larguraDoTexto`), então o texto do arquivo sai do tamanho da prévia.
 - **Tarefas periódicas**: `GET /api/interno/tarefas-periodicas?token=CRON_SECRET`
   a cada 15 min (hospedagem sem cron).
 
