@@ -1,5 +1,6 @@
 const db = require("./db");
 const { buildXlsx } = require("./xlsx");
+const etapas = require("./etapas-pedido");
 
 function formatDateTime(ms) {
   if (!ms && ms !== 0) return "";
@@ -191,8 +192,131 @@ function buildSheets({ resolveProductName } = {}) {
   return [usuarios, compras, pagamentos, enderecos, mensagens];
 }
 
+function dataCurta(texto) {
+  const [ano, mes, dia] = String(texto || "").split("-");
+  return dia ? `${dia}/${mes}/${ano}` : "";
+}
+
+function enderecoCompleto(a) {
+  const rua = [a.rua, a.numero].filter(Boolean).join(", ");
+  return [rua, a.complemento, a.bairro, [a.cidade, a.uf || a.estado].filter(Boolean).join("/")].filter(Boolean).join(" — ");
+}
+
+function pedidosNaProducao(diasDeProducao) {
+  return db.listAllOrders()
+    .map(o => ({ o, etapa: etapas.etapaDoPedido(o) }))
+    .filter(({ etapa }) => ["aprovar", "produzir", "pronto"].includes(etapa))
+    .map(({ o, etapa }) => ({ o, etapa, prazo: etapas.prazoDoPedido(o.pago_em || o.created_at, diasDeProducao) }))
+    .sort((a, b) => a.prazo.data.localeCompare(b.prazo.data) || a.o.created_at - b.o.created_at);
+}
+
+const COLUNAS_DE_PRODUCAO = [
+  { header: "Pedido", key: "pedido", width: 11 },
+  { header: "Data", key: "data", width: 18 },
+  { header: "Prazo", key: "prazo", width: 12 },
+  { header: "Cliente", key: "cliente", width: 24 },
+  { header: "WhatsApp", key: "whatsapp", width: 17 },
+  { header: "Produto", key: "produto", width: 32 },
+  { header: "Qtd", key: "qtd", width: 6 },
+  { header: "Cor/variação", key: "variacao", width: 22 },
+  { header: "Nome", key: "nome", width: 20 },
+  { header: "Frase", key: "frase", width: 36 },
+  { header: "Data na peça", key: "dataNaPeca", width: 14 },
+  { header: "Letra", key: "letra", width: 12 },
+  { header: "Arte", key: "arte", width: 14 },
+  { header: "Nº de fotos", key: "fotos", width: 10 },
+  { header: "Aprovar arte?", key: "aprovar", width: 13 },
+  { header: "Entrega", key: "entrega", width: 12 },
+  { header: "Etapa", key: "etapa", width: 18 },
+  { header: "Observações", key: "observacoes", width: 36 },
+];
+
+function linhasDeProducao({ overridesMap, diasDeProducao } = {}) {
+  const linhas = [];
+  for (const { o, etapa, prazo } of pedidosNaProducao(diasDeProducao)) {
+    const a = safeParse(o.address_json, {}) || {};
+    const retirada = etapas.ehRetiradaDoPedido(o);
+    for (const item of etapas.itensDoPedido(o)) {
+      const peca = etapas.pecaDoItem(item, overridesMap);
+      linhas.push({
+        pedido: `#${String(o.external_reference).slice(0, 8)}`,
+        data: formatDateTime(o.pago_em || o.created_at),
+        prazo: dataCurta(prazo.data),
+        cliente: a.nome || "",
+        whatsapp: a.telefone || o.customer_phone || "",
+        produto: peca.produto,
+        qtd: peca.qtd,
+        variacao: [peca.variacao, peca.adicionais].filter(Boolean).join(" · "),
+        nome: peca.nome,
+        frase: peca.frase,
+        dataNaPeca: peca.data,
+        letra: peca.letra,
+        arte: peca.arte,
+        fotos: peca.fotos,
+        aprovar: peca.aprovarArte ? (o.arte_aprovada_em ? "Aprovada" : "Sim") : "Não",
+        entrega: retirada ? "Retirada" : "Envio",
+        etapa: etapas.rotuloDaEtapa(etapa, retirada),
+        observacoes: peca.observacoes,
+      });
+    }
+  }
+  return linhas;
+}
+
+function planilhaDeProducao(deps) {
+  return buildXlsx([{ name: "Produção", columns: COLUNAS_DE_PRODUCAO, rows: linhasDeProducao(deps) }]);
+}
+
+const COLUNAS_DE_ENVIOS = [
+  { header: "Pedido", key: "pedido", width: 11 },
+  { header: "Destinatário", key: "nome", width: 26 },
+  { header: "CPF", key: "cpf", width: 16 },
+  { header: "Telefone", key: "telefone", width: 17 },
+  { header: "Endereço completo", key: "endereco", width: 56 },
+  { header: "CEP", key: "cep", width: 11 },
+  { header: "Serviço", key: "servico", width: 24 },
+  { header: "Itens", key: "itens", width: 40 },
+  { header: "Valor dos produtos (R$)", key: "valor", width: 14 },
+  { header: "Frete pago (R$)", key: "frete", width: 12 },
+  { header: "Rastreio", key: "rastreio", width: 18 },
+];
+
+function pedidosParaPostar() {
+  return db.listAllOrders()
+    .filter(o => etapas.etapaDoPedido(o) === "pronto" && !etapas.ehRetiradaDoPedido(o))
+    .sort((a, b) => (a.pronto_em || 0) - (b.pronto_em || 0));
+}
+
+function linhasDeEnvios() {
+  return pedidosParaPostar().map(o => {
+    const a = safeParse(o.address_json, {}) || {};
+    const envio = safeParse(o.shipping_json, {}) || {};
+    return {
+      pedido: `#${String(o.external_reference).slice(0, 8)}`,
+      nome: a.nome || "",
+      cpf: a.cpf || "",
+      telefone: a.telefone || o.customer_phone || "",
+      endereco: enderecoCompleto(a),
+      cep: a.cep || "",
+      servico: envio.name || "",
+      itens: etapas.itensDoPedido(o).map(it => `${it.qty}× ${it.nome || `Produto #${it.id}`}`).join("; "),
+      valor: money(Number(o.subtotal) - Number(o.discount || 0)),
+      frete: money(o.shipping_price),
+      rastreio: o.tracking_code || "",
+    };
+  });
+}
+
+function planilhaDeEnvios() {
+  return buildXlsx([{ name: "Envios", columns: COLUNAS_DE_ENVIOS, rows: linhasDeEnvios() }]);
+}
+
 function buildStoreWorkbook(deps) {
   return buildXlsx(buildSheets(deps));
 }
 
-module.exports = { buildStoreWorkbook, buildSheets };
+module.exports = {
+  buildStoreWorkbook, buildSheets,
+  planilhaDeProducao, linhasDeProducao, COLUNAS_DE_PRODUCAO,
+  planilhaDeEnvios, linhasDeEnvios, COLUNAS_DE_ENVIOS,
+};

@@ -133,10 +133,13 @@ Tudo fica em `server/` (é a pasta que a hospedagem usa como raiz). O
   e-mail/WhatsApp → painel gera etiqueta no Melhor Envio e rastreio (ou
   marca "retirado") →
   cliente acompanha em `acompanhar-pedido.html` e avalia em `avaliar.html`.
-- **Painel** (`admin.html`): Dashboard, Produtos (criar, editar, foto,
-  ordem, esgotado, oculto), Cupons, Vendas e pedidos (etiqueta, rastreio,
-  entrega, pedir avaliação), Clientes, Mensagens, Avaliações, Fotos do topo,
-  Depoimentos, Novidades (campanhas de e-mail), exportar planilha.
+- **Painel** (`admin.html`): abre na **Produção** (`js/admin-producao.js`,
+  `css/admin-producao.css`, etapas e prazo em `lib/etapas-pedido.js`, ver
+  `server/docs/PAINEL-PRODUCAO.md`), depois Vendas e pedidos (etiqueta,
+  rastreio, entrega, pedir avaliação), Produtos (criar, editar, foto, ordem,
+  esgotado, oculto), Dashboard, Cupons, Clientes, Avaliações e "Loja e
+  configurações" (Fotos do topo, Depoimentos, Novidades, Mensagens, backup
+  completo, Instagram, aviso de venda).
 - **Tarefas periódicas**: `GET /api/interno/tarefas-periodicas?token=CRON_SECRET`
   a cada 15 min (hospedagem sem cron).
 
@@ -150,3 +153,4 @@ Tudo fica em `server/` (é a pasta que a hospedagem usa como raiz). O
 - `server/docs/SECURITY-AUDIT.md` — decisões de segurança.
 - `server/docs/instagram-setup.md` — token do Instagram.
 - `server/docs/PEDIDO-DA-CLIENTE.md` — lista do que pedir para a Janaina.
+- `server/docs/PAINEL-PRODUCAO.md` — etapas do pedido, prazo e planilhas da aba Produção.

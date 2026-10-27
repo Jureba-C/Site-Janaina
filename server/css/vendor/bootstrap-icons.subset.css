@@ -1,7 +1,7 @@
 /* GERADO por scripts/subset-icones.js — não editar à mão.
-   70 de 2050 ícones do Bootstrap Icons v1.11.3 (MIT).
+   77 de 2050 ícones do Bootstrap Icons v1.11.3 (MIT).
    Para adicionar um ícone: use a classe no HTML/JS e rode o script de novo. */
-@font-face{font-display:block;font-family:bootstrap-icons;src:url("fonts/bootstrap-icons.subset-65022685.woff2") format("woff2")}
+@font-face{font-display:block;font-family:bootstrap-icons;src:url("fonts/bootstrap-icons.subset-00565d67.woff2") format("woff2")}
 .bi::before,[class*=" bi-"]::before,[class^=bi-]::before{display:inline-block;font-family:bootstrap-icons!important;font-style:normal;font-weight:400!important;font-variant:normal;text-transform:none;line-height:1;vertical-align:-.125em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .bi-arrow-left::before{content:"\f12f"}
 .bi-arrow-repeat::before{content:"\f130"}
@@ -9,6 +9,7 @@
 .bi-bag-heart::before{content:"\f705"}
 .bi-box-arrow-up-right::before{content:"\f1c5"}
 .bi-box-seam::before{content:"\f1c7"}
+.bi-brush::before{content:"\f1d8"}
 .bi-chat-dots::before{content:"\f24a"}
 .bi-chat-heart::before{content:"\f714"}
 .bi-check-circle::before{content:"\f26b"}
@@ -18,6 +19,7 @@
 .bi-chevron-left::before{content:"\f284"}
 .bi-chevron-right::before{content:"\f285"}
 .bi-clipboard::before{content:"\f290"}
+.bi-clipboard-check::before{content:"\f28b"}
 .bi-cloud-arrow-up::before{content:"\f297"}
 .bi-cookie::before{content:"\f6ee"}
 .bi-crop::before{content:"\f2dd"}
@@ -30,6 +32,7 @@
 .bi-eye-slash::before{content:"\f340"}
 .bi-facebook::before{content:"\f344"}
 .bi-file-earmark-spreadsheet::before{content:"\f389"}
+.bi-gear::before{content:"\f3e5"}
 .bi-gift::before{content:"\f3ec"}
 .bi-gift-fill::before{content:"\f3eb"}
 .bi-graph-up-arrow::before{content:"\f673"}
@@ -45,11 +48,13 @@
 .bi-link-45deg::before{content:"\f470"}
 .bi-lock::before{content:"\f47b"}
 .bi-lock-fill::before{content:"\f47a"}
+.bi-palette::before{content:"\f4b1"}
 .bi-pencil::before{content:"\f4cb"}
 .bi-people::before{content:"\f4d0"}
 .bi-person::before{content:"\f4e1"}
 .bi-pinterest::before{content:"\f663"}
 .bi-plus-lg::before{content:"\f64d"}
+.bi-printer::before{content:"\f501"}
 .bi-qr-code::before{content:"\f6ae"}
 .bi-question-circle::before{content:"\f505"}
 .bi-scissors::before{content:"\f528"}
@@ -59,7 +64,9 @@
 .bi-shield-check::before{content:"\f52f"}
 .bi-shield-exclamation::before{content:"\f530"}
 .bi-shield-lock::before{content:"\f538"}
+.bi-shop::before{content:"\f543"}
 .bi-speedometer2::before{content:"\f580"}
+.bi-stack::before{content:"\f585"}
 .bi-star-fill::before{content:"\f586"}
 .bi-stars::before{content:"\f589"}
 .bi-tags::before{content:"\f5b2"}
