@@ -78,7 +78,7 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
             ) : null}
             {config.magica ? (
               <button type="button" className="botao botao-escuro galeria-calor" aria-pressed={aquecida} onClick={() => setAquecida(!aquecida)}>
-                <Icone nome="calor" tamanho={18} />{aquecida ? "Ver a caneca fria" : "Ver depois de aquecer"}
+                <Icone nome="calor" tamanho={18} />{aquecida ? "Ver fria" : "Ver aquecida"}
               </button>
             ) : null}
             {config.personalizacao.ativa ? <p className="galeria-nota">Prévia ilustrativa. A arte final é ajustada à mão pela Janaina.</p> : null}

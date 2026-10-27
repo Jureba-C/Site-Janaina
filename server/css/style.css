@@ -727,7 +727,7 @@ section[id], header[id]{ scroll-margin-top:calc(90px + var(--promo-h, 0px)); }
 .auth-deco-motif-2{ bottom:-20px; left:-30px; width:130px; height:91px; transform:rotate(14deg); }
 
 .auth-bow-wrap{
-  position:relative; display:inline-flex; align-items:center; justify-content:center;
+  position:relative; display:inline-flex; pointer-events:none; align-items:center; justify-content:center;
   margin-bottom:4rem;
 }
 

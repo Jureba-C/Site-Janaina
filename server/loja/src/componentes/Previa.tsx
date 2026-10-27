@@ -533,7 +533,7 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
       ) : null}
       {g.sobre}
       {config.magica && !aquecida && comArte ? (
-        <text x={molde === "xicara" ? 176 : 170} y={molde === "xicara" ? 190 : 216} textAnchor="middle" fill="#F6F1EA" opacity={0.75} fontFamily="Josefin Sans, sans-serif" fontSize={13} letterSpacing="0.18em">A ARTE APARECE COM O CALOR</text>
+        <text x={molde === "xicara" ? 176 : 170} y={molde === "xicara" ? 190 : 216} textAnchor="middle" fill="#F6F1EA" opacity={0.75} fontFamily="Josefin Sans, sans-serif" fontSize={10.5} letterSpacing="0.14em">A ARTE APARECE COM O CALOR</text>
       ) : null}
     </g>
   );
