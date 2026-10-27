@@ -827,6 +827,10 @@ async function quoteShipping(cepDestino, validatedItems){
 
 const RETIRADA_ATIVA = String(process.env.RETIRADA_ATIVA || "true").toLowerCase() !== "false";
 const LOCAL_DE_RETIRADA = process.env.RETIRADA_LOCAL || "Asa Norte, Brasília";
+function ehRetirada(orderRow){
+  try { return JSON.parse(orderRow.shipping_json || "{}").service_id === OPCAO_RETIRADA.service_id; } catch { return false; }
+}
+
 const OPCAO_RETIRADA = {
   service_id: "retirada",
   name: `Retirar na ${LOCAL_DE_RETIRADA.split(",")[0]} (grátis)`,
@@ -1309,7 +1313,7 @@ app.get("/api/orders/:reference", statusPollLimiter, auth.requireAuth, async (re
       shippedAt: order.shipped_at || null,
       deliveredAt: entregou ? rastreio.dataDoEvento(entregou) || Date.now() : (order.delivered_at || null),
       items,
-      shipping: { name: shipping.name, deliveryTime: shipping.delivery_time },
+      shipping: { name: shipping.name, deliveryTime: shipping.delivery_time, retirada: shipping.service_id === "retirada" },
       total: order.total,
       createdAt: order.created_at,
       trackingCode,
@@ -2525,7 +2529,7 @@ app.get("/api/orders", auth.requireAuth, (req, res) => {
         deliveredAt: row.delivered_at || null,
         trackingCode: row.tracking_code || "",
         items,
-        shipping: { name: shipping.name, deliveryTime: shipping.delivery_time },
+        shipping: { name: shipping.name, deliveryTime: shipping.delivery_time, retirada: shipping.service_id === "retirada" },
         couponCode: row.coupon_code,
         subtotal: row.subtotal,
         discount: row.discount,
@@ -2731,7 +2735,7 @@ app.get("/api/admin/orders", auth.requireAdmin, auth.requireAdminTwoFactor, (req
           email: account?.email || null,
         },
         address,
-        shipping: { name: shipping.name, deliveryTime: shipping.delivery_time },
+        shipping: { name: shipping.name, deliveryTime: shipping.delivery_time, retirada: shipping.service_id === "retirada" },
         trackingCode: row.tracking_code || "",
         fulfillmentStatus: row.fulfillment_status || null,
         shippedAt: row.shipped_at || null,
@@ -3013,8 +3017,9 @@ app.patch("/api/admin/orders/:reference/delivered", auth.requireAdmin, auth.requ
     if(!order){
       return res.status(404).json({ error: "Pedido não encontrado." });
     }
-    if(order.fulfillment_status !== "postado"){
-      return res.status(409).json({ error: "Só é possível marcar como entregue um pedido já postado." });
+    const retirada = ehRetirada(order);
+    if(retirada ? (order.status !== "pago" || order.fulfillment_status === "entregue") : order.fulfillment_status !== "postado"){
+      return res.status(409).json({ error: retirada ? "Só é possível marcar como retirado um pedido pago." : "Só é possível marcar como entregue um pedido já postado." });
     }
     db.markOrderDelivered(reference);
     res.json({ ok: true });
@@ -4162,6 +4167,9 @@ app.post("/api/admin/orders/:reference/generate-label", auth.requireAdmin, auth.
     }
     if(orderRow.status !== "pago"){
       return res.status(409).json({ error: "Só é possível gerar etiqueta para pedidos pagos." });
+    }
+    if(ehRetirada(orderRow)){
+      return res.status(409).json({ error: "Este pedido é para retirar na Asa Norte — não precisa de etiqueta." });
     }
 
     const order = {

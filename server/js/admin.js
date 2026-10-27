@@ -1694,6 +1694,7 @@
 
   function proximoPasso(order){
     if(order.status !== "pago") return null;
+    if(order.shipping?.retirada) return order.fulfillmentStatus === "entregue" ? { texto: "Retirado", cls: "is-pronto" } : { texto: "Retirada na Asa Norte", cls: "is-agora" };
     if(order.fulfillmentStatus === "entregue") return { texto: "Entregue", cls: "is-pronto" };
     if(!order.trackingCode) return { texto: "Falta postar", cls: "is-agora" };
     return { texto: "A caminho", cls: "is-andamento" };
@@ -1790,7 +1791,19 @@
           <span class="text-blush">${formatMoney(order.total)}</span>
         </div>
 
-        ${isPaid ? `
+        ${isPaid && order.shipping?.retirada ? `
+        <div class="tracking-row mt-3 pt-3 border-top" style="border-color:var(--blush-100)!important">
+          <div class="tracking-bloco">
+            <span class="tracking-bloco-titulo">Retirada na Asa Norte</span>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+              ${order.fulfillmentStatus === "entregue"
+                ? `<span class="small fw-semibold" style="color:var(--color-success)"><i class="bi bi-check2-circle me-1"></i>Retirado${order.deliveredAt ? " em " + escapeHTML(formatDate(order.deliveredAt)) : ""}</span>`
+                : `<span class="small" style="color:var(--ink-soft)">Combine o dia com a cliente pelo WhatsApp quando ficar pronto.</span>
+              <button type="button" class="btn-outline-blush mark-delivered-btn" data-ref="${escapeHTML(ref)}" title="Marca que a cliente já retirou o pedido"><i class="bi bi-check2-circle me-1"></i>Marcar como retirado</button>`}
+            </div>
+            <span class="small tracking-feedback" data-ref-feedback="${escapeHTML(ref)}" aria-live="polite"></span>
+          </div>
+        </div>` : isPaid ? `
         <div class="tracking-row mt-3 pt-3 border-top" style="border-color:var(--blush-100)!important">
           <div class="tracking-bloco">
             <label class="tracking-bloco-titulo" for="tracking-${escapeHTML(ref)}">Código de rastreio</label>
@@ -2069,7 +2082,8 @@
   }
 
   async function markDelivered(ref, feedbackEl, btn){
-    if(!confirm("Marcar este pedido como entregue?")) return;
+    const palavra = /retirado/i.test(btn.textContent) ? "Retirado" : "Entregue";
+    if(!confirm(`Marcar este pedido como ${palavra.toLowerCase()}?`)) return;
     btn.disabled = true;
     feedbackEl.textContent = "Salvando...";
     feedbackEl.classList.remove("is-success", "is-error");
@@ -2077,9 +2091,10 @@
       const res = await fetch(`/api/admin/orders/${encodeURIComponent(ref)}/delivered`, { method: "PATCH" });
       const data = await res.json().catch(() => ({}));
       if(!res.ok) throw new Error(data.error || "Não foi possível marcar como entregue.");
-      feedbackEl.textContent = "Entregue!";
+      feedbackEl.textContent = `${palavra}!`;
       feedbackEl.classList.add("is-success");
-      btn.outerHTML = `<span class="small fw-semibold" style="color:var(--color-success)"><i class="bi bi-check2-circle me-1"></i>Entregue</span>`;
+      if(palavra === "Retirado") btn.previousElementSibling?.remove();
+      btn.outerHTML = `<span class="small fw-semibold" style="color:var(--color-success)"><i class="bi bi-check2-circle me-1"></i>${palavra}</span>`;
     }catch(err){
       feedbackEl.textContent = err.message || "Erro ao marcar como entregue.";
       feedbackEl.classList.add("is-error");

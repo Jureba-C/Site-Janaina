@@ -152,6 +152,27 @@ test("o painel gera o arquivo para Corel/Illustrator no tamanho real, com texto 
   assert.match(await arte.text(), /obrigada por/);
 });
 
+test("pedido para retirar: sem etiqueta, e a Janaina marca como retirado direto", async () => {
+  const ref = crypto.randomUUID();
+  db.createOrder({
+    externalReference: ref, userId: null, status: "pago",
+    items: [{ id: 2, qty: 1, price: 45 }],
+    address: { nome: "Cliente" }, shipping: { service_id: "retirada", name: "Retirar na Asa Norte (grátis)", price: 0 },
+    subtotal: 45, shippingPrice: 0, total: 40.5,
+  });
+  const cabecalhos = { Cookie: adminCookie, Origin: ORIGIN, "Content-Type": "application/json" };
+  const lista = await (await fetch(`${ORIGIN}/api/admin/orders`, { headers: { Cookie: adminCookie } })).json();
+  const doPedido = (lista.orders || lista).find(o => o.reference === ref);
+  assert.equal(doPedido.shipping.retirada, true);
+  const etiqueta = await fetch(`${ORIGIN}/api/admin/orders/${ref}/generate-label`, { method: "POST", headers: cabecalhos, body: "{}" });
+  assert.equal(etiqueta.status, 409);
+  const retirou = await fetch(`${ORIGIN}/api/admin/orders/${ref}/delivered`, { method: "PATCH", headers: cabecalhos, body: "{}" });
+  assert.equal(retirou.status, 200);
+  assert.equal(db.getOrderByExternalReference(ref).fulfillment_status, "entregue");
+  const deNovo = await fetch(`${ORIGIN}/api/admin/orders/${ref}/delivered`, { method: "PATCH", headers: cabecalhos, body: "{}" });
+  assert.equal(deNovo.status, 409);
+});
+
 test("fotos órfãs somem depois de 48 horas e as do pedido entregue depois do prazo", () => {
   const antes = db.apagarFotosPersonalizacaoVencidas(Date.now());
   assert.equal(typeof antes, "number");

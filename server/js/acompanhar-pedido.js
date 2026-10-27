@@ -43,6 +43,14 @@
     { key: "entregue", label: "Entregue" },
   ];
 
+  const ETAPAS_DA_RETIRADA = [
+    { key: "confirmado", label: "Confirmado" },
+    { key: "em_producao", label: "Em produção" },
+    { key: "entregue", label: "Retirado" },
+  ];
+
+  let etapasAtuais = FULFILLMENT_STEPS;
+
   const stateLoading = document.getElementById("trackLoading");
   const stateLoggedOut = document.getElementById("trackLoggedOut");
   const stateNotFound = document.getElementById("trackNotFound");
@@ -62,10 +70,10 @@
 
   function renderTimeline(fulfillmentStatus){
     const currentIndex = fulfillmentStatus
-      ? FULFILLMENT_STEPS.findIndex(s => s.key === fulfillmentStatus)
+      ? etapasAtuais.findIndex(s => s.key === fulfillmentStatus)
       : 0;
     const timeline = document.getElementById("trackTimeline");
-    timeline.innerHTML = FULFILLMENT_STEPS.map((step, i) => {
+    timeline.innerHTML = etapasAtuais.map((step, i) => {
       const cls = i < currentIndex ? "is-done" : i === currentIndex ? "is-current" : "";
       return `
         <div class="fulfillment-step ${cls}">
@@ -81,6 +89,16 @@
     const noCode = document.getElementById("trackNoCode");
     const withCode = document.getElementById("trackWithCode");
     wrap.classList.remove("d-none");
+    wrap.querySelector(".section-title").textContent = order.shipping?.retirada ? "Retirada" : "Rastreio";
+
+    if(order.shipping?.retirada){
+      noCode.textContent = order.fulfillmentStatus === "entregue"
+        ? "Pedido retirado na Asa Norte. Obrigada!"
+        : "Retirada grátis na Asa Norte. Quando o pedido ficar pronto, a Janaina combina o dia com você pelo WhatsApp.";
+      noCode.classList.remove("d-none");
+      withCode.classList.add("d-none");
+      return;
+    }
 
     if(!order.trackingCode){
       noCode.classList.remove("d-none");
@@ -141,6 +159,7 @@
 
     paymentIssue.classList.add("d-none");
     timelineWrap.classList.remove("d-none");
+    etapasAtuais = order.shipping?.retirada ? ETAPAS_DA_RETIRADA : FULFILLMENT_STEPS;
     renderTimeline(order.fulfillmentStatus);
     renderConfirmacao(order);
     renderShipping(order);
@@ -179,7 +198,7 @@
       if(!res.ok) throw new Error("falhou");
       recebiWrap.classList.add("d-none");
       renderTimeline("entregue");
-      recebiFeedback.textContent = "Que bom que chegou! Obrigada 💗";
+      recebiFeedback.textContent = "Que bom que chegou! Obrigada.";
       recebiFeedback.classList.remove("d-none");
       recebiWrap.classList.remove("d-none");
       recebiBtn.classList.add("d-none");
