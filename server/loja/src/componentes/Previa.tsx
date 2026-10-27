@@ -104,10 +104,10 @@ export function coresDaPeca(config: ConfigProduto, escolhas: Escolhas, aquecida:
 
 const BRASILIA = "M4 74h142M48 74c4-22 12-44 27-66M102 74c-4-22-12-44-27-66M58 74c3-20 8-42 17-66M92 74c-3-20-8-42-17-66M68 74c2-20 4-42 7-66M82 74c-2-20-4-42-7-66M75 8V2M72 5h6M14 74V54h10v20M118 74V44h4v30M126 74V44h4v30M116 44h16";
 
-function Flor({ x, y, tamanho, cor }: { x: number; y: number; tamanho: number; cor: string }) {
+function Flor({ x, y, tamanho, cor, contorno = false }: { x: number; y: number; tamanho: number; cor: string; contorno?: boolean }) {
   const escala = tamanho / 24;
   return (
-    <g transform={`translate(${x - tamanho / 2} ${y - tamanho / 2}) scale(${escala})`} fill="none" stroke={cor} strokeWidth={1.1}>
+    <g transform={`translate(${x - tamanho / 2} ${y - tamanho / 2}) scale(${escala})`} fill={contorno ? cor : "none"} stroke={cor} strokeWidth={contorno ? 4.2 : 1.1} strokeLinejoin="round">
       {[0, 72, 144, 216, 288].map(a => <ellipse key={a} cx="12" cy="6.5" rx="3" ry="5" transform={`rotate(${a} 12 12)`} />)}
       <circle cx="12" cy="12" r="1.6" />
     </g>
@@ -127,7 +127,7 @@ export interface PropsArte {
   fotoSelecionada?: number;
   aoTocarFoto?: (indice: number, evento: EventoPonteiro<SVGElement>) => void;
   exemplos?: boolean;
-  comEtiqueta?: boolean;
+  comContorno?: boolean;
 }
 
 function gradeDeFotos(quantidade: number): { colunas: number; linhas: number } {
@@ -138,13 +138,13 @@ function gradeDeFotos(quantidade: number): { colunas: number; linhas: number } {
   return { colunas: 4, linhas: 2 };
 }
 
-export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto, medir, idBase, fotoSelecionada, aoTocarFoto, exemplos = true, comEtiqueta }: PropsArte) {
+export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto, medir, idBase, fotoSelecionada, aoTocarFoto, exemplos = true, comContorno }: PropsArte) {
   const pers = escolhas.personalizacao;
   const fonte = FONTES[pers.letra || "cursiva"] || FONTES.cursiva;
   const campos = config.personalizacao.campos;
-  const partes: { altura: number; largura: number; desenhar: (y: number) => ReactNode }[] = [];
-  const etiqueta = comEtiqueta ?? Boolean(pers.estampa);
-  const maiorLinha = (linhas: string[], f: FonteDaLetra, t: number) => Math.max(...linhas.map(l => medirTexto(l, f, t, medir)));
+  const partes: { altura: number; desenhar: (y: number, halo: string | null) => ReactNode }[] = [];
+  const contorno = comContorno ?? Boolean(pers.estampa);
+  const traco = (tamanho: number, halo: string | null, fator = 0.22) => halo ? { fill: halo, stroke: halo, strokeWidth: Math.max(3, tamanho * fator), strokeLinejoin: "round" as const } : { fill: tinta };
   const espaco = altura * 0.05;
 
   if (lado === "verso") {
@@ -162,17 +162,16 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
       const alturaTexto = linhas.length * tamanho * 1.15;
       partes.push({
         altura: alturaTexto,
-        largura: Math.min(largura, maiorLinha(linhas, fonte, tamanho)),
-        desenhar: y => (
-          <text x={0} y={y + tamanho * 0.9} textAnchor="middle" fill={tinta} fontFamily={fonte.familia} fontWeight={fonte.peso} fontStyle={fonte.estilo} fontSize={tamanho} letterSpacing={`${fonte.espaco}em`}>
+        desenhar: (y, halo) => (
+          <text x={0} y={y + tamanho * 0.9} textAnchor="middle" {...traco(tamanho, halo)} fontFamily={fonte.familia} fontWeight={fonte.peso} fontStyle={fonte.estilo} fontSize={tamanho} letterSpacing={`${fonte.espaco}em`}>
             {linhas.map((linha, i) => (
               <tspan key={i} x={0} dy={i === 0 ? 0 : tamanho * 1.15}>{fonte.caixa === "uppercase" ? linha.toUpperCase() : linha}</tspan>
             ))}
           </text>
         ),
       });
-      partes.push({ altura: altura * 0.06, largura: largura * 0.36, desenhar: y => (
-        <g stroke={tinta} strokeWidth={1.2} strokeLinecap="round" fill="none" opacity={0.75}>
+      partes.push({ altura: altura * 0.06, desenhar: (y, halo) => (
+        <g stroke={halo ?? tinta} strokeWidth={halo ? 5 : 1.2} strokeLinecap="round" strokeLinejoin="round" fill={halo ?? "none"} opacity={halo ? 1 : 0.75}>
           <path d={`M${-largura * 0.18} ${y + altura * 0.03}h${largura * 0.13}M${largura * 0.05} ${y + altura * 0.03}h${largura * 0.13}`} />
           <circle cx={0} cy={y + altura * 0.03} r={altura * 0.012} />
         </g>
@@ -183,13 +182,13 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
     const fotos = (pers.fotos || []).slice(0, 8);
     if (arte === "flor") {
       const t = altura * 0.2;
-      partes.push({ altura: t, largura: t, desenhar: y => <Flor x={0} y={y + t / 2} tamanho={t} cor={tinta} /> });
+      partes.push({ altura: t, desenhar: (y, halo) => <Flor x={0} y={y + t / 2} tamanho={t} cor={halo ?? tinta} contorno={Boolean(halo)} /> });
     }
     if (arte === "brasilia") {
       const w = Math.min(largura * 0.7, altura * 0.62 * (150 / 78));
       const h = (w * 78) / 150;
-      partes.push({ altura: h, largura: w, desenhar: y => (
-        <g transform={`translate(${-w / 2} ${y}) scale(${w / 150})`} fill="none" stroke={tinta} strokeWidth={1.4} strokeLinecap="round"><path d={BRASILIA} /></g>
+      partes.push({ altura: h, desenhar: (y, halo) => (
+        <g transform={`translate(${-w / 2} ${y}) scale(${w / 150})`} fill="none" stroke={halo ?? tinta} strokeWidth={halo ? 6 : 1.4} strokeLinecap="round" strokeLinejoin="round"><path d={BRASILIA} /></g>
       ) });
     }
     const usaFotos = config.personalizacao.fotos.max > 0 && (arte === "fotos" || !config.personalizacao.artes.includes("fotos"));
@@ -204,8 +203,20 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
       const circulo = config.personalizacao.fotos.formato !== "quadrado";
       partes.push({
         altura: alturaGrade,
-        largura: larguraGrade,
-        desenhar: y => (
+        desenhar: (y, halo) => halo ? (
+          <g fill={halo}>
+            {Array.from({ length: quantidade }, (_, i) => {
+              const linha = Math.floor(i / colunas);
+              const naLinha = Math.min(colunas, quantidade - linha * colunas);
+              const cx = -larguraGrade / 2 + ((colunas - naLinha) * (lado2 + vao)) / 2 + (i % colunas) * (lado2 + vao);
+              const cy = y + linha * (lado2 + vao);
+              const borda = Math.max(3, lado2 * 0.06);
+              return circulo
+                ? <circle key={i} cx={cx + lado2 / 2} cy={cy + lado2 / 2} r={lado2 / 2 + borda} />
+                : <rect key={i} x={cx - borda} y={cy - borda} width={lado2 + 2 * borda} height={lado2 + 2 * borda} rx={lado2 * 0.08 + borda} />;
+            })}
+          </g>
+        ) : (
           <g>
             {Array.from({ length: quantidade }, (_, i) => {
               const coluna = i % colunas;
@@ -262,9 +273,8 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
       const entrelinha = fonte.caixa === "uppercase" ? 1.25 : 0.95;
       partes.push({
         altura: tamanho * (1.05 + (linhas.length - 1) * entrelinha),
-        largura: Math.min(largura, maiorLinha(linhas, fonte, tamanho)),
-        desenhar: y => (
-          <text x={0} y={y + tamanho * 0.88} textAnchor="middle" fill={tinta} fontFamily={fonte.familia} fontWeight={fonte.peso} fontStyle={fonte.estilo} fontSize={tamanho} letterSpacing={`${fonte.espaco}em`}>
+        desenhar: (y, halo) => (
+          <text x={0} y={y + tamanho * 0.88} textAnchor="middle" {...traco(tamanho, halo)} fontFamily={fonte.familia} fontWeight={fonte.peso} fontStyle={fonte.estilo} fontSize={tamanho} letterSpacing={`${fonte.espaco}em`}>
             {linhas.map((linha, i) => (
               <tspan key={i} x={0} dy={i === 0 ? 0 : tamanho * entrelinha}>{fonte.caixa === "uppercase" ? linha.toUpperCase() : linha}</tspan>
             ))}
@@ -276,35 +286,20 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
     if (data) {
       const delicada = FONTES.delicada;
       const tamanho = tamanhoQueCabe(data, delicada, altura * 0.06, largura * 0.8, medir);
-      partes.push({ altura: tamanho * 1.2, largura: Math.min(largura, medirTexto(data, delicada, tamanho, medir)), desenhar: y => (
-        <text x={0} y={y + tamanho} textAnchor="middle" fill={tinta} fontFamily={delicada.familia} fontWeight={400} fontSize={tamanho} letterSpacing="0.22em">{data.toUpperCase()}</text>
+      partes.push({ altura: tamanho * 1.2, desenhar: (y, halo) => (
+        <text x={0} y={y + tamanho} textAnchor="middle" {...traco(tamanho, halo, 0.5)} fontFamily={delicada.familia} fontWeight={400} fontSize={tamanho} letterSpacing="0.22em">{data.toUpperCase()}</text>
       ) });
     }
   }
 
   const total = partes.reduce((s, p) => s + p.altura, 0) + espaco * Math.max(0, partes.length - 1);
-  let y = -total / 2;
-  const reducao = etiqueta && partes.length ? 0.84 : 1;
-  const folgaX = altura * 0.08;
-  const folgaY = altura * 0.05;
-  const larguraEtiqueta = Math.min(largura, Math.max(0, ...partes.map(p => p.largura)) * reducao * 1.08 + 2 * folgaX);
-  const alturaEtiqueta = Math.min(altura, total * reducao + 2 * folgaY);
-  const raioEtiqueta = Math.min(alturaEtiqueta / 2, altura * 0.08);
-  const fundo = tinta === "#F6F1EA" ? "#2E2A28" : "#FFFFFF";
+  const halo = contorno && partes.length ? (tinta === "#F6F1EA" ? "#2E2A28" : "#FFFCF8") : null;
+  const posicoes = partes.reduce<number[]>((ys, _parte, i) => [...ys, i === 0 ? -total / 2 : ys[i - 1] + partes[i - 1].altura + espaco], []);
   return (
     <g>
-      {etiqueta && partes.length ? (
-        <g>
-          <rect x={-larguraEtiqueta / 2} y={-alturaEtiqueta / 2} width={larguraEtiqueta} height={alturaEtiqueta} rx={raioEtiqueta} fill={fundo} />
-          <rect x={-larguraEtiqueta / 2 + 4} y={-alturaEtiqueta / 2 + 4} width={larguraEtiqueta - 8} height={alturaEtiqueta - 8} rx={Math.max(0, raioEtiqueta - 4)} fill="none" stroke={tinta} strokeOpacity={0.28} strokeWidth={0.8} />
-        </g>
-      ) : null}
-      <g transform={reducao === 1 ? undefined : `scale(${reducao})`}>
-        {partes.map((parte, i) => {
-          const elemento = <g key={i}>{parte.desenhar(y)}</g>;
-          y += parte.altura + espaco;
-          return elemento;
-        })}
+      {halo ? <g>{partes.map((parte, i) => <g key={i}>{parte.desenhar(posicoes[i], halo)}</g>)}</g> : null}
+      <g>
+        {partes.map((parte, i) => <g key={i}>{parte.desenhar(posicoes[i], null)}</g>)}
       </g>
     </g>
   );
@@ -598,7 +593,7 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
   const mostrarArte = comArte && config.personalizacao.ativa && area.largura > 0 && !(config.magica && !aquecida);
   const tinta = molde === "copo" ? "#2E2A28" : cores.tinta;
   const arte = mostrarArte ? (
-    <Arte config={config} escolhas={escolhas} lado={lado} largura={area.largura} altura={area.altura} tinta={tinta} urlDaFoto={urlDaFoto} medir={medir} idBase={`${idBase}-a`} fotoSelecionada={fotoSelecionada} aoTocarFoto={aoTocarFoto} exemplos={exemplos} comEtiqueta={Boolean(estampa && g.superficie)} />
+    <Arte config={config} escolhas={escolhas} lado={lado} largura={area.largura} altura={area.altura} tinta={tinta} urlDaFoto={urlDaFoto} medir={medir} idBase={`${idBase}-a`} fotoSelecionada={fotoSelecionada} aoTocarFoto={aoTocarFoto} exemplos={exemplos} comContorno={Boolean(estampa && g.superficie)} />
   ) : null;
   return (
     <g>

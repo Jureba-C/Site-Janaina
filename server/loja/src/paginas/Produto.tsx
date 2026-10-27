@@ -33,17 +33,25 @@ function estampaDe(produto: TipoProduto, escolhas: Escolhas): EstampaPublica | n
   return id ? (produto.estampasDisponiveis || []).find(e => e.id === id) ?? null : null;
 }
 
-function SeletorDeEstampa({ produto, escolhas, aoEscolher }: { produto: TipoProduto; escolhas: Escolhas; aoEscolher: (id: string | undefined) => void }) {
+function temEstampas(produto: TipoProduto): boolean {
+  return Boolean(produto.config.estampas?.ativa && produto.estampasDisponiveis?.length);
+}
+
+function Passo({ numero }: { numero?: number }) {
+  return numero ? <span className="passo-numero" aria-hidden="true">{numero}</span> : null;
+}
+
+function SeletorDeEstampa({ produto, escolhas, aoEscolher, numero }: { produto: TipoProduto; escolhas: Escolhas; aoEscolher: (id: string | undefined) => void; numero?: number }) {
   const [colecao, setColecao] = useState("");
   const lista = produto.estampasDisponiveis || [];
-  if (!produto.config.estampas?.ativa || !lista.length) return null;
-  const obrigatoria = Boolean(produto.config.estampas.obrigatoria);
+  if (!temEstampas(produto)) return null;
+  const obrigatoria = Boolean(produto.config.estampas?.obrigatoria);
   const colecoes = [...new Set(lista.map(e => e.colecao))];
   const visiveis = colecao ? lista.filter(e => e.colecao === colecao) : lista;
   const escolhida = estampaDe(produto, escolhas);
   return (
     <fieldset className="grupo-escolha seletor-estampa">
-      <legend>Estampa: <span>{escolhida ? escolhida.nome : "sem estampa"}</span></legend>
+      <legend><Passo numero={numero} />Estampa: <span>{escolhida ? escolhida.nome : "sem estampa"}</span></legend>
       {colecoes.length > 1 ? (
         <div className="chips chips-colecao" role="group" aria-label="Coleções de estampa">
           <button type="button" className={`chip${colecao ? "" : " ativo"}`} aria-pressed={!colecao} onClick={() => setColecao("")}>Todas</button>
@@ -284,38 +292,62 @@ function EnvioDeFotos({ produto, fotos, setFotos, selecionada, setSelecionada }:
   );
 }
 
-function Personalizar({ produto, escolhas, mudar, fotoSelecionada, setFotoSelecionada, setLado }: {
+function Personalizar({ produto, escolhas, mudar, fotoSelecionada, setFotoSelecionada, setLado, aoEscolherEstampa }: {
   produto: TipoProduto;
   escolhas: Escolhas;
   mudar: (p: Partial<Personalizacao>) => void;
   fotoSelecionada: number;
   setFotoSelecionada: (i: number) => void;
   setLado: (l: Lado) => void;
+  aoEscolherEstampa: (id: string | undefined) => void;
 }) {
   const pers = produto.config.personalizacao;
   const p = escolhas.personalizacao;
   const campos = pers.campos;
+  const medir = useMedirTexto();
+  const estampa = estampaDe(produto, escolhas);
+  const temTexto = Boolean(campos.nome || campos.frase || campos.data);
+  let passo = 0;
+  const numeroEstampa = temEstampas(produto) ? ++passo : undefined;
+  const numeroArte = pers.artes.length > 1 ? ++passo : undefined;
+  const numeroTexto = temTexto ? ++passo : undefined;
+  const numeroLetra = pers.letras.length > 1 ? ++passo : undefined;
+  const numerar = passo > 1;
   return (
     <div className="caixa-personalizar">
       <h2>Personalize {produto.config.molde === "caneca" ? "a sua" : "do seu jeito"}</h2>
+      <SeletorDeEstampa produto={produto} escolhas={escolhas} aoEscolher={aoEscolherEstampa} numero={numerar ? numeroEstampa : undefined} />
       {pers.artes.length > 1 ? (
         <fieldset className="grupo-escolha">
-          <legend>Arte</legend>
-          <div className="chips">
-            {pers.artes.map(id => (
-              <button key={id} type="button" aria-pressed={p.arte === id} className={`chip${p.arte === id ? " ativo" : ""}`} onClick={() => { mudar({ arte: id }); setLado("frente"); }}>{regras.nomeDaArte(id)}</button>
-            ))}
+          <legend><Passo numero={numerar ? numeroArte : undefined} />Arte: <span>{regras.nomeDaArte(p.arte || pers.artes[0])}</span></legend>
+          <div className="artes-grade">
+            {pers.artes.map(id => {
+              const ativo = (p.arte || pers.artes[0]) === id;
+              return (
+                <button key={id} type="button" aria-pressed={ativo} className={`arte-opcao${ativo ? " ativo" : ""}`} onClick={() => { mudar({ arte: id }); setLado("frente"); }}>
+                  <svg className="arte-amostra" viewBox="24 50 320 300" aria-hidden="true">
+                    <PecaSvg config={produto.config} escolhas={{ ...escolhas, personalizacao: { ...p, arte: id } }} lado="frente" aquecida urlDaFoto={urlDaFotoEnviada} estampa={estampa} medir={medir} fatias={8} />
+                  </svg>
+                  <span className="arte-nome">{regras.nomeDaArte(id)}</span>
+                </button>
+              );
+            })}
           </div>
         </fieldset>
       ) : null}
-      <div className="campos-duplos">
-        {campos.nome ? <CampoDeTexto id="nome" campo={campos.nome} valor={p.nome || ""} aoMudar={v => { mudar({ nome: v }); setLado("frente"); }} /> : null}
-        {campos.frase ? <CampoDeTexto id="frase" campo={campos.frase} valor={p.frase || ""} aoMudar={v => { mudar({ frase: v }); if (pers.verso) setLado("verso"); }} /> : null}
-        {campos.data ? <CampoDeTexto id="data" campo={campos.data} valor={p.data || ""} aoMudar={v => { mudar({ data: v }); setLado("frente"); }} /> : null}
-      </div>
+      {temTexto ? (
+        <fieldset className="grupo-escolha">
+          {numerar ? <legend><Passo numero={numeroTexto} />Escreva</legend> : null}
+          <div className="campos-duplos">
+            {campos.nome ? <CampoDeTexto id="nome" campo={campos.nome} valor={p.nome || ""} aoMudar={v => { mudar({ nome: v }); setLado("frente"); }} /> : null}
+            {campos.frase ? <CampoDeTexto id="frase" campo={campos.frase} valor={p.frase || ""} aoMudar={v => { mudar({ frase: v }); if (pers.verso) setLado("verso"); }} /> : null}
+            {campos.data ? <CampoDeTexto id="data" campo={campos.data} valor={p.data || ""} aoMudar={v => { mudar({ data: v }); setLado("frente"); }} /> : null}
+          </div>
+        </fieldset>
+      ) : null}
       {pers.letras.length > 1 ? (
         <fieldset className="grupo-escolha">
-          <legend>Estilo da letra</legend>
+          <legend><Passo numero={numerar ? numeroLetra : undefined} />Estilo da letra</legend>
           <div className="letras">
             {pers.letras.map(id => {
               const f = FONTES[id];
@@ -369,6 +401,11 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
 
   const unitario = precoUnitario(produto, escolhas, qtd);
   const total = Math.round(unitario * qtd * 100) / 100;
+
+  function escolherEstampa(id: string | undefined) {
+    setEscolhas(es => ({ ...es, personalizacao: { ...es.personalizacao, estampa: id } }));
+    setLado("frente");
+  }
 
   function mudarPers(p: Partial<Personalizacao>) {
     setEscolhas(e => ({ ...e, personalizacao: { ...e.personalizacao, ...p } }));
@@ -491,16 +528,17 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
             );
           })}
 
-          <SeletorDeEstampa produto={produto} escolhas={escolhas} aoEscolher={id => { setEscolhas(es => ({ ...es, personalizacao: { ...es.personalizacao, estampa: id } })); setLado("frente"); }} />
-
           {config.personalizacao.ativa ? (
-            <Personalizar produto={produto} escolhas={escolhas} mudar={mudarPers} fotoSelecionada={fotoSelecionada} setFotoSelecionada={setFotoSelecionada} setLado={setLado} />
-          ) : null}
+            <Personalizar produto={produto} escolhas={escolhas} mudar={mudarPers} fotoSelecionada={fotoSelecionada} setFotoSelecionada={setFotoSelecionada} setLado={setLado} aoEscolherEstampa={escolherEstampa} />
+          ) : (
+            <SeletorDeEstampa produto={produto} escolhas={escolhas} aoEscolher={escolherEstampa} />
+          )}
 
           {config.adicionais.map(a => (
             <label key={a.id} className="marcar marcar-adicional">
               <input type="checkbox" disabled={a.esgotado} checked={escolhas.adicionais.includes(a.id)} onChange={e => setEscolhas(es => ({ ...es, adicionais: e.target.checked ? [...es.adicionais, a.id] : es.adicionais.filter(x => x !== a.id) }))} />
-              <span>Adicionar <strong>{a.nome.toLowerCase()}</strong> (+ {dinheiro(a.preco)})</span>
+              <span className="adicional-nome">Adicionar <strong>{a.nome.toLowerCase()}</strong></span>
+              <span className="adicional-preco">+ {dinheiro(a.preco)}</span>
             </label>
           ))}
 
@@ -518,7 +556,7 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
             </div>
             <button type="button" className={`botao botao-cheio botao-comprar${adicionado ? " feito" : ""}`} onClick={adicionar} disabled={produto.esgotado}>
               <Icone nome={adicionado ? "check" : "sacola"} tamanho={20} traco={1.8} />
-              {produto.esgotado ? "Esgotado" : adicionado ? "Adicionado ao carrinho" : `Adicionar ao carrinho · ${dinheiro(total)}`}
+              {produto.esgotado ? "Esgotado" : adicionado ? <><span className="so-largo">Adicionado ao carrinho</span><span className="so-curto">Adicionado</span></> : <><span className="so-largo">Adicionar ao carrinho · {dinheiro(total)}</span><span className="so-curto">Adicionar · {dinheiro(total)}</span></>}
             </button>
           </div>
           {!produto.esgotado ? (

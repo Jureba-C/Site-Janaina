@@ -154,7 +154,9 @@ test("arquivo de produção: estampa original cobrindo o gabarito, texto em curv
   const frente = /<g id="Frente" transform="translate\(([\d.]+) /.exec(svg);
   assert.ok(Math.abs(Number(frente[1]) - 240 * regras.voltaDaPeca("caneca").centroDaFrente) < 0.01);
   assert.doesNotMatch(svg, /<text\b/);
-  assert.match(svg, /<g id="Frente"[^>]*>(?:<g>)*<rect [^>]*fill="#FFFFFF"/, "etiqueta lisa atrás do nome para dar para ler sobre a estampa");
+  const frenteSvg = svg.slice(svg.indexOf('<g id="Frente"'), svg.indexOf('<g id="Verso"'));
+  assert.match(frenteSvg, /<g fill="#FFFCF8" stroke="#FFFCF8" stroke-linejoin="round"><path [^>]*stroke-width="[\d.]+"/, "contorno claro em curvas atrás do nome para dar para ler sobre a estampa");
+  assert.ok(frenteSvg.indexOf('stroke="#FFFCF8"') < frenteSvg.indexOf('<g fill="#2E2A28">'), "contorno embaixo das letras");
 
   const apagar = await fetch(`${ORIGIN}/api/admin/estampas/${estampa.id}`, { method: "DELETE", headers: { Origin: ORIGIN, Cookie: adminCookie } });
   assert.equal(apagar.status, 409, "estampa em pedido em produção não pode ser apagada");

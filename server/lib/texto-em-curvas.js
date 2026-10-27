@@ -40,7 +40,7 @@ function arredondar(n){
   return Math.round(n * 1000) / 1000;
 }
 
-function linhaEmCurvas(conteudo, { x, y, ancora, tamanho, espaco, f }){
+function linhaEmCurvas(conteudo, { x, y, ancora, tamanho, espaco, f, traco }){
   const escala = tamanho / f.unitsPerEm;
   const corrida = f.layout(conteudo);
   let largura = 0;
@@ -54,7 +54,9 @@ function linhaEmCurvas(conteudo, { x, y, ancora, tamanho, espaco, f }){
     if(d){
       const gx = arredondar(caneta + p.xOffset * escala);
       const gy = arredondar(y - p.yOffset * escala);
-      partes.push(`<path transform="translate(${gx} ${gy}) scale(${arredondar(escala * 1000) / 1000} ${-arredondar(escala * 1000) / 1000})" d="${d}"/>`);
+      const escalaDoGlifo = arredondar(escala * 1000) / 1000;
+      const largura = traco ? ` stroke-width="${arredondar(traco / escalaDoGlifo)}"` : "";
+      partes.push(`<path transform="translate(${gx} ${gy}) scale(${escalaDoGlifo} ${-escalaDoGlifo})"${largura} d="${d}"/>`);
     }
     caneta += p.xAdvance * escala + espaco;
   });
@@ -68,7 +70,8 @@ function textoEmCurvas(svg){
     const espacoEm = String(a["letter-spacing"] || "0");
     const espaco = espacoEm.endsWith("em") ? numero(espacoEm) * tamanho : numero(espacoEm);
     const f = escolherFonte(a["font-family"], a["font-weight"], a["font-style"]);
-    const base = { x: numero(a.x), y: numero(a.y), ancora: a["text-anchor"] || "start", tamanho, espaco, f };
+    const traco = a.stroke && a.stroke !== "none" ? numero(a["stroke-width"], 1) : 0;
+    const base = { x: numero(a.x), y: numero(a.y), ancora: a["text-anchor"] || "start", tamanho, espaco, f, traco };
     const linhas = [];
     if(miolo.includes("<tspan")){
       let y = base.y;
@@ -80,7 +83,8 @@ function textoEmCurvas(svg){
     } else {
       linhas.push(linhaEmCurvas(desescapar(miolo), base));
     }
-    return `<g fill="${a.fill || "#000"}">${linhas.join("")}</g>`;
+    const contorno = traco ? ` stroke="${a.stroke}" stroke-linejoin="${a["stroke-linejoin"] || "round"}"` : "";
+    return `<g fill="${a.fill || "#000"}"${contorno}>${linhas.join("")}</g>`;
   });
 }
 

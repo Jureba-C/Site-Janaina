@@ -11,7 +11,7 @@ export function configDeVitrine(p: Pick<ProdutoResumo, "molde" | "corPeca" | "co
     categorias: [], medida: "", codigo: "", cuidados: "", aviso: null,
     molde: p.molde, formato: p.formato, corPeca: p.corPeca, corAlca: p.corAlca, magica: p.magica,
     moldeFoto: null, variacoes: [], adicionais: [], faixas: [], qtdMinima: 1,
-    personalizacao: { ativa: true, campos: {}, letras: ["cursiva"], artes: ["flor"], fotos: { min: 0, max: 0, formato: "circulo" }, verso: false },
+    personalizacao: { ativa: true, campos: { nome: { ativo: true, rotulo: "Nome", limite: 20, obrigatorio: false } }, letras: ["cursiva"], artes: ["flor"], fotos: { min: 0, max: 0, formato: "circulo" }, verso: false },
   };
 }
 
@@ -20,7 +20,7 @@ export function IlustracaoDaPeca({ produto, rotulo }: { produto: ProdutoResumo; 
   const config = configDeVitrine(produto);
   return (
     <svg className="ilustracao-peca" viewBox="0 0 360 380" role="img" aria-label={rotulo}>
-      <PecaSvg config={config} escolhas={{ variacoes: {}, adicionais: [], personalizacao: { arte: "flor", letra: "cursiva" } }} lado="frente" aquecida={false} urlDaFoto={() => null} medir={false} exemplos={false} fatias={comEstampa ? 16 : 12} estampa={produto.estampaVitrine} comArte={!comEstampa} />
+      <PecaSvg config={config} escolhas={{ variacoes: {}, adicionais: [], personalizacao: { arte: "flor", letra: "cursiva" } }} lado="frente" aquecida={false} urlDaFoto={() => null} medir={false} fatias={comEstampa ? 16 : 12} estampa={produto.estampaVitrine} />
     </svg>
   );
 }

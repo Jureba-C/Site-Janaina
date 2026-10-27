@@ -7,6 +7,7 @@ const DB_PATH = process.env.DB_PATH || path.join(__dirname, "..", "data.db");
 const db = new DatabaseSync(DB_PATH);
 
 db.exec(`
+  PRAGMA busy_timeout = 5000;
   PRAGMA journal_mode = WAL;
   PRAGMA foreign_keys = ON;
 
