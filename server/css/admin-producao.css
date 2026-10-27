@@ -181,3 +181,7 @@
 .prod-btn,
 .prod-btn-arquivo,
 .prod-ferramentas-botoes .btn-outline-blush{ display:inline-flex; align-items:center; text-decoration:none; }
+
+@keyframes prod-chegou{ from{ box-shadow:0 0 0 4px rgba(158,74,24,.35), var(--shadow-card); transform:translateY(-4px); } to{ box-shadow:var(--shadow-card); transform:none; } }
+.prod-card-chegou{ animation:prod-chegou 1.2s ease-out; }
+@media (prefers-reduced-motion: reduce){ .prod-card-chegou{ animation:none; } }

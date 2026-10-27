@@ -355,6 +355,14 @@
       const data = await res.json().catch(() => ({}));
       if(!res.ok) throw new Error(data.error || "Não foi possível salvar.");
       await aj.recarregar();
+      const movido = pedidos.find(o => o.reference === ref);
+      const destino = movido && ETAPAS.find(et => et.id === movido.etapa);
+      if(destino && destino.id !== etapaAberta){
+        etapaAberta = destino.id;
+        renderQuadro();
+        mostrarFeedback(ref, `Foi para ${destino.titulo}.`);
+        document.querySelector(`.prod-card[data-ref="${CSS.escape(ref)}"]`)?.classList.add("prod-card-chegou");
+      }
     }catch(err){
       mostrarFeedback(ref, err.message || "Não foi possível salvar.", true);
       btn.disabled = false;

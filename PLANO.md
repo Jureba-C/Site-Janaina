@@ -123,6 +123,18 @@ foto, lista de produtos e preços, e as capturas de referência em
 - Segurança do site inteiro até o pagamento: ver
   `server/docs/SECURITY-AUDIT.md` (rodada de 27/10/2026).
 
+## Fase 6b — Celular e painel de produção ✅ (27/10/2026)
+
+- Loja pensada para o celular: home ~30% mais curta (vitrine em carrossel logo
+  depois do topo, vantagens numa linha, momentos deslizáveis, rodapé em
+  sanfona), cartão inteiro clicável, filtros numa gaveta com chips de ocasião,
+  preço logo abaixo do nome, mini prévia flutuante, botão "Pedir pelo
+  WhatsApp" com a personalização escrita.
+- Painel: aba **Produção** (abre primeiro) com etapas Aprovar arte → Produzir
+  → Pronto → Enviado/Retirada → Entregue, prazo em dias úteis, planilhas de
+  produção e de envios, lista de postagem. Ver `server/docs/PAINEL-PRODUCAO.md`.
+- Frete grátis acima de um valor: ajuste no painel (aba Produtos), desligado.
+
 ## Fase 7 — Entrega para a cliente ⬜
 
 - ⚠️ Prévia online para a cliente aprovar (hospedagem temporária) — só com
@@ -140,6 +152,8 @@ foto, lista de produtos e preços, e as capturas de referência em
 - 2026-10-26 — Funcionamento e catálogo (Fases 2 e 3) começam já.
 - 2026-10-26 — Frete pelo Melhor Envio, mais retirada grátis na Asa Norte.
 - 2026-10-26 — Prévia em 3D entra, carregada só quando a cliente pede.
+- 2026-10-27 — Botão "Pedir pelo WhatsApp" no produto, como opção ao carrinho.
+- 2026-10-27 — Frete grátis: não por enquanto (ajuste pronto no painel, desligado).
 - 2026-10-27 — A loja só baixa o React depois de mostrar a página (a
   primeira pintura não espera o script); o aviso de privacidade aparece na
   primeira rolagem ou toque.
