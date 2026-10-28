@@ -259,3 +259,12 @@ test("foto do painel não muda o preload do topo", async () => {
   assert.ok(preload[0].includes("canecas-alca-colorida.webp"), "o preload continua na primeira foto do topo");
   await apagarTodas();
 });
+
+test("a demonstração da caneca chega pronta do servidor, com o nome e os passos", async () => {
+  const home = await (await fetch(ORIGIN + "/")).text();
+  const demo = home.slice(home.indexOf('class="demo-caneca'), home.indexOf('class="chamada-previa-texto'));
+  assert.ok(demo.length > 0, "a demonstração sumiu da home");
+  assert.match(demo, /Madrinha/);
+  assert.match(demo, /Florzinha/);
+  assert.match(home, /<li class="ativo"><span class="passo-numero">3<\/span>/);
+});

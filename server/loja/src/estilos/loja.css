@@ -329,8 +329,8 @@ main:focus { outline: none; }
 .cartao-produto.esgotado .cartao-produto-foto { opacity: .6; }
 
 .chamada-previa { display: flex; flex-wrap: wrap; align-items: center; gap: 48px; background: var(--branco); border-radius: 36px; padding: 56px; border: 1px solid var(--borda); overflow: hidden; }
-.chamada-previa-peca { flex: 1 1 420px; min-width: 0; position: relative; height: 400px; }
-.chamada-previa-peca svg { position: absolute; left: 50%; top: 20px; width: 360px; height: 380px; margin-left: -180px; }
+.chamada-previa-peca { flex: 1 1 520px; min-width: 0; position: relative; display: flex; align-items: center; justify-content: center; min-height: 360px; }
+
 .chamada-previa-texto { flex: 1 1 420px; min-width: 0; }
 .chamada-previa-texto h2 { font-size: clamp(34px, 3.6vw, 48px); line-height: 1.04; margin-top: 16px; }
 .passos { list-style: none; padding: 0; margin: 28px 0 32px; display: flex; flex-direction: column; gap: 18px; }
@@ -756,8 +756,6 @@ main:focus { outline: none; }
   .cartao-produto-corpo .cartao-produto-acao { display: none; }
   .cartao-preco-cheio { display: none; }
   .chamada-previa { padding: 28px 20px; gap: 12px; border-radius: 28px; }
-  .chamada-previa-peca { height: 230px; flex-basis: 100%; }
-  .chamada-previa-peca svg { width: 214px; height: 226px; margin-left: -107px; top: 2px; }
   .faixa-caramelo-esquerda { left: -20px; top: 120px; height: 120px; }
   .faixa-ipes { margin-top: 72px; }
   .faixa-ipes-grade { padding-top: 56px; padding-bottom: 56px; gap: 28px; }
@@ -942,3 +940,50 @@ a.vantagem-link:hover .vantagem-texto strong { color: var(--terracota-forte); te
 }
 @media (max-width: 359px) { .destaque h1 { font-size: 38px; } }
 @media (prefers-reduced-motion: reduce) { .destaque-sublinhado path { animation: none; } }
+
+.demo-caneca { position: relative; z-index: 1; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 216px; align-items: center; gap: 4px; }
+.demo-palco { position: relative; perspective: 900px; }
+.demo-palco > svg { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto; transform-origin: 50% 85%; }
+.demo-caneca.pronta.animando .demo-palco > svg { animation: demo-gira 3.2s ease-in-out infinite; }
+@keyframes demo-gira { 0%, 100% { transform: rotateY(0deg) rotateZ(0deg); } 30% { transform: rotateY(-9deg) rotateZ(-1deg); } 70% { transform: rotateY(9deg) rotateZ(1deg); } }
+.demo-pincel { filter: drop-shadow(0 6px 6px rgba(80, 40, 10, 0.25)); }
+.demo-calor path { animation: demo-calor 1.4s ease-in-out infinite; }
+.demo-calor path:nth-child(2) { animation-delay: .35s; }
+.demo-calor path:nth-child(3) { animation-delay: .7s; }
+@keyframes demo-calor { from { transform: translateY(16px); opacity: 0; } 50% { opacity: 1; } to { transform: translateY(-12px); opacity: 0; } }
+.demo-selo { position: absolute; top: 10%; right: 2%; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px 7px; background: #E9D7BD; color: var(--tinta); font-size: 14px; font-weight: 700; rotate: 6deg; box-shadow: 0 6px 10px -6px rgba(110, 60, 30, 0.5); opacity: 0; scale: .6; transition: opacity .35s ease, scale .5s cubic-bezier(.2, .8, .2, 1.4); pointer-events: none; }
+.demo-selo svg { color: #2E6B4F; }
+.demo-caneca.pronta .demo-selo { opacity: 1; scale: 1; }
+.demo-painel { display: grid; gap: 6px; padding: 10px; background: var(--papel); border: 1px solid var(--borda); border-radius: 18px; box-shadow: 0 18px 30px -24px rgba(110, 60, 30, 0.55); font-size: 13px; }
+.demo-linha { padding: 8px 10px; border-radius: 12px; border: 1px solid transparent; transition: background-color .3s ease, border-color .3s ease, box-shadow .3s ease; }
+.demo-linha.ativa { background: var(--branco); border-color: var(--caramelo); box-shadow: 0 0 0 3px rgba(212, 147, 94, 0.18); }
+.demo-rotulo { display: block; margin-bottom: 5px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta-suave); }
+.demo-cores { display: flex; gap: 7px; }
+.demo-cores span { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(46, 42, 40, 0.18); transition: box-shadow .25s ease; }
+.demo-cores span.escolhida { box-shadow: 0 0 0 2px var(--papel), 0 0 0 4px var(--terracota-forte); }
+.demo-valor { display: flex; align-items: center; gap: 7px; min-height: 22px; font-weight: 600; }
+.demo-valor img { border-radius: 4px; object-fit: cover; }
+.demo-vazio { font-weight: 400; color: var(--tinta-suave); }
+.demo-campo { display: flex; align-items: center; min-height: 32px; padding: 4px 10px; border-radius: 8px; background: var(--papel-2); font-family: var(--fonte-cursiva); font-size: 22px; line-height: 1; color: var(--tinta); white-space: nowrap; overflow: hidden; }
+.demo-cursor { flex: none; width: 1.5px; height: 20px; margin-left: 2px; background: var(--terracota-forte); opacity: 0; }
+.demo-cursor.pisca { opacity: 1; animation: demo-pisca 1s steps(1) infinite; }
+@keyframes demo-pisca { 50% { opacity: 0; } }
+.demo-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.demo-chips span { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--borda-forte); font-size: 12px; font-weight: 600; transition: background-color .25s ease, color .25s ease; }
+.demo-chips span.escolhida { background: var(--tinta); border-color: var(--tinta); color: var(--branco); }
+.demo-de-novo { position: absolute; left: 0; bottom: 0; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--borda-forte); background: var(--branco); color: var(--terracota-forte); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.demo-de-novo:hover { border-color: var(--terracota-forte); }
+.passos li .passo-numero { transition: background-color .3s ease, color .3s ease, scale .3s ease; }
+.passos li.ativo .passo-numero { background: var(--terracota-forte); color: var(--branco); scale: 1.08; }
+@media (max-width: 760px) {
+  .chamada-previa-peca { min-height: 0; flex-basis: 100%; }
+  .demo-caneca { grid-template-columns: 1fr; justify-items: center; gap: 10px; }
+  .demo-palco { width: 100%; max-width: 270px; }
+  .demo-painel { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 4px; }
+  .demo-linha { padding: 6px 8px; }
+  .demo-campo { font-size: 18px; min-height: 28px; padding: 3px 8px; }
+  .demo-de-novo { position: static; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-caneca .demo-palco > svg, .demo-calor path, .demo-cursor.pisca { animation: none; }
+}

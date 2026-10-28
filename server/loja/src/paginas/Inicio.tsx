@@ -4,8 +4,8 @@ import { CartaoProduto } from "../componentes/CartaoProduto";
 import { Foto } from "../componentes/Foto";
 import { BordaRasgada, EnfeiteDoCartao, Folhas, RamoDeIpe, recorteCirculo, recorteFlor, recorteRetangulo, type EnfeiteDoCartao as TipoDeEnfeite } from "../componentes/Enfeites";
 import { Icone } from "../componentes/Icone";
-import { PecaSvg } from "../componentes/Previa";
-import type { ConfigProduto, Loja, PaginaInicio } from "../tipos";
+import { DemoDaCaneca } from "../componentes/DemoDaCaneca";
+import type { Loja, PaginaInicio } from "../tipos";
 
 const GIROS = [-2, 1.5, -1, 2, -1.5];
 
@@ -32,12 +32,6 @@ const INSTAGRAM = [
   { img: "/img/provisorias/garrafa-professores.jpg", alt: "Garrafa para professores" },
   { img: "/img/provisorias/ipe-amarelo.jpg", alt: "Ipê amarelo" },
 ];
-
-const CANECA_EXEMPLO: ConfigProduto = {
-  categorias: [], medida: "", codigo: "", cuidados: "", aviso: null, molde: "caneca", formato: "", corPeca: "#FFFFFF", corAlca: "#F2A7BE",
-  magica: false, moldeFoto: null, variacoes: [], adicionais: [], faixas: [], qtdMinima: 1,
-  personalizacao: { ativa: true, campos: { nome: { ativo: true, obrigatorio: false, limite: 20, rotulo: "Nome" } }, letras: ["cursiva"], artes: ["flor"], fotos: { min: 0, max: 0, formato: "circulo" }, verso: true },
-};
 
 function Destaque({ pagina }: { pagina: PaginaInicio }) {
   return (
@@ -172,6 +166,7 @@ function Avaliacoes({ pagina }: { pagina: PaginaInicio }) {
 }
 
 export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
+  const [passo, setPasso] = useState(3);
   return (
     <>
       <Destaque pagina={pagina} />
@@ -202,17 +197,15 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
         <div className="chamada-previa">
           <div className="chamada-previa-peca">
             <div className="faixa-caramelo faixa-caramelo-esquerda" aria-hidden="true" />
-            <svg viewBox="0 0 360 380" role="img" aria-label="Prévia de caneca rosa com florzinha e o nome Madrinha Lara">
-              <PecaSvg config={CANECA_EXEMPLO} escolhas={{ variacoes: {}, adicionais: [], personalizacao: { nome: "Madrinha Lara", arte: "flor", letra: "cursiva" } }} lado="frente" aquecida={false} urlDaFoto={() => null} medir={false} fatias={16} />
-            </svg>
+            <DemoDaCaneca aoMudarPasso={setPasso} />
           </div>
           <div className="chamada-previa-texto" id="como-personalizar">
             <p className="etiqueta">Novo no site</p>
             <h2 id="previa-titulo">Veja como fica antes de comprar</h2>
             <ol className="passos">
-              <li><span className="passo-numero">1</span><span><strong>Escolha a peça e a cor</strong>: caneca, xícara, garrafa ou vidro.</span></li>
-              <li><span className="passo-numero">2</span><span><strong>Escreva o nome, a frase ou envie fotos</strong>: a prévia muda na hora.</span></li>
-              <li><span className="passo-numero">3</span><span><strong>A {loja.responsavel} finaliza a arte</strong> e, se você quiser, aprova com você pelo WhatsApp antes de produzir.</span></li>
+              <li className={passo === 1 ? "ativo" : undefined}><span className="passo-numero">1</span><span><strong>Escolha a peça e a cor</strong>: caneca, xícara, garrafa ou vidro.</span></li>
+              <li className={passo === 2 ? "ativo" : undefined}><span className="passo-numero">2</span><span><strong>Escreva o nome, a frase ou envie fotos</strong>: a prévia muda na hora.</span></li>
+              <li className={passo === 3 ? "ativo" : undefined}><span className="passo-numero">3</span><span><strong>A {loja.responsavel} finaliza a arte</strong> e, se você quiser, aprova com você pelo WhatsApp antes de produzir.</span></li>
             </ol>
             <a className="botao botao-cheio botao-grande" href={pagina.vitrines[0]?.produtos[0]?.endereco ?? "/categoria/canecas"}>Experimentar agora</a>
           </div>
