@@ -136,6 +136,9 @@ export interface FotoDestaque {
   legenda: string;
   alt: string;
   link?: string;
+  titulo?: string;
+  frase?: string;
+  botao?: string;
 }
 
 export interface Avaliacao {

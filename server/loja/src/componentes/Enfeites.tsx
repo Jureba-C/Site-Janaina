@@ -11,17 +11,6 @@ function pct(n: number): string {
   return `${Math.round(n * 100) / 100}%`;
 }
 
-export function recorteRetangulo(semente: number, folga = 2.4): string {
-  const r = sorteio(semente);
-  const pontos: string[] = [];
-  const passos = 12;
-  for (let i = 0; i <= passos; i++) pontos.push(`${pct((i / passos) * 100)} ${pct(r() * folga)}`);
-  for (let i = 1; i <= passos; i++) pontos.push(`${pct(100 - r() * folga)} ${pct((i / passos) * 100)}`);
-  for (let i = passos - 1; i >= 0; i--) pontos.push(`${pct((i / passos) * 100)} ${pct(100 - r() * folga)}`);
-  for (let i = passos - 1; i >= 1; i--) pontos.push(`${pct(r() * folga)} ${pct((i / passos) * 100)}`);
-  return `polygon(${pontos.join(", ")})`;
-}
-
 export function recorteCirculo(semente: number, folga = 2.2): string {
   const r = sorteio(semente);
   const pontos: string[] = [];
@@ -29,18 +18,6 @@ export function recorteCirculo(semente: number, folga = 2.2): string {
   for (let i = 0; i < total; i++) {
     const a = (i / total) * Math.PI * 2;
     const raio = 50 - r() * folga;
-    pontos.push(`${pct(50 + Math.cos(a) * raio)} ${pct(50 + Math.sin(a) * raio)}`);
-  }
-  return `polygon(${pontos.join(", ")})`;
-}
-
-export function recorteFlor(semente: number, petalas = 6, folga = 0): string {
-  const r = sorteio(semente);
-  const pontos: string[] = [];
-  const total = 144;
-  for (let i = 0; i < total; i++) {
-    const a = (i / total) * Math.PI * 2 - Math.PI / 2;
-    const raio = 38 + 11 * Math.pow(Math.abs(Math.cos((a * petalas) / 2)), 0.7) - r() * folga;
     pontos.push(`${pct(50 + Math.cos(a) * raio)} ${pct(50 + Math.sin(a) * raio)}`);
   }
   return `polygon(${pontos.join(", ")})`;
@@ -85,26 +62,6 @@ export function Folhas({ className }: { className?: string }) {
   );
 }
 
-export function Laco({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 64 72" aria-hidden="true" focusable="false">
-      <path d="M31 34C18 12 2 18 6 34C9 46 24 44 31 34Z" fill="#D98A9C" />
-      <path d="M33 34C46 12 62 18 58 34C55 46 40 44 33 34Z" fill="#D98A9C" />
-      <path d="M30 40L14 66L26 61L30 70L35 44Z" fill="#C06C80" />
-      <path d="M34 40L50 64L40 60L36 70Z" fill="#C06C80" />
-      <ellipse cx="32" cy="36" rx="6" ry="7" fill="#B85C72" />
-    </svg>
-  );
-}
-
-export function Clipe({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 40 80" aria-hidden="true" focusable="false">
-      <path d="M12 14V58a8 8 0 0 0 16 0V16a5 5 0 0 0-10 0V54" fill="none" stroke="#9AA0A6" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 export function BordaRasgada({ cor = "var(--papel)", semente = 3, className }: { cor?: string; semente?: number; className?: string }) {
   const r = sorteio(semente);
   const total = 72;
@@ -115,13 +72,4 @@ export function BordaRasgada({ cor = "var(--papel)", semente = 3, className }: {
       <polygon points={pontos.join(" ")} style={{ fill: cor }} />
     </svg>
   );
-}
-
-export type EnfeiteDoCartao = "fita-verde" | "laco" | "clipe" | "ramo" | "fita-rosa";
-
-export function EnfeiteDoCartao({ tipo }: { tipo: EnfeiteDoCartao }) {
-  if (tipo === "laco") return <Laco className="enfeite enfeite-laco" />;
-  if (tipo === "clipe") return <Clipe className="enfeite enfeite-clipe" />;
-  if (tipo === "ramo") return <RamoDeIpe className="enfeite enfeite-ramo" />;
-  return <span className={`enfeite enfeite-fita ${tipo === "fita-rosa" ? "fita-rosa" : "fita-verde"}`} />;
 }

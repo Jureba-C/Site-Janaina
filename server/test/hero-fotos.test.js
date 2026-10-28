@@ -92,9 +92,9 @@ test("sem foto no painel, a home usa as fotos fixas da loja", async () => {
 test("só a primeira foto do destaque tem prioridade; as outras esperam", async () => {
   await apagarTodas();
   const home = await (await fetch(ORIGIN + "/")).text();
-  const destaque = home.slice(home.indexOf('class="destaque'), home.indexOf('class="secao'));
+  const destaque = home.slice(home.indexOf('class="banner'), home.indexOf('class="vantagens'));
   assert.equal((destaque.match(/fetchPriority="high"|fetchpriority="high"/g) || []).length, 1);
-  assert.equal((destaque.match(/class="tipo-cartao/g) || []).length, 5, "cinco tipos logo abaixo do título");
+  assert.equal((destaque.match(/class="banner-slide/g) || []).length, 5, "cinco slides no banner do topo");
   assert.ok((destaque.match(/loading="lazy"/g) || []).length >= 1);
 });
 
@@ -242,9 +242,9 @@ test("o preload do topo aponta para exatamente a mesma imagem do <picture>", asy
   const home = await (await fetch(ORIGIN + "/")).text();
   const preload = home.match(/<link rel="preload" as="image"[^>]*>/);
   assert.ok(preload, "o preload da foto do topo sumiu");
-  const destaque = home.slice(home.indexOf('class="tipo-cartao'));
+  const destaque = home.slice(home.indexOf('class="banner-slide'));
   const source = destaque.match(/<source type="image\/webp"[^>]*>/);
-  assert.ok(source, "o <source> webp da primeira foto do topo sumiu");
+  assert.ok(source, "o <source> webp da primeira foto do banner sumiu");
   const pegar = (tag, attr) => (tag.match(new RegExp(`${attr}="([^"]*)"`, "i")) || [])[1];
   assert.equal(pegar(preload[0], "href"), pegar(source[0], "srcSet"), "preload e <source> discordam: o navegador baixaria duas imagens");
   assert.match(preload[0], /type="image\/webp"/);

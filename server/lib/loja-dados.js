@@ -92,11 +92,11 @@ function dadosDaLoja(visiveis){
 }
 
 const TIPOS_DO_TOPO = [
-  { src: "/img/provisorias/canecas-alca-colorida.jpg", legenda: "Canecas", alt: "Canecas com alça e interior coloridos", link: "/categoria/canecas" },
-  { src: "/img/provisorias/xicaras-casamento.jpg", legenda: "Xícaras e kits", alt: "Xícaras de casamento empilhadas", link: "/categoria/xicaras-e-kits" },
-  { src: "/img/provisorias/garrafa-professores.jpg", legenda: "Garrafas", alt: "Garrafa personalizada com fotos de alunos", link: "/categoria/garrafas-e-termicos" },
-  { src: "/img/provisorias/ipe-amarelo.jpg", legenda: "Ipês Brasília", alt: "Ipê amarelo feito à mão", link: "/categoria/ipes-brasilia" },
-  { src: "/img/provisorias/caneca-caixa-presente.jpg", legenda: "Presentes", alt: "Caneca com caixa de presente e laço", link: "/categoria/acessorios-e-embalagens" },
+  { src: "/img/provisorias/canecas-alca-colorida.jpg", legenda: "Canecas", alt: "Canecas com alça e interior coloridos", link: "/categoria/canecas", titulo: "Canecas com o seu nome", frase: "do jeito que você imaginou", botao: "Criar a minha" },
+  { src: "/img/provisorias/xicaras-casamento.jpg", legenda: "Xícaras e kits", alt: "Xícaras de casamento empilhadas", link: "/categoria/xicaras-e-kits", titulo: "Casamentos e padrinhos", frase: "lembrança que fica", botao: "Ver xícaras e kits" },
+  { src: "/img/provisorias/garrafa-professores.jpg", legenda: "Garrafas", alt: "Garrafa personalizada com fotos de alunos", link: "/categoria/garrafas-e-termicos", titulo: "Garrafas personalizadas", frase: "para o dia a dia", botao: "Ver garrafas" },
+  { src: "/img/provisorias/ipe-amarelo.jpg", legenda: "Ipês Brasília", alt: "Ipê amarelo feito à mão", link: "/categoria/ipes-brasilia", titulo: "Ipês de Brasília", frase: "brasiliense de coração", botao: "Ver coleção" },
+  { src: "/img/provisorias/caneca-caixa-presente.jpg", legenda: "Presentes", alt: "Caneca com caixa de presente e laço", link: "/categoria/acessorios-e-embalagens", titulo: "Presentes prontos", frase: "com laço e cartão", botao: "Ver presentes" },
 ];
 
 function destaques(){

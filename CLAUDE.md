@@ -80,7 +80,7 @@ e que nenhum dado da Adriana voltou.
 |---|---|
 | `img/logo.svg` | logo provisório montado por `scripts/gerar-logo.js`; com o arquivo real, salvar como `img/logo.svg` e rodar `node scripts/gerar-marca.js` (gera favicon, ícone do celular, `logo-loja.png`, `og-loja.jpg` e o logo dos e-mails) |
 | `img/provisorias/*` | fotos tiradas do Instagram/catálogos; trocar pelas originais. Fotos de produto entram pelo **painel** (aba Produtos) |
-| fotos dos 5 tipos no topo da home | `TIPOS_DO_TOPO` em `server/lib/loja-dados.js` (a aba "Fotos do topo" do painel saiu do atalho e não muda mais o site) |
+| banner que troca sozinho no topo da home (5 slides: foto, título, frase e botão) | `TIPOS_DO_TOPO` em `server/lib/loja-dados.js`; visual em `BannerDoTopo` (`loja/src/paginas/Inicio.tsx`). A aba "Fotos do topo" do painel não muda mais o site |
 
 ## Onde mexer em cada assunto
 

@@ -1,17 +1,14 @@
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { linkWhatsApp } from "../compartilhado";
 import { CartaoProduto } from "../componentes/CartaoProduto";
 import { Foto } from "../componentes/Foto";
-import { BordaRasgada, EnfeiteDoCartao, Folhas, RamoDeIpe, recorteCirculo, recorteFlor, recorteRetangulo, type EnfeiteDoCartao as TipoDeEnfeite } from "../componentes/Enfeites";
+import { BordaRasgada, Folhas, RamoDeIpe, recorteCirculo } from "../componentes/Enfeites";
+import { Florzinha } from "../componentes/Marca";
 import { Icone } from "../componentes/Icone";
 import { DemoEstudio } from "../componentes/DemoDaCaneca";
 import type { Loja, PaginaInicio } from "../tipos";
 
 const GIROS = [-2, 1.5, -1, 2, -1.5];
-
-const ENFEITES_DOS_TIPOS: { enfeite: TipoDeEnfeite; flor?: boolean }[] = [
-  { enfeite: "fita-verde" }, { enfeite: "laco", flor: true }, { enfeite: "fita-rosa" }, { enfeite: "ramo" }, { enfeite: "clipe", flor: true },
-];
 
 const MOMENTOS: { nome: string; slug: string; d: string }[] = [
   { nome: "Casamento", slug: "casamento", d: "M4 14a5 5 0 1 0 10 0a5 5 0 1 0 -10 0M10 14a5 5 0 1 0 10 0a5 5 0 1 0 -10 0M9 6l1.5-2.5h3L15 6" },
@@ -33,44 +30,100 @@ const INSTAGRAM = [
   { img: "/img/provisorias/ipe-amarelo.jpg", alt: "Ipê amarelo" },
 ];
 
-function Destaque({ pagina }: { pagina: PaginaInicio }) {
+const FUNDOS_DO_BANNER = ["#F4E9DD", "#F6E1DE", "#EFE2D3", "#F1E6DA", "#F6E1DE"];
+
+const FLORES_DO_BANNER = ["#DFA1AC", "#CD7031", "#E9B824", "#DFA1AC"];
+
+function SeloFeitoAMao() {
+  const id = `selo-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   return (
-    <section className="destaque envolve" aria-labelledby="destaque-titulo">
-      <div className="destaque-titulo">
-        <p className="destaque-feito"><Folhas className="floreio floreio-esq" /><span className="cursiva">feito à mão em Brasília</span><RamoDeIpe className="floreio" /></p>
-        <h1 id="destaque-titulo">Presentes <span className="destaque-marca">que marcam<svg className="destaque-sublinhado" viewBox="0 0 300 26" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M6 17C70 7 160 4 294 12" /><path className="destaque-sublinhado-fino" d="M40 22C120 15 200 14 268 19" /></svg></span></h1>
-        <p className="destaque-apoio">Canecas, xícaras e garrafas com o nome, a frase ou a foto que você escolher. Você vê a prévia antes de comprar.</p>
-        <div className="destaque-acoes">
-          <a className="botao botao-cheio botao-grande" href="/categoria/canecas">Ver as canecas</a>
-          <a className="botao botao-vazado botao-grande" href="/#previa">Criar a minha</a>
-        </div>
-      </div>
-      <ul className="tipos-colagem" aria-label="Escolha pelo tipo">
-        {pagina.destaques.map((t, i) => {
-          const visual = ENFEITES_DOS_TIPOS[i % ENFEITES_DOS_TIPOS.length];
-          return (
-            <li
-              key={t.src}
-              className={`tipo-cartao${i % 2 ? " tipo-invertido" : ""}`}
-              style={{ ["--giro" as string]: `${GIROS[i % GIROS.length]}deg`, ["--recorte-retangulo" as string]: recorteRetangulo(11 + i * 7), ["--recorte-circulo" as string]: recorteCirculo(31 + i * 5), ["--recorte-flor" as string]: recorteFlor(51 + i * 3, 6, 1.6), ["--recorte-flor-liso" as string]: recorteFlor(51 + i * 3, 6) }}
+    <svg className="banner-selo" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+      <defs><path id={id} d="M60 60m-42 0a42 42 0 1 1 84 0a42 42 0 1 1 -84 0" /></defs>
+      <circle cx="60" cy="60" r="58" fill="#FFFCF8" />
+      <circle cx="60" cy="60" r="53" fill="none" stroke="#9E4A18" strokeWidth="1.2" strokeDasharray="3 3" />
+      <text fontSize="11" fontWeight="600" letterSpacing="1.5" fill="#9E4A18"><textPath href={`#${id}`} textLength="258">FEITO À MÃO · EM BRASÍLIA ·</textPath></text>
+      <g transform="translate(44 44)"><Florzinha tamanho={32} cor="#CD7031" traco={1.4} /></g>
+    </svg>
+  );
+}
+
+function BannerDoTopo({ pagina }: { pagina: PaginaInicio }) {
+  const slides = pagina.destaques;
+  const total = slides.length;
+  const [atual, setAtual] = useState(0);
+  const [pausado, setPausado] = useState(false);
+  const inicioDoToque = useRef<number | null>(null);
+  useEffect(() => {
+    if (pausado || total < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const relogio = setInterval(() => {
+      if (!document.hidden) setAtual(i => (i + 1) % total);
+    }, 5000);
+    return () => clearInterval(relogio);
+  }, [pausado, total, atual]);
+  const ir = (i: number) => setAtual((i + total) % total);
+  return (
+    <section
+      className="banner envolve"
+      aria-roledescription="carrossel"
+      aria-label="Destaques da loja"
+      onMouseEnter={() => setPausado(true)}
+      onMouseLeave={() => setPausado(false)}
+      onTouchStart={e => { inicioDoToque.current = e.touches[0].clientX; setPausado(true); }}
+      onTouchEnd={e => {
+        const dx = e.changedTouches[0].clientX - (inicioDoToque.current ?? e.changedTouches[0].clientX);
+        if (Math.abs(dx) > 40) ir(atual + (dx < 0 ? 1 : -1));
+        inicioDoToque.current = null;
+        setPausado(false);
+      }}
+    >
+      <h1 className="visualmente-oculto">Arte Canecas: presentes que marcam, feitos à mão em Brasília</h1>
+      <div className="banner-vista">
+        <div className="banner-trilho" style={{ transform: `translateX(-${atual * 100}%)` }}>
+          {slides.map((s, i) => (
+            <article
+              key={s.src}
+              className={`banner-slide${i === atual ? " ativo" : ""}`}
+              style={{ ["--fundo" as string]: FUNDOS_DO_BANNER[i % FUNDOS_DO_BANNER.length] }}
+              aria-roledescription="slide"
+              aria-label={`${i + 1} de ${total}`}
+              aria-hidden={i !== atual}
             >
-              <a className="tipo-link" href={t.link || "/categoria/canecas"}>
-                <span className="tipo-caixa">
-                  <span className={`tipo-recorte${visual.flor ? " tipo-flor" : ""}`}>
-                    <Foto src={t.src} alt={t.alt} sizes="(max-width: 760px) 120px, 230px" largura={230} altura={288} prioridade={i === 0} className="tipo-foto" />
-                  </span>
-                  <EnfeiteDoCartao tipo={visual.enfeite} />
-                </span>
-                <span className="tipo-texto">
-                  <span className="tipo-nome">{t.legenda}</span>
-                  <span className="tipo-ver">ver mais <Icone nome="setaDireita" tamanho={14} traco={2} /></span>
-                </span>
-              </a>
-              <Folhas className="tipo-folhas" />
-            </li>
-          );
-        })}
-      </ul>
+              <div className="banner-texto">
+                <h2 className="banner-titulo">{s.titulo || s.legenda}</h2>
+                {s.frase ? <p className="cursiva banner-frase">{s.frase}</p> : null}
+                <a className="botao botao-cheio banner-botao" href={s.link || "/categoria/canecas"} tabIndex={i === atual ? 0 : -1}>
+                  {s.botao || "Ver mais"}<Icone nome="setaDireita" tamanho={18} traco={2} />
+                </a>
+              </div>
+              <div className="banner-colagem">
+                <span className="banner-arco" aria-hidden="true" />
+                <RamoDeIpe className="banner-ramo" />
+                <Folhas className="banner-folhas" />
+                <figure className="banner-polaroide" style={{ ["--giro" as string]: `${GIROS[i % GIROS.length] * 1.6}deg` }}>
+                  <span className="banner-fita" aria-hidden="true" />
+                  <Foto src={s.src} alt={s.alt} sizes="(max-width: 760px) 140px, 296px" prioridade={i === 0} largura={296} altura={300} className="banner-imagem" />
+                  <figcaption className="cursiva">{s.legenda}</figcaption>
+                </figure>
+                <SeloFeitoAMao />
+              </div>
+              {FLORES_DO_BANNER.map((cor, k) => (
+                <span key={k} className={`banner-flor banner-flor-${k + 1}`} aria-hidden="true"><Florzinha tamanho={28} cor={cor} traco={1.3} /></span>
+              ))}
+            </article>
+          ))}
+        </div>
+        {total > 1 ? (
+          <>
+            <button type="button" className="banner-seta banner-seta-antes" onClick={() => ir(atual - 1)} aria-label="Destaque anterior"><Icone nome="setaEsquerda" tamanho={20} traco={2} /></button>
+            <button type="button" className="banner-seta banner-seta-depois" onClick={() => ir(atual + 1)} aria-label="Próximo destaque"><Icone nome="setaDireita" tamanho={20} traco={2} /></button>
+            <div className="banner-pontos">
+              {slides.map((s, i) => (
+                <button key={s.src} type="button" className={i === atual ? "ativo" : undefined} aria-label={`Destaque ${i + 1} de ${total}`} aria-current={i === atual} onClick={() => ir(i)} />
+              ))}
+            </div>
+          </>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -169,7 +222,7 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
   const [passo, setPasso] = useState(3);
   return (
     <>
-      <Destaque pagina={pagina} />
+      <BannerDoTopo pagina={pagina} />
       <Vantagens loja={loja} />
       <Vitrine pagina={pagina} />
 

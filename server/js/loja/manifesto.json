@@ -1,30 +1,30 @@
 {
-  "_parte-BgVvG1ee.js": {
-    "file": "parte-BgVvG1ee.js",
+  "_parte-CkEb9r7V.js": {
+    "file": "parte-CkEb9r7V.js",
     "name": "Previa"
   },
   "src/componentes/Demo3D.tsx": {
-    "file": "parte-DcGC6_aH.js",
+    "file": "parte-Chxg3k6p.js",
     "name": "Demo3D",
     "src": "src/componentes/Demo3D.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_parte-BgVvG1ee.js",
+      "_parte-CkEb9r7V.js",
       "src/componentes/Previa3D.tsx",
       "src/iniciar.tsx"
     ]
   },
   "src/componentes/Previa3D.tsx": {
-    "file": "parte-BAfGZPCx.js",
+    "file": "parte-DsQgpWUc.js",
     "name": "Previa3D",
     "src": "src/componentes/Previa3D.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_parte-BgVvG1ee.js"
+      "_parte-CkEb9r7V.js"
     ]
   },
   "src/entrada-cliente.tsx": {
-    "file": "loja-BKCTVFqq.js",
+    "file": "loja-O0NbKdgw.js",
     "name": "entrada-cliente",
     "src": "src/entrada-cliente.tsx",
     "isEntry": true,
@@ -33,12 +33,12 @@
     ]
   },
   "src/iniciar.tsx": {
-    "file": "parte-DGDpV-Fr.js",
+    "file": "parte-DQQLyfli.js",
     "name": "iniciar",
     "src": "src/iniciar.tsx",
     "isDynamicEntry": true,
     "imports": [
-      "_parte-BgVvG1ee.js",
+      "_parte-CkEb9r7V.js",
       "src/entrada-cliente.tsx"
     ],
     "dynamicImports": [
@@ -47,7 +47,7 @@
     ]
   },
   "style.css": {
-    "file": "style-BDfYf0B-.css",
+    "file": "style-B2eI-Gif.css",
     "src": "style.css"
   }
 }
