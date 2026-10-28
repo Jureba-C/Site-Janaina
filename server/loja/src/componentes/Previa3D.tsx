@@ -6,6 +6,8 @@ import { urlDaFotoEnviada } from "../estado/fotos";
 import { regras } from "../compartilhado";
 import type { ConfigProduto, Escolhas, EstampaPublica } from "../tipos";
 import { Arte, coresDaPeca, useMedirTexto, type Lado } from "./Previa";
+import { ParedeDoEstudio } from "./Estudio";
+import { montarBandeja3D } from "./estudio3d";
 
 interface Forma {
   raio: number;
@@ -204,8 +206,10 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
     }
     const sombra = new THREE.Mesh(new THREE.PlaneGeometry(raio * 4, raio * 4), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sombraCanvas), transparent: true, depthWrite: false }));
     sombra.rotation.x = -Math.PI / 2;
-    sombra.position.y = -altura / 2 - (forma.pires ? altura * 0.085 : 0.005);
+    const baseDaPeca = -altura / 2 - (forma.pires ? altura * 0.085 : 0);
+    sombra.position.y = baseDaPeca + 0.006;
     mundo.add(sombra);
+    const limparBandeja = montarBandeja3D(mundo, { y: baseDaPeca, raio: raio * 2.7, espessura: altura * 0.06, celular: window.matchMedia("(max-width: 760px)").matches, sombras: false });
 
     cena.current = { textura, canvas, materialCorpo, materialAlca, materialInterior, arte };
 
@@ -252,6 +256,7 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
         else if (material) material.dispose();
       });
       textura.dispose();
+      limparBandeja();
       renderizador.dispose();
       renderizador.domElement.remove();
       cena.current = null;
@@ -302,6 +307,7 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
 
   return (
     <div className="previa-3d">
+      <ParedeDoEstudio />
       <div ref={palco} className="previa-3d-palco" />
       <div className="arte-escondida-caixa" aria-hidden="true">
         <ArteEscondida config={config} escolhas={escolhas} lado="frente" forma={forma} tinta={tinta} medir={medir} aoMontar={svg => { svgFrente.current = svg; }} />
@@ -309,7 +315,7 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
       </div>
       {carregando ? <p className="previa-3d-aviso">Preparando o 3D…</p> : null}
       {erro ? <p className="previa-3d-aviso" role="alert">{erro}</p> : <p className="previa-3d-dica">Arraste para girar · use as setas do teclado</p>}
-      <button type="button" className="botao botao-escuro previa-3d-fechar" onClick={fechar}>Voltar para a prévia 2D</button>
+      <button type="button" className="botao botao-escuro previa-3d-fechar" onClick={fechar}><span className="so-largo">Voltar para a prévia 2D</span><span className="so-curto">Voltar ao 2D</span></button>
     </div>
   );
 }

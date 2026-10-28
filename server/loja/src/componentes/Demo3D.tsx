@@ -2,30 +2,30 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { carregarImagem, desenharEstampa } from "./Previa3D";
+import { carregarImagem } from "./Previa3D";
+import { ParedeDoEstudio } from "./Estudio";
+import { montarBandeja3D } from "./estudio3d";
 import { Icone } from "./Icone";
 import type { EstampaPublica } from "../tipos";
 
 const R = 0.41;
 const H = 0.95;
 const PAREDE = 0.03;
-const ROSA = "#F2A7BE";
 const NOME_INICIAL = "Madrinha Lara";
-const PELE_BAIXO = H * 0.07;
-const PELE_ALTURA = H * 0.84;
+const PELE_BAIXO = 0.075;
+const PELE_ALTURA = H - 0.097;
+const BANDEJA = 0.07;
 
 const TEMPO = {
-  esmalte: [1.8, 3.9],
-  estampa: [4.1, 7.7],
-  nome: [7.9, 9.9],
-  flor: [9.7, 10.5],
-  cafe: [10.7, 12.6],
-  fim: 13.2,
+  estampa: [1.8, 5.3],
+  nome: [5.5, 7.5],
+  flor: [7.3, 8.1],
+  cafe: [8.3, 10.2],
+  fim: 10.8,
 } as const;
 
 const ETAPAS = [
-  { ate: TEMPO.esmalte[0], texto: "Peça escolhida · caneca 325 ml" },
-  { ate: TEMPO.estampa[0], texto: "Esmalte rosa na alça e por dentro" },
+  { ate: TEMPO.estampa[0], texto: "Caneca branca · 325 ml" },
   { ate: TEMPO.nome[0], texto: "Estampa aplicada com calor" },
   { ate: TEMPO.cafe[0], texto: "Nome escrito à mão" },
   { ate: TEMPO.fim, texto: "Pronta para o primeiro café" },
@@ -34,14 +34,12 @@ const ETAPAS = [
 type Pose = { t: number; az: number; el: number; dist: number; giro: number; alvo?: number };
 
 const POSES: Pose[] = [
-  { t: 0, az: 0.95, el: 0.34, dist: 5.6, giro: -1.1 },
-  { t: 1.8, az: 0.55, el: 0.42, dist: 4.4, giro: -0.55 },
-  { t: 3.9, az: 0.32, el: 0.5, dist: 4.15, giro: -0.15 },
-  { t: TEMPO.estampa[0], az: 0.18, el: 0.2, dist: 4.1, giro: 0 },
-  { t: TEMPO.estampa[1], az: 0.06, el: 0.12, dist: 3.95, giro: Math.PI * 2 },
-  { t: 8.6, az: 0, el: 0.08, dist: 3.05, giro: Math.PI * 2 },
-  { t: 10.5, az: 0, el: 0.08, dist: 3.1, giro: Math.PI * 2 },
-  { t: 11.6, az: 0.2, el: 0.5, dist: 3.85, giro: Math.PI * 2 + 0.05 },
+  { t: 0, az: 0.95, el: 0.36, dist: 5.6, giro: -1.1 },
+  { t: TEMPO.estampa[0], az: 0.22, el: 0.24, dist: 4.2, giro: 0 },
+  { t: TEMPO.estampa[1], az: 0.06, el: 0.14, dist: 3.95, giro: Math.PI * 2 },
+  { t: 6.1, az: 0, el: 0.08, dist: 3.05, giro: Math.PI * 2 },
+  { t: 8.1, az: 0, el: 0.08, dist: 3.1, giro: Math.PI * 2 },
+  { t: 9.2, az: 0.2, el: 0.5, dist: 3.85, giro: Math.PI * 2 + 0.05 },
   { t: TEMPO.fim, az: 0.34, el: 0.4, dist: 5.0, giro: Math.PI * 2 + 0.2, alvo: H * 0.36 },
 ];
 
@@ -73,18 +71,22 @@ function poseEm(t: number): Pose {
   return POSES[POSES.length - 1];
 }
 
-function esmalte(material: THREE.MeshPhysicalMaterial, yMin: number, yMax: number) {
-  const uniforms = { uCor: { value: new THREE.Color(ROSA) }, uNivel: { value: 0 } };
-  material.onBeforeCompile = shader => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying float vP;\nvarying float vA;")
-      .replace("#include <begin_vertex>", `#include <begin_vertex>\nvP = 1.0 - (position.y - ${yMin.toFixed(4)}) / ${(yMax - yMin).toFixed(4)};\nvA = atan(position.z, position.x);`);
-    shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nuniform vec3 uCor;\nuniform float uNivel;\nvarying float vP;\nvarying float vA;")
-      .replace("#include <color_fragment>", "#include <color_fragment>\nfloat bordaE = uNivel * 1.14 - 0.07 + 0.035 * sin(vA * 7.0) + 0.018 * sin(vA * 17.0 + 1.7);\nfloat tinta = smoothstep(bordaE + 0.012, bordaE - 0.012, vP);\ndiffuseColor.rgb = mix(diffuseColor.rgb, uCor, tinta);");
-  };
-  return uniforms;
+function desenharEstampaCheia(ctx: CanvasRenderingContext2D, imagem: HTMLImageElement, W: number, A: number) {
+  const proporcao = W / A;
+  let sw = imagem.naturalWidth;
+  let sh = sw / proporcao;
+  let sx = 0;
+  let sy = (imagem.naturalHeight - sh) / 2;
+  if (sh > imagem.naturalHeight) {
+    sh = imagem.naturalHeight;
+    sw = sh * proporcao;
+    sy = 0;
+    sx = (imagem.naturalWidth - sw) / 2;
+  }
+  ctx.save();
+  ctx.filter = "brightness(1.04) saturate(1.08)";
+  ctx.drawImage(imagem, sx, sy, sw, sh, 0, 0, W, A);
+  ctx.restore();
 }
 
 function texturaMacia(cor: string): THREE.CanvasTexture {
@@ -139,7 +141,9 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
   const [legenda, setLegenda] = useState(ETAPAS[0].texto);
   const [final, setFinal] = useState(false);
   const [nome, setNome] = useState(NOME_INICIAL);
-  const controle = useRef<{ reiniciar: () => void; escrever: (nome: string) => void } | null>(null);
+  const [estampas, setEstampas] = useState<EstampaPublica[]>([]);
+  const [estampaAtiva, setEstampaAtiva] = useState("");
+  const controle = useRef<{ reiniciar: () => void; escrever: (nome: string) => void; trocarEstampa: (e: EstampaPublica) => void } | null>(null);
 
   useEffect(() => {
     const alvo = palco.current;
@@ -160,7 +164,7 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
     renderizador.shadowMap.type = THREE.PCFSoftShadowMap;
     alvo.appendChild(renderizador.domElement);
     renderizador.domElement.setAttribute("role", "img");
-    renderizador.domElement.setAttribute("aria-label", "Animação: uma caneca branca ganha esmalte rosa, estampa de florzinhas, o nome Madrinha Lara escrito à mão e uma xícara de café");
+    renderizador.domElement.setAttribute("aria-label", "Animação: uma caneca branca ganha estampa de florzinhas aplicada com calor, o nome Madrinha Lara escrito à mão e café quente");
 
     const mundo = new THREE.Scene();
     const pmrem = new THREE.PMREMGenerator(renderizador);
@@ -188,14 +192,12 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
     recorte.position.set(-3, 2.4, -2.5);
     mundo.add(recorte);
 
-    const chao = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.ShadowMaterial({ opacity: 0.16 }));
+    const chao = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.ShadowMaterial({ opacity: 0.14 }));
     chao.rotation.x = -Math.PI / 2;
+    chao.position.y = -BANDEJA;
     chao.receiveShadow = true;
     mundo.add(chao);
-    const contato = new THREE.Mesh(new THREE.PlaneGeometry(R * 3.2, R * 3.2), new THREE.MeshBasicMaterial({ map: texturaMacia("rgba(90,50,25,0.42)"), transparent: true, depthWrite: false }));
-    contato.rotation.x = -Math.PI / 2;
-    contato.position.y = 0.002;
-    mundo.add(contato);
+    const limparBandeja = montarBandeja3D(mundo, { y: 0, raio: 1.08, espessura: BANDEJA, celular });
 
     const caneca = new THREE.Group();
     mundo.add(caneca);
@@ -211,7 +213,6 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
     caneca.add(fora);
 
     const materialDentro = ceramica();
-    const nivelDentro = esmalte(materialDentro, 0.04, H + 0.006);
     const perfilDentro = [
       [R - PAREDE * 0.5, H + 0.006], [R - PAREDE + 0.004, H - 0.004], [R - PAREDE, H - 0.03], [R - PAREDE, 0.08], [R - PAREDE - 0.025, 0.05], [0.0001, 0.045],
     ].map(([x, y]) => new THREE.Vector2(x, y));
@@ -227,7 +228,6 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
       new THREE.Vector3(R - 0.012, H * 0.22, 0),
     ]);
     const materialAlca = ceramica();
-    const nivelAlca = esmalte(materialAlca, H * 0.2, H * 0.84);
     const alca = new THREE.Mesh(new THREE.TubeGeometry(curvaAlca, celular ? 64 : 96, 0.034, celular ? 14 : 20, false), materialAlca);
     alca.castShadow = true;
     alca.scale.z = 0.82;
@@ -248,11 +248,11 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
     pele.position.y = PELE_BAIXO + PELE_ALTURA / 2;
     caneca.add(pele);
 
-    const cafe = new THREE.Mesh(new THREE.CircleGeometry(R - PAREDE - 0.004, segmentos), new THREE.MeshPhysicalMaterial({ color: 0x3a2214, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 }));
+    const cafe = new THREE.Mesh(new THREE.CircleGeometry(R - PAREDE - 0.004, segmentos), new THREE.MeshStandardMaterial({ color: 0x4a2814, roughness: 0.16, metalness: 0, emissive: 0x1c0b03, emissiveIntensity: 0.6, envMapIntensity: 0.55 }));
     cafe.rotation.x = -Math.PI / 2;
     cafe.visible = false;
     caneca.add(cafe);
-    const creme = new THREE.Mesh(new THREE.RingGeometry(R - PAREDE - 0.05, R - PAREDE - 0.004, segmentos), new THREE.MeshPhysicalMaterial({ color: 0x8a5a36, roughness: 0.35, transparent: true, opacity: 0.85 }));
+    const creme = new THREE.Mesh(new THREE.RingGeometry(R - PAREDE - 0.05, R - PAREDE - 0.004, segmentos), new THREE.MeshStandardMaterial({ color: 0xb98458, roughness: 0.45, transparent: true, opacity: 0.92, envMapIntensity: 0.4 }));
     creme.rotation.x = -Math.PI / 2;
     creme.visible = false;
     caneca.add(creme);
@@ -279,6 +279,8 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
 
     let estampa: EstampaPublica | null = null;
     let imagemEstampa: HTMLImageElement | null = null;
+    let imagemAnterior: HTMLImageElement | null = null;
+    let trocaInicio = -1;
     let nomeAtual = NOME_INICIAL;
     let escritaInicio = -1;
     let t = 0;
@@ -304,6 +306,7 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
       const W = telaPele.width;
       const A = telaPele.height;
       ctx.clearRect(0, 0, W, A);
+      if (imagemAnterior && revela < 1) desenharEstampaCheia(ctx, imagemAnterior, W, A);
       if (imagemEstampa && estampa && revela > 0) {
         ctx.save();
         if (revela < 1) {
@@ -323,7 +326,7 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
           }
           ctx.closePath();
           ctx.clip();
-          desenharEstampa(ctx, imagemEstampa, W, A, estampa, "caneca");
+          desenharEstampaCheia(ctx, imagemEstampa, W, A);
           ctx.restore();
           ctx.save();
           ctx.globalCompositeOperation = "source-atop";
@@ -333,7 +336,7 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
           }
           ctx.restore();
         } else {
-          desenharEstampa(ctx, imagemEstampa, W, A, estampa, "caneca");
+          desenharEstampaCheia(ctx, imagemEstampa, W, A);
           ctx.restore();
         }
       }
@@ -385,7 +388,9 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
 
     const posicionarCamera = (pose: Pose) => {
       const raio = pose.dist;
-      alvoCamera.y = pose.alvo ?? H * 0.5;
+      const alvoBase = pose.alvo ?? H * 0.5;
+      const pesoFinal = Math.min(1, Math.max(0, (H * 0.5 - alvoBase) / (H * 0.14)));
+      alvoCamera.y = alvoBase - (celular ? 0.32 : 0) * pesoFinal;
       camera.position.set(alvoCamera.x + Math.sin(pose.az) * Math.cos(pose.el) * raio, alvoCamera.y + Math.sin(pose.el) * raio, alvoCamera.z + Math.cos(pose.az) * Math.cos(pose.el) * raio);
       camera.lookAt(alvoCamera);
       caneca.rotation.y = pose.giro;
@@ -393,16 +398,19 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
 
     const atualizarCena = (agora: number) => {
       const tempo = agora / 1000;
-      if (!terminou) {
-        posicionarCamera(poseEm(t));
-        nivelDentro.uNivel.value = suave(entre(t, TEMPO.esmalte));
-        nivelAlca.uNivel.value = suave(entre(t, [TEMPO.esmalte[0] + 0.5, TEMPO.esmalte[1] + 0.2]));
+      if (!terminou) posicionarCamera(poseEm(t));
+      let revela = imagemEstampa ? suave(entre(t, TEMPO.estampa)) : 0;
+      if (trocaInicio >= 0) {
+        revela = suave(Math.min(1, (tempo - trocaInicio) / 1.6));
+        if (revela >= 1) {
+          trocaInicio = -1;
+          imagemAnterior = null;
+        }
       }
-      const revela = imagemEstampa ? suave(entre(t, TEMPO.estampa)) : 0;
       let escrita = suave(entre(t, TEMPO.nome));
       if (escritaInicio >= 0) escrita = Math.min(1, (tempo - escritaInicio) / 1.1);
       const flor = escritaInicio >= 0 ? 1 : entre(t, TEMPO.flor);
-      const precisaPele = !terminou || escritaInicio >= 0;
+      const precisaPele = !terminou || escritaInicio >= 0 || trocaInicio >= 0 || revela < 1 && imagemAnterior !== null;
       if (precisaPele) {
         const ponta = desenharPele(revela, escrita, flor, tempo);
         const escrevendo = escrita > 0 && escrita < 1;
@@ -413,6 +421,7 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
       const cheio = suave(entre(t, TEMPO.cafe));
       cafe.visible = creme.visible = cheio > 0;
       cafe.position.y = creme.position.y = 0.06 + cheio * (H * 0.84 - 0.06);
+      creme.position.y += 0.0015;
       const vapor = entre(t, [TEMPO.cafe[0] + 0.8, TEMPO.cafe[1] + 0.4]);
       vapores.forEach((s, i) => {
         const vida = (tempo * 0.28 + s.userData.fase) % 1;
@@ -465,11 +474,14 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
       quadro = 0;
     };
 
+    let cancelado = false;
     controle.current = {
       reiniciar: () => {
         t = 0;
         terminou = false;
         escritaInicio = -1;
+        trocaInicio = -1;
+        imagemAnterior = null;
         controles.enabled = false;
         etapaAtual = -1;
         setFinal(false);
@@ -479,9 +491,16 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
         nomeAtual = novo;
         escritaInicio = performance.now() / 1000;
       },
+      trocarEstampa: async (nova: EstampaPublica) => {
+        const imagem = await carregarImagem(nova.textura).catch(() => null);
+        if (!imagem || cancelado) return;
+        imagemAnterior = imagemEstampa;
+        imagemEstampa = imagem;
+        estampa = nova;
+        trocaInicio = performance.now() / 1000;
+      },
     };
 
-    let cancelado = false;
     const preparar = async () => {
       try {
         await document.fonts?.load(`120px Allura`);
@@ -489,7 +508,12 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
       try {
         const res = await fetch("/api/estampas");
         const dados = res.ok ? await res.json() : null;
-        estampa = dados?.estampas?.[0] ?? null;
+        const lista: EstampaPublica[] = dados?.estampas ?? [];
+        estampa = lista[0] ?? null;
+        if (!cancelado) {
+          setEstampas(lista.slice(0, 4));
+          setEstampaAtiva(estampa?.id ?? "");
+        }
         if (estampa) imagemEstampa = await carregarImagem(estampa.textura).catch(() => null);
         if (!imagemEstampa) estampa = null;
       } catch {
@@ -526,6 +550,7 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
         else if (material) material.dispose();
       });
       texturaPele.dispose();
+      limparBandeja();
       ambiente.dispose();
       pmrem.dispose();
       renderizador.dispose();
@@ -536,18 +561,28 @@ export default function Demo3D({ aoMudarPasso, aoPronto, aoFalhar, linkProduto }
 
   return (
     <div className={`demo3d${final ? " final" : ""}`}>
+      <ParedeDoEstudio />
       <div ref={palco} className="demo3d-palco" />
       <p className="demo3d-legenda" aria-live="polite"><span aria-hidden="true" />{legenda}</p>
       {final ? (
         <form className="demo3d-nome" onSubmit={e => e.preventDefault()}>
+          {estampas.length > 1 ? (
+            <div className="demo3d-estampas" role="group" aria-label="Escolha a estampa">
+              {estampas.map(e => (
+                <button key={e.id} type="button" className={e.id === estampaAtiva ? "ativa" : undefined} aria-pressed={e.id === estampaAtiva} aria-label={e.nome} title={e.nome} onClick={() => { if (e.id === estampaAtiva) return; setEstampaAtiva(e.id); controle.current?.trocarEstampa(e); }}>
+                  <img src={e.miniatura} alt="" width={44} height={30} />
+                </button>
+              ))}
+            </div>
+          ) : null}
           <label htmlFor="demo3d-campo">Escreva um nome e veja na caneca</label>
           <div className="demo3d-linha">
             <input id="demo3d-campo" type="text" maxLength={20} value={nome} autoComplete="off" onChange={e => { setNome(e.target.value); controle.current?.escrever(e.target.value.trim()); }} />
             <a className="botao botao-cheio" href={linkProduto}>Criar a minha</a>
           </div>
-          <button type="button" className="demo3d-de-novo" onClick={() => { setNome(NOME_INICIAL); controle.current?.escrever(NOME_INICIAL); controle.current?.reiniciar(); }}><Icone nome="girar" tamanho={16} />Ver de novo</button>
         </form>
       ) : null}
+      {final ? <button type="button" className="demo3d-de-novo" onClick={() => { setNome(NOME_INICIAL); controle.current?.escrever(NOME_INICIAL); controle.current?.reiniciar(); }}><Icone nome="girar" tamanho={16} />Ver de novo</button> : null}
     </div>
   );
 }

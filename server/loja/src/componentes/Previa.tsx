@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type PointerEvent as EventoPonteiro, type ReactNode } from "react";
 import { regras } from "../compartilhado";
+import { BandejaNoSvg } from "./Estudio";
 import type { ConfigProduto, Escolhas, EstampaPublica, FotoEnviada, Molde } from "../tipos";
 
 export type Lado = "frente" | "verso";
@@ -347,6 +348,7 @@ export interface PropsPeca {
   exemplos?: boolean;
   fatias?: number;
   estampa?: EstampaPublica | null;
+  noEstudio?: boolean;
 }
 
 interface Superficie {
@@ -377,7 +379,16 @@ function alcaCaneca(lado: Lado, x: number, y: number, h: number, cor: string, co
   const d = lado === "frente"
     ? `M${x} ${y + h * 0.18}h${largura * 0.35}a${largura * 0.65} ${h * 0.25} 0 0 1 0 ${h * 0.5}h${-largura * 0.35}`
     : `M${x} ${y + h * 0.18}h${-largura * 0.35}a${largura * 0.65} ${h * 0.25} 0 0 0 0 ${h * 0.5}h${largura * 0.35}`;
-  return <path d={d} fill="none" stroke={cor} strokeWidth={h * 0.075} strokeLinejoin="round" />;
+  const grossura = h * 0.075;
+  const lado1 = lado === "frente" ? 1 : -1;
+  return (
+    <g fill="none" strokeLinejoin="round" strokeLinecap="round">
+      <path d={d} stroke="rgba(60, 35, 20, 0.12)" strokeWidth={grossura * 1.05} transform={`translate(${2 * lado1} 3)`} />
+      <path d={d} stroke={escurecer(cor, 0.1)} strokeWidth={grossura} />
+      <path d={d} stroke={cor} strokeWidth={grossura * 0.72} transform={`translate(${-1.2 * lado1} -1.2)`} />
+      <path d={d} stroke="rgba(255, 255, 255, 0.7)" strokeWidth={grossura * 0.2} transform={`translate(${-grossura * 0.2 * lado1} ${-grossura * 0.18})`} />
+    </g>
+  );
 }
 
 function caminhoCilindro(x: number, y: number, w: number, h: number, raioBase: number): string {
@@ -551,10 +562,14 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
   };
 }
 
+function baseDaPeca(molde: Molde, formato: string): number {
+  return molde === "xicara" ? 290 : molde === "caneca" ? 340 : molde === "copo" ? (formato === "cerveja" ? 373 : 343) : 362;
+}
+
 function Sombra({ molde, formato, centro, raio }: { molde: Molde; formato: string; centro: number | null; raio: number | null }) {
   if (molde === "foto" || molde === "nenhum") return null;
   const rx = raio ? raio * 1.18 : molde === "garrafa" ? 90 : 140;
-  const cy = molde === "xicara" ? 290 : molde === "caneca" ? 340 : molde === "copo" ? (formato === "cerveja" ? 373 : 343) : 362;
+  const cy = baseDaPeca(molde, formato);
   return <ellipse cx={centro ?? 180} cy={cy} rx={rx} ry={raio ? 9 : 10} fill="rgba(80, 40, 20, 0.16)" />;
 }
 
@@ -584,7 +599,7 @@ function EstampaNaPeca({ superficie, estampa, molde, lado, idBase, fatias }: { s
   );
 }
 
-export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fotoSelecionada, aoTocarFoto, urlDaFotoDoMolde = null, comArte = true, exemplos = true, fatias = 28, estampa = null }: PropsPeca) {
+export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fotoSelecionada, aoTocarFoto, urlDaFotoDoMolde = null, comArte = true, exemplos = true, fatias = 28, estampa = null, noEstudio = false }: PropsPeca) {
   const idBase = useId().replace(/[^a-zA-Z0-9]/g, "");
   const cores = coresDaPeca(config, escolhas, aquecida);
   const molde = config.molde;
@@ -595,8 +610,11 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
   const arte = mostrarArte ? (
     <Arte config={config} escolhas={escolhas} lado={lado} largura={area.largura} altura={area.altura} tinta={tinta} urlDaFoto={urlDaFoto} medir={medir} idBase={`${idBase}-a`} fotoSelecionada={fotoSelecionada} aoTocarFoto={aoTocarFoto} exemplos={exemplos} comContorno={Boolean(estampa && g.superficie)} />
   ) : null;
+  const emPe = Boolean(area.raio) && ["caneca", "xicara", "garrafa", "copo"].includes(molde);
+  const deslocamento = noEstudio && emPe ? 180 - area.cx : 0;
   return (
-    <g>
+    <g transform={deslocamento ? `translate(${deslocamento} 0)` : undefined}>
+      {noEstudio && emPe ? <BandejaNoSvg cx={area.cx} cy={baseDaPeca(molde, config.formato) + 4} rx={(area.raio ?? 110) * 1.75} /> : null}
       <Sombra molde={molde} formato={config.formato} centro={area.raio ? area.cx : null} raio={area.raio} />
       {g.sob}
       {g.corpo}

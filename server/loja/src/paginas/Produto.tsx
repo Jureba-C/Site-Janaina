@@ -7,6 +7,7 @@ import { voarParaSacola } from "../estado/voo";
 import { Florzinha } from "../componentes/Marca";
 import { FONTES, PecaSvg, coresDaPeca, descricaoDaPrevia, useMedirTexto, type Lado } from "../componentes/Previa";
 import { CalculoDeFrete } from "../componentes/CalculoDeFrete";
+import { ParedeDoEstudio } from "../componentes/Estudio";
 import { carrinho } from "../estado/carrinho";
 import { enviarFoto, urlDaFotoEnviada, lembrarFotoLocal } from "../estado/fotos";
 import type { Escolhas, EstampaPublica, FotoEnviada, IdCampo, Loja, PaginaProduto, Personalizacao, Produto as TipoProduto } from "../tipos";
@@ -150,7 +151,7 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
           <Foto src={produto.fotos[indiceFoto]} alt={`${produto.nome}, foto ${indiceFoto + 1}`} larguras={[600, 900]} sizes="(max-width: 900px) 100vw, 620px" largura={620} altura={620} className="galeria-foto" prioridade />
         ) : (
           <>
-            <div className="faixa-caramelo galeria-faixa" aria-hidden="true" />
+            <ParedeDoEstudio className="estudio-galeria" />
             {temVerso ? (
               <div role="tablist" aria-label="Lado da peça" className="galeria-lados">
                 {(["frente", "verso"] as Lado[]).map(l => (
@@ -160,7 +161,7 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
             ) : null}
             <span className="cursiva galeria-rotulo" aria-hidden="true">prévia ao vivo</span>
             <svg key={`${lado}-${aquecida}`} className={`galeria-previa${efeito.current}`} viewBox="0 0 360 380" role="img" aria-label={descricao}>
-              <PecaSvg config={config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} estampa={estampaDe(produto, escolhas)} medir={medir} fotoSelecionada={aoTocarFoto ? fotoSelecionada : undefined} aoTocarFoto={aoTocarFoto} urlDaFotoDoMolde={config.moldeFoto?.foto ? urlDaFotoDoProduto(config.moldeFoto.foto, 900) : null} />
+              <PecaSvg config={config} escolhas={escolhas} lado={lado} aquecida={aquecida} urlDaFoto={urlDaFotoEnviada} estampa={estampaDe(produto, escolhas)} medir={medir} fotoSelecionada={aoTocarFoto ? fotoSelecionada : undefined} aoTocarFoto={aoTocarFoto} urlDaFotoDoMolde={config.moldeFoto?.foto ? urlDaFotoDoProduto(config.moldeFoto.foto, 900) : null} noEstudio />
             </svg>
             <p className="visualmente-oculto" aria-live="polite">{descricao}</p>
             {pode3d || config.magica ? (
@@ -177,7 +178,7 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
                 ) : null}
               </div>
             ) : null}
-            {config.personalizacao.ativa ? <p className="galeria-nota">Prévia ilustrativa. A arte final é ajustada à mão pela Janaina.</p> : null}
+            {config.personalizacao.ativa ? <p className="galeria-nota"><span className="so-largo">Prévia ilustrativa. A arte final é ajustada à mão pela Janaina.</span><span className="so-curto">Prévia ilustrativa · arte final feita à mão</span></p> : null}
           </>
         )}
       </div>
