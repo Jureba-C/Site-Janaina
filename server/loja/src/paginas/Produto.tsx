@@ -88,7 +88,11 @@ function MiniPrevia({ produto, escolhas, lado, aquecida }: { produto: TipoProdut
     const estreita = window.matchMedia("(max-width: 1099px)");
     let palcoVisivel = true;
     let mexendo = false;
-    const atualizar = () => setMostrar(estreita.matches && mexendo && !palcoVisivel);
+    const atualizar = () => {
+      const topo = document.querySelector(".cabecalho")?.getBoundingClientRect().bottom ?? 0;
+      document.documentElement.style.setProperty("--topo-livre", `${Math.max(0, Math.round(topo))}px`);
+      setMostrar(estreita.matches && mexendo && !palcoVisivel);
+    };
     const observador = new IntersectionObserver(([e]) => { palcoVisivel = e.isIntersecting; atualizar(); }, { threshold: 0.2 });
     observador.observe(palco);
     const mexeu = () => { mexendo = true; atualizar(); };

@@ -130,10 +130,10 @@ function BannerDoTopo({ pagina }: { pagina: PaginaInicio }) {
 
 function Vantagens({ loja }: { loja: Loja }) {
   const itens = [
-    { t: "Valor especial", s: "acima de 10 unidades", icone: "caixas" as const, href: linkWhatsApp(loja.whatsapp, "Olá! Quero saber o valor para mais de 10 unidades.") },
-    { t: "Enviamos para todo o Brasil", s: loja.retirada ? "ou retire na Asa Norte" : "pelo Melhor Envio", icone: "caminhao" as const },
-    { t: "Parcelamos em até 3x", s: `ou ${loja.regrasPagamento.pixDiscountPercent}% de desconto no Pix`, icone: "cartao" as const },
-    { t: "Dúvida com o pedido?", s: "chame no WhatsApp", icone: "whatsapp" as const, href: linkWhatsApp(loja.whatsapp, "Olá! Tenho uma dúvida sobre o meu pedido.") },
+    { t: "Valor especial", s: "acima de 10 unidades", tc: "Valor especial", sc: "acima de 10 unidades", icone: "caixas" as const, href: linkWhatsApp(loja.whatsapp, "Olá! Quero saber o valor para mais de 10 unidades.") },
+    { t: "Enviamos para todo o Brasil", s: loja.retirada ? "ou retire na Asa Norte" : "pelo Melhor Envio", tc: "Todo o Brasil", sc: loja.retirada ? "ou retire na Asa Norte" : "pelo Melhor Envio", icone: "caminhao" as const },
+    { t: "Parcelamos em até 3x", s: `ou ${loja.regrasPagamento.pixDiscountPercent}% de desconto no Pix`, tc: "Até 3x sem juros", sc: `ou ${loja.regrasPagamento.pixDiscountPercent}% a menos no Pix`, icone: "cartao" as const },
+    { t: "Dúvida com o pedido?", s: "chame no WhatsApp", tc: "Dúvidas?", sc: "chame no WhatsApp", icone: "whatsapp" as const, href: linkWhatsApp(loja.whatsapp, "Olá! Tenho uma dúvida sobre o meu pedido.") },
   ];
   return (
     <section className="vantagens envolve" aria-label="Vantagens">
@@ -142,7 +142,10 @@ function Vantagens({ loja }: { loja: Loja }) {
           const miolo = (
             <>
               <span className="vantagem-icone"><Icone nome={v.icone} tamanho={34} traco={1.4} /></span>
-              <span className="vantagem-texto"><strong>{v.t}</strong><span>{v.s}</span></span>
+              <span className="vantagem-texto">
+                <strong><span className="vantagem-longa">{v.t}</span><span className="vantagem-curta">{v.tc}</span></strong>
+                <small><span className="vantagem-longa">{v.s}</span><span className="vantagem-curta">{v.sc}</span></small>
+              </span>
             </>
           );
           return (
