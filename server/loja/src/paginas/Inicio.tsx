@@ -2,19 +2,19 @@ import { useState } from "react";
 import { linkWhatsApp } from "../compartilhado";
 import { CartaoProduto } from "../componentes/CartaoProduto";
 import { Foto } from "../componentes/Foto";
+import { BordaRasgada, EnfeiteDoCartao, Folhas, RamoDeIpe, recorteCirculo, recorteFlor, recorteRetangulo, type EnfeiteDoCartao as TipoDeEnfeite } from "../componentes/Enfeites";
 import { Icone } from "../componentes/Icone";
 import { PecaSvg } from "../componentes/Previa";
 import type { ConfigProduto, Loja, PaginaInicio } from "../tipos";
 
-const FITAS = ["fita-crepe", "fita-rosa", "fita-caramelo"];
 const GIROS = [-2, 1.5, -1, 2, -1.5];
 
-const TIPOS = [
-  { nome: "Canecas", slug: "canecas", img: "/img/provisorias/canecas-alca-colorida.jpg", alt: "Canecas com alça e interior coloridos" },
-  { nome: "Xícaras e kits", slug: "xicaras-e-kits", img: "/img/provisorias/xicaras-casamento.jpg", alt: "Xícaras de casamento empilhadas" },
-  { nome: "Garrafas", slug: "garrafas-e-termicos", img: "/img/provisorias/garrafa-professores.jpg", alt: "Garrafa personalizada com fotos de alunos" },
-  { nome: "Ipês Brasília", slug: "ipes-brasilia", img: "/img/provisorias/ipe-amarelo.jpg", alt: "Ipê amarelo feito à mão" },
-  { nome: "Presentes", slug: "acessorios-e-embalagens", img: "/img/provisorias/caneca-caixa-presente.jpg", alt: "Caneca com caixa de presente e laço" },
+const TIPOS: { nome: string; slug: string; img: string; alt: string; enfeite: TipoDeEnfeite; flor?: boolean }[] = [
+  { nome: "Canecas", slug: "canecas", img: "/img/provisorias/canecas-alca-colorida.jpg", alt: "Canecas com alça e interior coloridos", enfeite: "fita-verde" },
+  { nome: "Xícaras e kits", slug: "xicaras-e-kits", img: "/img/provisorias/xicaras-casamento.jpg", alt: "Xícaras de casamento empilhadas", enfeite: "laco", flor: true },
+  { nome: "Garrafas", slug: "garrafas-e-termicos", img: "/img/provisorias/garrafa-professores.jpg", alt: "Garrafa personalizada com fotos de alunos", enfeite: "fita-rosa" },
+  { nome: "Ipês Brasília", slug: "ipes-brasilia", img: "/img/provisorias/ipe-amarelo.jpg", alt: "Ipê amarelo feito à mão", enfeite: "ramo" },
+  { nome: "Presentes", slug: "acessorios-e-embalagens", img: "/img/provisorias/caneca-caixa-presente.jpg", alt: "Caneca com caixa de presente e laço", enfeite: "clipe", flor: true },
 ];
 
 const MOMENTOS: { nome: string; slug: string; d: string }[] = [
@@ -50,7 +50,6 @@ function Destaque({ pagina }: { pagina: PaginaInicio }) {
   return (
     <section className="destaque envolve" aria-label="Destaques">
       <div className="destaque-texto">
-        <p className="sobretitulo">Canecas e xícaras personalizadas · Brasília</p>
         <h1>Presentes que marcam,</h1>
         <p className="cursiva destaque-cursiva">feitos à mão em Brasília</p>
         <p className="destaque-apoio">Escolha a peça, escreva o nome ou envie suas fotos e veja como a arte fica na caneca antes de comprar.</p>
@@ -73,6 +72,8 @@ function Destaque({ pagina }: { pagina: PaginaInicio }) {
           ))}
         </ul>
         <div className="prateleira-tabua" aria-hidden="true" />
+        <RamoDeIpe className="prateleira-ramo" />
+        <Folhas className="prateleira-folhas" />
       </div>
     </section>
   );
@@ -80,19 +81,27 @@ function Destaque({ pagina }: { pagina: PaginaInicio }) {
 
 function Vantagens({ loja }: { loja: Loja }) {
   const itens = [
-    { t: "Personalização inclusa", s: "nome, frase ou fotos", icone: "lapis" as const },
+    { t: "Valor especial", s: "acima de 10 unidades", icone: "caixas" as const, href: linkWhatsApp(loja.whatsapp, "Olá! Quero saber o valor para mais de 10 unidades.") },
     { t: "Enviamos para todo o Brasil", s: loja.retirada ? "ou retire na Asa Norte" : "pelo Melhor Envio", icone: "caminhao" as const },
-    { t: "Parcelamos no cartão", s: `ou ${loja.regrasPagamento.pixDiscountPercent}% de desconto no Pix`, icone: "cartao" as const },
+    { t: "Parcelamos em até 3x", s: `ou ${loja.regrasPagamento.pixDiscountPercent}% de desconto no Pix`, icone: "cartao" as const },
+    { t: "Dúvida com o pedido?", s: "chame no WhatsApp", icone: "whatsapp" as const, href: linkWhatsApp(loja.whatsapp, "Olá! Tenho uma dúvida sobre o meu pedido.") },
   ];
   return (
     <section className="vantagens envolve" aria-label="Vantagens">
       <ul>
-        {itens.map(v => (
-          <li key={v.t}>
-            <span className="vantagem-icone"><Icone nome={v.icone} tamanho={24} traco={1.6} /></span>
-            <span><strong>{v.t}</strong><span>{v.s}</span></span>
-          </li>
-        ))}
+        {itens.map(v => {
+          const miolo = (
+            <>
+              <span className="vantagem-icone"><Icone nome={v.icone} tamanho={34} traco={1.4} /></span>
+              <span className="vantagem-texto"><strong>{v.t}</strong><span>{v.s}</span></span>
+            </>
+          );
+          return (
+            <li key={v.t}>
+              {v.href ? <a className="vantagem-link" href={v.href} target="_blank" rel="noopener noreferrer">{miolo}</a> : <span className="vantagem-link">{miolo}</span>}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
@@ -107,7 +116,7 @@ function Vitrine({ pagina }: { pagina: PaginaInicio }) {
     <section className="secao envolve" aria-labelledby="mais-pedidas">
       <div className="secao-topo secao-topo-lado">
         <div>
-          <p className="cursiva sobre-titulo">as queridinhas</p>
+          <p className="cursiva sobre-titulo">as queridinhas<RamoDeIpe className="floreio" /></p>
           <h2 id="mais-pedidas">{atual.nome}</h2>
         </div>
         <div role="tablist" aria-label="Vitrines" className="abas">
@@ -169,18 +178,32 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
 
       <section className="secao envolve" aria-labelledby="tipos">
         <div className="secao-topo">
-          <p className="cursiva sobre-titulo">feito com carinho</p>
+          <p className="cursiva sobre-titulo"><Folhas className="floreio floreio-esq" />feito com carinho<RamoDeIpe className="floreio" /></p>
           <h2 id="tipos">Escolha pelo tipo</h2>
         </div>
-        <div className="grade-polaroids">
+        <ul className="tipos-colagem">
           {TIPOS.map((t, i) => (
-            <a key={t.slug} className="polaroid polaroid-tipo" href={`/categoria/${t.slug}`} style={{ rotate: `${GIROS[i % GIROS.length]}deg` }}>
-              <span className={`fita ${FITAS[i % FITAS.length]}`} aria-hidden="true" />
-              <Foto src={t.img} alt={t.alt} sizes="(max-width: 640px) 45vw, 230px" largura={230} altura={288} className="polaroid-foto" />
-              <span className="polaroid-nome">{t.nome}</span>
-            </a>
+            <li
+              key={t.slug}
+              className={`tipo-cartao${i % 2 ? " tipo-invertido" : ""}`}
+              style={{ ["--giro" as string]: `${GIROS[i % GIROS.length]}deg`, ["--recorte-retangulo" as string]: recorteRetangulo(11 + i * 7), ["--recorte-circulo" as string]: recorteCirculo(31 + i * 5), ["--recorte-flor" as string]: recorteFlor(51 + i * 3, 6 + (i % 3)) }}
+            >
+              <a className="tipo-link" href={`/categoria/${t.slug}`}>
+                <span className="tipo-caixa">
+                  <span className={`tipo-recorte${t.flor ? " tipo-flor" : ""}`}>
+                    <Foto src={t.img} alt={t.alt} sizes="(max-width: 760px) 120px, 230px" largura={230} altura={288} className="tipo-foto" />
+                  </span>
+                  <EnfeiteDoCartao tipo={t.enfeite} />
+                </span>
+                <span className="tipo-texto">
+                  <span className="tipo-nome">{t.nome}</span>
+                  <span className="tipo-ver">ver mais <Icone nome="setaDireita" tamanho={14} traco={2} /></span>
+                </span>
+              </a>
+              <Folhas className="tipo-folhas" />
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
       <section className="secao envolve" aria-labelledby="momentos">
@@ -188,9 +211,11 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
         <ul className="momentos">
           {MOMENTOS.map((m, i) => (
             <li key={m.slug}>
-              <a href={`/categoria/${m.slug}`}>
-                <span className={`momento-circulo${i % 2 ? " momento-creme" : ""}`}>
-                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={m.d} /></svg>
+              <a href={`/categoria/${m.slug}`} style={{ ["--giro" as string]: `${GIROS[i % GIROS.length]}deg`, ["--recorte-circulo" as string]: recorteCirculo(71 + i * 9, 4) }}>
+                <span className="momento-adesivo">
+                  <span className={`momento-circulo${i % 2 ? " momento-creme" : ""}`}>
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={m.d} /></svg>
+                  </span>
                 </span>
                 <span className="momento-nome">{m.nome}</span>
               </a>
@@ -223,6 +248,7 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
       </section>
 
       <section className="faixa-ipes" aria-labelledby="ipes">
+        <BordaRasgada className="faixa-borda" semente={17} />
         <div className="envolve faixa-ipes-grade">
           <div className="faixa-ipes-texto">
             <p className="sobretitulo">Coleção</p>
@@ -245,6 +271,7 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
           { titulo: "Brindes para empresas", texto: "Garrafas, canecas e kits com a sua marca, para equipe, clientes e eventos.", img: "/img/provisorias/garrafa-inox-brasilia.jpg", alt: "Garrafa de inox com line art de Brasília", mensagem: "Olá! Quero um orçamento de brindes para empresa." },
         ].map(g => (
           <a key={g.titulo} className="cartao-grande" href={linkWhatsApp(loja.whatsapp, g.mensagem)} target="_blank" rel="noopener noreferrer">
+            <span className="fita fita-crepe cartao-fita" aria-hidden="true" />
             <Foto src={g.img} alt={g.alt} sizes="(max-width: 640px) 40vw, 260px" largura={260} altura={300} className="cartao-grande-foto" />
             <span className="cartao-grande-texto">
               <span className="cartao-grande-titulo">{g.titulo}</span>

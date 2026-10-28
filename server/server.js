@@ -48,7 +48,7 @@ const etapas = require("./lib/etapas-pedido.js");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:3333";
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || process.env.RENDER_EXTERNAL_URL || "http://localhost:3333";
 
 const CANONICAL_HOST = new URL(CLIENT_ORIGIN).host;
 const HOST_GEMEO = CANONICAL_HOST.startsWith("www.")
