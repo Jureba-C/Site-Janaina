@@ -5,7 +5,7 @@
   "description": "Loja online com vitrine, carrinho, frete (Melhor Envio), pagamento (Mercado Pago), acompanhamento de pedido e painel administrativo.",
   "main": "server.js",
   "engines": {
-    "node": ">=22.5.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning server.js",

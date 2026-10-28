@@ -34,14 +34,13 @@ export function recorteCirculo(semente: number, folga = 2.2): string {
   return `polygon(${pontos.join(", ")})`;
 }
 
-export function recorteFlor(semente: number, petalas = 7): string {
+export function recorteFlor(semente: number, petalas = 6, folga = 0): string {
   const r = sorteio(semente);
   const pontos: string[] = [];
-  const total = 112;
+  const total = 144;
   for (let i = 0; i < total; i++) {
     const a = (i / total) * Math.PI * 2 - Math.PI / 2;
-    const base = 42 + 6.5 * Math.cos(a * petalas + Math.PI);
-    const raio = base + r() * 0.8;
+    const raio = 38 + 11 * Math.pow(Math.abs(Math.cos((a * petalas) / 2)), 0.7) - r() * folga;
     pontos.push(`${pct(50 + Math.cos(a) * raio)} ${pct(50 + Math.sin(a) * raio)}`);
   }
   return `polygon(${pontos.join(", ")})`;

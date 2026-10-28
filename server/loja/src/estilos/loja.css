@@ -309,6 +309,8 @@ main:focus { outline: none; }
 .cartao-ver-todos { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; border-radius: 28px; border: 1.5px dashed var(--borda-forte); color: var(--terracota-forte); font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; font-weight: 700; font-size: 20px; text-align: center; text-decoration: none; min-height: 220px; }
 .cartao-ver-todos svg { width: 44px; height: 44px; padding: 10px; border-radius: 999px; background: var(--rosa-claro); }
 .cartao-ver-todos:hover { border-color: var(--terracota-forte); }
+.grade-produtos .cartao-ver-todos { grid-column: 1 / -1; flex-direction: row; min-height: 64px; padding: 12px 22px; font-size: 19px; }
+.grade-produtos .cartao-ver-todos svg { width: 38px; height: 38px; padding: 8px; }
 .cartao-produto { position: relative; display: flex; flex-direction: column; background: var(--branco); border-radius: 28px; padding: 14px; box-shadow: 0 1px 0 var(--borda); }
 .cartao-produto-foto { display: block; border-radius: 20px; overflow: hidden; background: var(--papel-2); aspect-ratio: 4 / 5; }
 .cartao-produto-foto img, .cartao-produto-foto .ilustracao-peca { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
@@ -894,8 +896,8 @@ a.vantagem-link:hover .vantagem-texto strong { color: var(--terracota-forte); te
 .tipo-recorte { display: block; background: var(--branco); padding: 7px; aspect-ratio: 4 / 5; clip-path: var(--recorte-retangulo); }
 .tipo-recorte picture { display: block; width: 100%; height: 100%; }
 .tipo-foto { display: block; width: 100%; height: 100%; object-fit: cover; }
-.tipo-flor { aspect-ratio: 1 / 1; padding: 3.5%; clip-path: var(--recorte-flor); }
-.tipo-flor .tipo-foto { clip-path: var(--recorte-flor); }
+.tipo-flor { aspect-ratio: 1 / 1; padding: 4.5%; clip-path: var(--recorte-flor); }
+.tipo-flor .tipo-foto { clip-path: var(--recorte-flor-liso); }
 .tipo-texto { display: block; position: relative; margin: -14px auto 0; text-align: center; }
 .tipo-nome { display: inline-block; padding: 4px 16px 6px; background: #E9D7BD; font-family: var(--fonte-cursiva); font-size: 30px; line-height: 1.1; color: var(--tinta); rotate: -1.5deg; box-shadow: 0 5px 8px -5px rgba(110, 60, 30, 0.45); }
 .tipo-invertido .tipo-nome { rotate: 1.5deg; background: #E3D0C0; }
@@ -932,22 +934,22 @@ a.vantagem-link:hover .vantagem-texto strong { color: var(--terracota-forte); te
 }
 
 @media (max-width: 760px) {
-  .tipos-colagem { grid-template-columns: 1fr; gap: 30px; margin-top: 34px; }
+  .tipos-colagem { grid-template-columns: 1fr; gap: 22px; margin-top: 28px; padding: 6px 0; }
   .tipo-cartao { rotate: 0deg; }
-  .tipo-link { display: flex; align-items: center; min-height: 92px; padding: 12px 126px 12px 26px; background: var(--papel-2); border: 1.5px dashed rgba(110, 60, 30, 0.36); border-radius: 999px; box-shadow: 0 12px 14px -14px rgba(110, 60, 30, 0.6); position: relative; }
-  .tipo-invertido .tipo-link { padding: 12px 26px 12px 126px; justify-content: flex-end; }
-  .tipo-caixa { position: absolute; top: 50%; right: -6px; width: 112px; height: 112px; translate: 0 -50%; }
-  .tipo-invertido .tipo-caixa { right: auto; left: -6px; }
+  .tipo-link { display: flex; align-items: center; min-height: 80px; padding: 10px 118px 10px 24px; background: var(--papel-2); border: 1.5px dashed rgba(110, 60, 30, 0.36); border-radius: 999px; box-shadow: 0 12px 14px -14px rgba(110, 60, 30, 0.6); position: relative; }
+  .tipo-invertido .tipo-link { padding: 10px 24px 10px 118px; justify-content: flex-end; }
+  .tipo-caixa { position: absolute; top: 50%; right: -4px; width: 102px; height: 102px; translate: 0 -50%; }
+  .tipo-invertido .tipo-caixa { right: auto; left: -4px; }
   .tipo-recorte { width: 100%; height: 100%; aspect-ratio: 1 / 1; padding: 5px; clip-path: var(--recorte-circulo); }
-  .tipo-flor { padding: 3.5%; clip-path: var(--recorte-flor); }
+  .tipo-flor { padding: 4.5%; clip-path: var(--recorte-flor); }
   .tipo-texto { margin: 0; text-align: left; }
   .tipo-invertido .tipo-texto { text-align: right; }
-  .tipo-nome { padding: 0; background: none; box-shadow: none; rotate: 0deg; font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; font-weight: 600; font-size: 25px; line-height: 1.1; }
+  .tipo-nome { padding: 0; background: none; box-shadow: none; rotate: 0deg; font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; font-weight: 600; font-size: 23px; line-height: 1.1; }
   .tipo-invertido .tipo-nome { background: none; rotate: 0deg; }
   .tipo-ver { font-size: 14px; letter-spacing: 0.04em; text-transform: none; font-weight: 500; margin-top: 4px; }
   .enfeite { display: none; }
-  .tipo-folhas { display: block; position: absolute; top: -34px; left: 38%; width: 30px; height: auto; rotate: 14deg; pointer-events: none; }
-  .tipo-invertido .tipo-folhas { left: auto; right: 38%; rotate: -14deg; }
+  .tipo-folhas { display: block; position: absolute; top: -20px; right: 82px; width: 24px; height: auto; rotate: -32deg; pointer-events: none; z-index: 1; }
+  .tipo-invertido .tipo-folhas { right: auto; left: 82px; rotate: 32deg; }
   .floreio { height: 34px; vertical-align: -10px; }
   .vantagens ul { padding: 12px 4px; }
   .vantagens li { padding: 8px 6px; justify-content: flex-start; }

@@ -44,7 +44,7 @@ alta resolução esperam a Janaina (ver `server/docs/PEDIDO-DA-CLIENTE.md`).
 
 ```bash
 cd server
-npm install            # Node 22.5 ou mais novo (usa node:sqlite)
+npm install            # Node 22.13 ou mais novo (usa node:sqlite)
 npm run ao-vivo        # site em http://localhost:3000, recarrega sozinho a cada mudança
 npm run dev            # servidor + site em http://localhost:3333
 npm run conferir       # navegador de verdade em 5 telas; capturas em .conferencia/

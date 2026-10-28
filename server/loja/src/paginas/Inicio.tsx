@@ -173,9 +173,6 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
   return (
     <>
       <Destaque pagina={pagina} />
-      <Vitrine pagina={pagina} />
-      <Vantagens loja={loja} />
-
       <section className="secao envolve" aria-labelledby="tipos">
         <div className="secao-topo">
           <p className="cursiva sobre-titulo"><Folhas className="floreio floreio-esq" />feito com carinho<RamoDeIpe className="floreio" /></p>
@@ -186,7 +183,7 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
             <li
               key={t.slug}
               className={`tipo-cartao${i % 2 ? " tipo-invertido" : ""}`}
-              style={{ ["--giro" as string]: `${GIROS[i % GIROS.length]}deg`, ["--recorte-retangulo" as string]: recorteRetangulo(11 + i * 7), ["--recorte-circulo" as string]: recorteCirculo(31 + i * 5), ["--recorte-flor" as string]: recorteFlor(51 + i * 3, 6 + (i % 3)) }}
+              style={{ ["--giro" as string]: `${GIROS[i % GIROS.length]}deg`, ["--recorte-retangulo" as string]: recorteRetangulo(11 + i * 7), ["--recorte-circulo" as string]: recorteCirculo(31 + i * 5), ["--recorte-flor" as string]: recorteFlor(51 + i * 3, 6, 1.6), ["--recorte-flor-liso" as string]: recorteFlor(51 + i * 3, 6) }}
             >
               <a className="tipo-link" href={`/categoria/${t.slug}`}>
                 <span className="tipo-caixa">
@@ -205,6 +202,9 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
           ))}
         </ul>
       </section>
+
+      <Vitrine pagina={pagina} />
+      <Vantagens loja={loja} />
 
       <section className="secao envolve" aria-labelledby="momentos">
         <div className="secao-topo"><h2 id="momentos">Para cada momento</h2></div>

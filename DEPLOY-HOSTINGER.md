@@ -11,7 +11,7 @@ não dá para simplesmente arrastar os arquivos para o `public_html`.
 O painel da Hostinger (hPanel) oferece **Node.js 18, 20, 22 e 24**.
 
 ⚠️ **Escolha 22 ou 24.** O projeto usa `node:sqlite`, o módulo de banco
-nativo do Node, que só existe a partir do **22.5**. Em 18 ou 20 o servidor
+nativo do Node, que só funciona sem opção extra a partir do **22.13**. Em 18 ou 20 o servidor
 nem inicia.
 
 ---

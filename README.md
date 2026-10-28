@@ -12,7 +12,7 @@ Guia de trabalho, mapa do código e o que falta adaptar: **`CLAUDE.md`**.
 
 ## Rodar no computador
 
-Requer Node.js **22.5 ou mais novo**.
+Requer Node.js **22.13 ou mais novo**.
 
 ```bash
 cd server
