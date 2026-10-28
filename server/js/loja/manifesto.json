@@ -4,7 +4,7 @@
     "name": "Previa"
   },
   "src/componentes/Demo3D.tsx": {
-    "file": "parte-B-ZavR9f.js",
+    "file": "parte-DcGC6_aH.js",
     "name": "Demo3D",
     "src": "src/componentes/Demo3D.tsx",
     "isDynamicEntry": true,
@@ -24,7 +24,7 @@
     ]
   },
   "src/entrada-cliente.tsx": {
-    "file": "loja-CKGz2sJ1.js",
+    "file": "loja-BKCTVFqq.js",
     "name": "entrada-cliente",
     "src": "src/entrada-cliente.tsx",
     "isEntry": true,
@@ -33,7 +33,7 @@
     ]
   },
   "src/iniciar.tsx": {
-    "file": "parte-KOGzWobV.js",
+    "file": "parte-DGDpV-Fr.js",
     "name": "iniciar",
     "src": "src/iniciar.tsx",
     "isDynamicEntry": true,
@@ -47,7 +47,7 @@
     ]
   },
   "style.css": {
-    "file": "style-BXyME_w3.css",
+    "file": "style-BDfYf0B-.css",
     "src": "style.css"
   }
 }

@@ -5,17 +5,36 @@ import { useSessao } from "../estado/sessao";
 import type { Categoria, Loja, ProdutoResumo } from "../tipos";
 import { Foto } from "./Foto";
 import { Icone } from "./Icone";
-import { Logo } from "./Marca";
+import { Florzinha, Logo } from "./Marca";
 import { IlustracaoDaPeca } from "./CartaoProduto";
 
 function FaixaDoTopo({ loja }: { loja: Loja }) {
+  const mensagens: [string, string][] = [
+    [`${loja.regrasPagamento.pixDiscountPercent}% de desconto no Pix`, `${loja.regrasPagamento.pixDiscountPercent}% de desconto no Pix`],
+    ["Personalização inclusa em todos os produtos", "Personalização inclusa"],
+    ["Enviamos para todo o Brasil", "Enviamos para todo o Brasil"],
+    ...(loja.retirada ? [["Retire grátis na Asa Norte", "Retire grátis na Asa Norte"] as [string, string]] : []),
+    ["Acima de 10 unidades, valor especial", "Valor especial acima de 10"],
+  ];
+  const [atual, setAtual] = useState(0);
+  const [pausada, setPausada] = useState(false);
+  useEffect(() => {
+    if (pausada || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const relogio = setInterval(() => setAtual(i => (i + 1) % mensagens.length), 3800);
+    return () => clearInterval(relogio);
+  }, [pausada, mensagens.length]);
   return (
-    <div className="faixa-topo">
-      <span>{`Desconto de ${loja.regrasPagamento.pixDiscountPercent}% no Pix`}</span>
-      <span aria-hidden="true" className="faixa-flor">✿</span>
-      <span className="faixa-opcional">Personalização inclusa em todos os produtos</span>
-      <span aria-hidden="true" className="faixa-flor faixa-opcional">✿</span>
-      <span>Enviamos para todo o Brasil</span>
+    <div className="faixa-topo" role="region" aria-label="Avisos da loja" onMouseEnter={() => setPausada(true)} onMouseLeave={() => setPausada(false)}>
+      <ul className="faixa-trilho">
+        {mensagens.map(([longa, curta], i) => (
+          <li key={longa} className={i === atual ? "ativa" : undefined} aria-hidden={i !== atual}>
+            <Florzinha tamanho={14} traco={1.6} />
+            <span className="so-largo">{longa}</span>
+            <span className="so-curto">{curta}</span>
+            <Florzinha tamanho={14} traco={1.6} />
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

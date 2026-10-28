@@ -126,11 +126,12 @@ main:focus { outline: none; }
 }
 .botao-icone:hover { background: var(--papel-2); }
 
-.faixa-topo {
-  background: var(--terracota-forte); color: var(--branco);
-  font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
-  padding: 10px var(--margem); display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 28px; text-align: center;
-}
+.faixa-topo { position: relative; height: 36px; overflow: hidden; background: var(--rosa-claro); color: var(--terracota-forte); border-bottom: 1px dashed rgba(158, 74, 24, 0.28); font-size: 12.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+.faixa-trilho { list-style: none; margin: 0; padding: 0; height: 100%; position: relative; }
+.faixa-trilho li { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 var(--margem); white-space: nowrap; opacity: 0; transform: translateY(100%); transition: opacity .55s ease, transform .55s cubic-bezier(.2, .8, .2, 1); }
+.faixa-trilho li.ativa { opacity: 1; transform: none; }
+.faixa-trilho li svg { flex: none; color: var(--terracota); }
+@media (prefers-reduced-motion: reduce) { .faixa-trilho li { transition: none; } }
 
 .cabecalho {
   position: sticky; top: 0; z-index: 40; background: rgba(251, 248, 243, 0.97);
@@ -724,8 +725,9 @@ main:focus { outline: none; }
   .cabecalho-logo .logo, .cabecalho.rolou .cabecalho-logo .logo { width: 100px; }
   .botao-carrinho { width: 44px; height: 44px; }
   html { scroll-padding-top: 130px; }
-  .faixa-opcional { display: none; }
-  .faixa-topo { font-size: 11px; padding: 8px 16px; gap: 4px 14px; }
+  .faixa-topo { height: 32px; font-size: 11px; letter-spacing: 0.1em; }
+  .faixa-trilho li { gap: 7px; padding: 0 12px; }
+  .faixa-trilho li svg { width: 12px; height: 12px; }
 }
 
 @media (max-width: 640px) {
