@@ -55,7 +55,7 @@ function ArteEscondida({ config, escolhas, lado, forma, tinta, medir, aoMontar }
 
 const imagensCarregadas = new Map<string, Promise<HTMLImageElement>>();
 
-function carregarImagem(url: string): Promise<HTMLImageElement> {
+export function carregarImagem(url: string): Promise<HTMLImageElement> {
   let pedido = imagensCarregadas.get(url);
   if (!pedido) {
     pedido = new Promise((resolver, rejeitar) => {
@@ -70,7 +70,7 @@ function carregarImagem(url: string): Promise<HTMLImageElement> {
   return pedido;
 }
 
-function desenharEstampa(contexto: CanvasRenderingContext2D, imagem: HTMLImageElement, largura: number, altura: number, estampa: EstampaPublica, molde: string) {
+export function desenharEstampa(contexto: CanvasRenderingContext2D, imagem: HTMLImageElement, largura: number, altura: number, estampa: EstampaPublica, molde: string) {
   const volta = regras.voltaDaPeca(molde as Parameters<typeof regras.voltaDaPeca>[0]);
   const w = volta.cobertura * largura;
   const hDesejada = w / (estampa.proporcao || 2.105);

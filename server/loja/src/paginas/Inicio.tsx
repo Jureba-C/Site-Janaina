@@ -4,7 +4,7 @@ import { CartaoProduto } from "../componentes/CartaoProduto";
 import { Foto } from "../componentes/Foto";
 import { BordaRasgada, EnfeiteDoCartao, Folhas, RamoDeIpe, recorteCirculo, recorteFlor, recorteRetangulo, type EnfeiteDoCartao as TipoDeEnfeite } from "../componentes/Enfeites";
 import { Icone } from "../componentes/Icone";
-import { DemoDaCaneca } from "../componentes/DemoDaCaneca";
+import { DemoEstudio } from "../componentes/DemoDaCaneca";
 import type { Loja, PaginaInicio } from "../tipos";
 
 const GIROS = [-2, 1.5, -1, 2, -1.5];
@@ -197,7 +197,7 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
         <div className="chamada-previa">
           <div className="chamada-previa-peca">
             <div className="faixa-caramelo faixa-caramelo-esquerda" aria-hidden="true" />
-            <DemoDaCaneca aoMudarPasso={setPasso} />
+            <DemoEstudio aoMudarPasso={setPasso} linkProduto={pagina.vitrines[0]?.produtos[0]?.endereco ?? "/categoria/canecas"} />
           </div>
           <div className="chamada-previa-texto" id="como-personalizar">
             <p className="etiqueta">Novo no site</p>

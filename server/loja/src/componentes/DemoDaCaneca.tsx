@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, memo, useEffect, useRef, useState } from "react";
 import { Icone } from "./Icone";
 import { PecaSvg, useMedirTexto } from "./Previa";
 import type { ConfigProduto, EstampaPublica } from "../tipos";
@@ -106,7 +106,7 @@ export function passoDaDemo(t: number): number {
   return 3;
 }
 
-export function DemoDaCaneca({ aoMudarPasso }: { aoMudarPasso?: (passo: number) => void }) {
+export function DemoDaCaneca({ aoMudarPasso, animar = true }: { aoMudarPasso?: (passo: number) => void; animar?: boolean }) {
   const [t, setT] = useState(FIM);
   const [estampa, setEstampa] = useState<EstampaPublica | null>(null);
   const [animando, setAnimando] = useState(false);
@@ -127,6 +127,11 @@ export function DemoDaCaneca({ aoMudarPasso }: { aoMudarPasso?: (passo: number) 
   }, []);
 
   useEffect(() => {
+    if (!animar) {
+      setT(FIM);
+      setAnimando(false);
+      return;
+    }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !raiz.current || !("IntersectionObserver" in window)) return;
     const passo = (agora: number) => {
       let decorrido = (agora - inicio.current) / 1000;
@@ -157,7 +162,7 @@ export function DemoDaCaneca({ aoMudarPasso }: { aoMudarPasso?: (passo: number) 
     const aoTrocarAba = () => (document.hidden ? desligar() : ligar());
     document.addEventListener("visibilitychange", aoTrocarAba);
     return () => { observador.disconnect(); document.removeEventListener("visibilitychange", aoTrocarAba); desligar(); };
-  }, []);
+  }, [animar]);
 
   const passoAtual = passoDaDemo(t);
   useEffect(() => { aoMudarPasso?.(passoAtual); }, [passoAtual, aoMudarPasso]);
@@ -222,6 +227,38 @@ export function DemoDaCaneca({ aoMudarPasso }: { aoMudarPasso?: (passo: number) 
         </div>
       </div>
       {animando ? <button type="button" className="demo-de-novo" onClick={reiniciar}><Icone nome="girar" tamanho={16} />Ver de novo</button> : null}
+    </div>
+  );
+}
+
+const Demo3D = lazy(() => import("./Demo3D"));
+
+export function DemoEstudio({ aoMudarPasso, linkProduto }: { aoMudarPasso?: (passo: number) => void; linkProduto: string }) {
+  const raiz = useRef<HTMLDivElement>(null);
+  const [usar3d, setUsar3d] = useState(false);
+  const [pronto, setPronto] = useState(false);
+  useEffect(() => {
+    const alvo = raiz.current;
+    if (!alvo || window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) return;
+    const observador = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        setUsar3d(true);
+        observador.disconnect();
+      }
+    }, { rootMargin: "500px 0px" });
+    observador.observe(alvo);
+    return () => observador.disconnect();
+  }, []);
+  return (
+    <div ref={raiz} className={`demo-estudio${pronto ? " com-3d" : ""}`}>
+      <div className="demo-estudio-poster" aria-hidden={pronto}>
+        <DemoDaCaneca aoMudarPasso={pronto ? undefined : aoMudarPasso} animar={!usar3d} />
+      </div>
+      {usar3d ? (
+        <Suspense fallback={null}>
+          <Demo3D aoMudarPasso={aoMudarPasso} aoPronto={() => setPronto(true)} aoFalhar={() => { setUsar3d(false); setPronto(false); }} linkProduto={linkProduto} />
+        </Suspense>
+      ) : null}
     </div>
   );
 }
