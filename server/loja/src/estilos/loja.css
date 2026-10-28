@@ -1059,3 +1059,5 @@ a.vantagem-link:hover .vantagem-texto strong { color: var(--terracota-forte); te
   .estudio-galeria .estudio-ramo-esq { width: 14%; }
   .galeria-previa { width: 270px; height: 285px; margin-left: -135px; top: 66px; }
 }
+.vantagens + .secao { margin-top: 56px; }
+@media (max-width: 640px) { .vantagens + .secao { margin-top: 36px; } }

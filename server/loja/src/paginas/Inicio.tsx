@@ -170,8 +170,8 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
   return (
     <>
       <Destaque pagina={pagina} />
-      <Vitrine pagina={pagina} />
       <Vantagens loja={loja} />
+      <Vitrine pagina={pagina} />
 
       <section className="secao envolve" aria-labelledby="momentos">
         <div className="secao-topo"><h2 id="momentos">Para cada momento</h2></div>
