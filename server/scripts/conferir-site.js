@@ -36,7 +36,7 @@ const PAGINAS_SEM_CAPTURA = ["inicio", "produto", "categoria", "busca", "conta",
 
 const LOJA_SEM_ROLAGEM_LATERAL = ["inicio", "produto", "categoria", "busca"];
 
-const BARRAS_FIXAS = /\b(cabecalho|simple-header|comprar|aviso-cookies|whatsapp-flutuante)\b/;
+const BARRAS_FIXAS = /\b(faixa-topo|cabecalho|simple-header|comprar|aviso-cookies|whatsapp-flutuante)\b/;
 
 const PAGINAS = [
   ["inicio", "/"],
