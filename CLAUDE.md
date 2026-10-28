@@ -80,7 +80,7 @@ e que nenhum dado da Adriana voltou.
 |---|---|
 | `img/logo.svg` | logo provisório montado por `scripts/gerar-logo.js`; com o arquivo real, salvar como `img/logo.svg` e rodar `node scripts/gerar-marca.js` (gera favicon, ícone do celular, `logo-loja.png`, `og-loja.jpg` e o logo dos e-mails) |
 | `img/provisorias/*` | fotos tiradas do Instagram/catálogos; trocar pelas originais. Fotos de produto entram pelo **painel** (aba Produtos) |
-| fotos do topo da home | painel → "Fotos do topo" |
+| fotos dos 5 tipos no topo da home | `TIPOS_DO_TOPO` em `server/lib/loja-dados.js` (a aba "Fotos do topo" do painel saiu do atalho e não muda mais o site) |
 
 ## Onde mexer em cada assunto
 
@@ -138,7 +138,7 @@ Tudo fica em `server/` (é a pasta que a hospedagem usa como raiz). O
   `server/docs/PAINEL-PRODUCAO.md`), depois Vendas e pedidos (etiqueta,
   rastreio, entrega, pedir avaliação), Produtos (criar, editar, foto, ordem,
   esgotado, oculto), Dashboard, Cupons, Clientes, Avaliações e "Loja e
-  configurações" (Fotos do topo, Depoimentos, Novidades, Mensagens, backup
+  configurações" (Depoimentos, Novidades, Mensagens, backup
   completo, Instagram, aviso de venda).
 - **Estampas** (padrão que dá a volta na peça: flores, Brasília…): biblioteca
   no banco (`estampas` em `lib/db.js`, imagens em `lib/estampas.js`, 3

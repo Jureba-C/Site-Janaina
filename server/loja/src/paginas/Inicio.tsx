@@ -9,12 +9,8 @@ import type { ConfigProduto, Loja, PaginaInicio } from "../tipos";
 
 const GIROS = [-2, 1.5, -1, 2, -1.5];
 
-const TIPOS: { nome: string; slug: string; img: string; alt: string; enfeite: TipoDeEnfeite; flor?: boolean }[] = [
-  { nome: "Canecas", slug: "canecas", img: "/img/provisorias/canecas-alca-colorida.jpg", alt: "Canecas com alça e interior coloridos", enfeite: "fita-verde" },
-  { nome: "Xícaras e kits", slug: "xicaras-e-kits", img: "/img/provisorias/xicaras-casamento.jpg", alt: "Xícaras de casamento empilhadas", enfeite: "laco", flor: true },
-  { nome: "Garrafas", slug: "garrafas-e-termicos", img: "/img/provisorias/garrafa-professores.jpg", alt: "Garrafa personalizada com fotos de alunos", enfeite: "fita-rosa" },
-  { nome: "Ipês Brasília", slug: "ipes-brasilia", img: "/img/provisorias/ipe-amarelo.jpg", alt: "Ipê amarelo feito à mão", enfeite: "ramo" },
-  { nome: "Presentes", slug: "acessorios-e-embalagens", img: "/img/provisorias/caneca-caixa-presente.jpg", alt: "Caneca com caixa de presente e laço", enfeite: "clipe", flor: true },
+const ENFEITES_DOS_TIPOS: { enfeite: TipoDeEnfeite; flor?: boolean }[] = [
+  { enfeite: "fita-verde" }, { enfeite: "laco", flor: true }, { enfeite: "fita-rosa" }, { enfeite: "ramo" }, { enfeite: "clipe", flor: true },
 ];
 
 const MOMENTOS: { nome: string; slug: string; d: string }[] = [
@@ -43,38 +39,44 @@ const CANECA_EXEMPLO: ConfigProduto = {
   personalizacao: { ativa: true, campos: { nome: { ativo: true, obrigatorio: false, limite: 20, rotulo: "Nome" } }, letras: ["cursiva"], artes: ["flor"], fotos: { min: 0, max: 0, formato: "circulo" }, verso: true },
 };
 
-const GIROS_DA_PRATELEIRA = [-2.5, 1.5, -1.2];
-
 function Destaque({ pagina }: { pagina: PaginaInicio }) {
-  const itens = pagina.destaques.slice(0, 3);
   return (
-    <section className="destaque envolve" aria-label="Destaques">
-      <div className="destaque-texto">
-        <h1>Presentes que marcam,</h1>
-        <p className="cursiva destaque-cursiva">feitos à mão em Brasília</p>
-        <p className="destaque-apoio">Escolha a peça, escreva o nome ou envie suas fotos e veja como a arte fica na caneca antes de comprar.</p>
+    <section className="destaque envolve" aria-labelledby="destaque-titulo">
+      <div className="destaque-titulo">
+        <p className="destaque-feito"><Folhas className="floreio floreio-esq" /><span className="cursiva">feito à mão em Brasília</span><RamoDeIpe className="floreio" /></p>
+        <h1 id="destaque-titulo">Presentes <span className="destaque-marca">que marcam<svg className="destaque-sublinhado" viewBox="0 0 300 26" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M6 17C70 7 160 4 294 12" /><path className="destaque-sublinhado-fino" d="M40 22C120 15 200 14 268 19" /></svg></span></h1>
+        <p className="destaque-apoio">Canecas, xícaras e garrafas com o nome, a frase ou a foto que você escolher. Você vê a prévia antes de comprar.</p>
         <div className="destaque-acoes">
           <a className="botao botao-cheio botao-grande" href="/categoria/canecas">Ver as canecas</a>
           <a className="botao botao-vazado botao-grande" href="/#previa">Criar a minha</a>
         </div>
       </div>
-      <div className="prateleira">
-        <ul className="prateleira-itens">
-          {itens.map((item, i) => (
-            <li key={item.src} style={{ ["--giro" as string]: `${GIROS_DA_PRATELEIRA[i % 3]}deg` }}>
-              <a href={item.link || "/categoria/canecas"} className="prateleira-item">
-                <span className="prateleira-quadro">
-                  <Foto src={item.src} alt={item.alt} sizes="(max-width: 640px) 30vw, 200px" larguras={[240, 480]} prioridade={i === 0} largura={240} altura={300} className="prateleira-foto" />
+      <ul className="tipos-colagem" aria-label="Escolha pelo tipo">
+        {pagina.destaques.map((t, i) => {
+          const visual = ENFEITES_DOS_TIPOS[i % ENFEITES_DOS_TIPOS.length];
+          return (
+            <li
+              key={t.src}
+              className={`tipo-cartao${i % 2 ? " tipo-invertido" : ""}`}
+              style={{ ["--giro" as string]: `${GIROS[i % GIROS.length]}deg`, ["--recorte-retangulo" as string]: recorteRetangulo(11 + i * 7), ["--recorte-circulo" as string]: recorteCirculo(31 + i * 5), ["--recorte-flor" as string]: recorteFlor(51 + i * 3, 6, 1.6), ["--recorte-flor-liso" as string]: recorteFlor(51 + i * 3, 6) }}
+            >
+              <a className="tipo-link" href={t.link || "/categoria/canecas"}>
+                <span className="tipo-caixa">
+                  <span className={`tipo-recorte${visual.flor ? " tipo-flor" : ""}`}>
+                    <Foto src={t.src} alt={t.alt} sizes="(max-width: 760px) 120px, 230px" largura={230} altura={288} prioridade={i === 0} className="tipo-foto" />
+                  </span>
+                  <EnfeiteDoCartao tipo={visual.enfeite} />
                 </span>
-                <span className="prateleira-bilhete cursiva">{item.legenda}</span>
+                <span className="tipo-texto">
+                  <span className="tipo-nome">{t.legenda}</span>
+                  <span className="tipo-ver">ver mais <Icone nome="setaDireita" tamanho={14} traco={2} /></span>
+                </span>
               </a>
+              <Folhas className="tipo-folhas" />
             </li>
-          ))}
-        </ul>
-        <div className="prateleira-tabua" aria-hidden="true" />
-        <RamoDeIpe className="prateleira-ramo" />
-        <Folhas className="prateleira-folhas" />
-      </div>
+          );
+        })}
+      </ul>
     </section>
   );
 }
@@ -173,36 +175,6 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
   return (
     <>
       <Destaque pagina={pagina} />
-      <section className="secao envolve" aria-labelledby="tipos">
-        <div className="secao-topo">
-          <p className="cursiva sobre-titulo"><Folhas className="floreio floreio-esq" />feito com carinho<RamoDeIpe className="floreio" /></p>
-          <h2 id="tipos">Escolha pelo tipo</h2>
-        </div>
-        <ul className="tipos-colagem">
-          {TIPOS.map((t, i) => (
-            <li
-              key={t.slug}
-              className={`tipo-cartao${i % 2 ? " tipo-invertido" : ""}`}
-              style={{ ["--giro" as string]: `${GIROS[i % GIROS.length]}deg`, ["--recorte-retangulo" as string]: recorteRetangulo(11 + i * 7), ["--recorte-circulo" as string]: recorteCirculo(31 + i * 5), ["--recorte-flor" as string]: recorteFlor(51 + i * 3, 6, 1.6), ["--recorte-flor-liso" as string]: recorteFlor(51 + i * 3, 6) }}
-            >
-              <a className="tipo-link" href={`/categoria/${t.slug}`}>
-                <span className="tipo-caixa">
-                  <span className={`tipo-recorte${t.flor ? " tipo-flor" : ""}`}>
-                    <Foto src={t.img} alt={t.alt} sizes="(max-width: 760px) 120px, 230px" largura={230} altura={288} className="tipo-foto" />
-                  </span>
-                  <EnfeiteDoCartao tipo={t.enfeite} />
-                </span>
-                <span className="tipo-texto">
-                  <span className="tipo-nome">{t.nome}</span>
-                  <span className="tipo-ver">ver mais <Icone nome="setaDireita" tamanho={14} traco={2} /></span>
-                </span>
-              </a>
-              <Folhas className="tipo-folhas" />
-            </li>
-          ))}
-        </ul>
-      </section>
-
       <Vitrine pagina={pagina} />
       <Vantagens loja={loja} />
 

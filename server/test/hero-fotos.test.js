@@ -94,22 +94,19 @@ test("só a primeira foto do destaque tem prioridade; as outras esperam", async 
   const home = await (await fetch(ORIGIN + "/")).text();
   const destaque = home.slice(home.indexOf('class="destaque'), home.indexOf('class="secao'));
   assert.equal((destaque.match(/fetchPriority="high"|fetchpriority="high"/g) || []).length, 1);
-  assert.equal((destaque.match(/class="prateleira-item"/g) || []).length, 3, "três fotos na prateleira");
+  assert.equal((destaque.match(/class="tipo-cartao/g) || []).length, 5, "cinco tipos logo abaixo do título");
   assert.ok((destaque.match(/loading="lazy"/g) || []).length >= 1);
 });
 
-test("foto enviada pelo painel entra na home no lugar das fixas", async () => {
+test("foto do painel não muda o topo, que mostra os tipos", async () => {
   await apagarTodas();
   const res = await enviarFoto({ legenda: "Laço de teste", alt: "Um laço rosa de teste" });
   assert.equal(res.status, 201);
   const { id } = await res.json();
 
   const home = await (await fetch(ORIGIN + "/")).text();
-  assert.ok(home.includes(`/api/hero/fotos/${id}?w=480`), "a home deve apontar para a foto do banco");
-  const destaque = home.slice(home.indexOf('class="destaque'), home.indexOf('class="secao'));
-  assert.ok(!destaque.includes("canecas-alca-colorida.jpg"), "as fixas devem sair do destaque");
-  assert.match(home, /<span class="prateleira-bilhete cursiva">Laço de teste<\/span>/);
-  assert.match(home, /alt="Um laço rosa de teste"/);
+  assert.ok(!home.includes(`/api/hero/fotos/${id}`), "o topo não usa mais as fotos do painel");
+  assert.match(home, /img\/provisorias\/canecas-alca-colorida\.jpg/);
 });
 
 test("a rota pública devolve 4:5 em toda largura e formato", async () => {
@@ -157,16 +154,12 @@ test("texto escrito no painel não vira HTML na home", async () => {
   const home = await (await fetch(ORIGIN + "/")).text();
   assert.ok(!home.includes("<script>alert(1)</script>"));
   assert.ok(!home.includes('onload="alert(2)'));
-  assert.match(home, /&lt;script&gt;/);
 });
 
-test("a ordem do painel é a ordem do carrossel", async () => {
+test("a ordem do painel é gravada", async () => {
   await apagarTodas();
   const a = (await (await enviarFoto({ legenda: "Primeira" })).json()).id;
   const b = (await (await enviarFoto({ legenda: "Segunda" })).json()).id;
-
-  let home = await (await fetch(ORIGIN + "/")).text();
-  assert.ok(home.indexOf("Primeira") < home.indexOf("Segunda"));
 
   const res = await fetch(`${ORIGIN}/api/admin/hero/fotos/ordem`, {
     method: "PUT",
@@ -174,9 +167,7 @@ test("a ordem do painel é a ordem do carrossel", async () => {
     body: JSON.stringify({ ids: [b, a] }),
   });
   assert.equal(res.status, 200);
-
-  home = await (await fetch(ORIGIN + "/")).text();
-  assert.ok(home.indexOf("Segunda") < home.indexOf("Primeira"), "a nova ordem tem de aparecer na home");
+  assert.deepEqual(db.listHeroPhotos().map(f => f.id), [b, a]);
 });
 
 test("ordem incompleta é recusada em vez de embaralhar o carrossel", async () => {
@@ -251,23 +242,20 @@ test("o preload do topo aponta para exatamente a mesma imagem do <picture>", asy
   const home = await (await fetch(ORIGIN + "/")).text();
   const preload = home.match(/<link rel="preload" as="image"[^>]*>/);
   assert.ok(preload, "o preload da foto do topo sumiu");
-  const destaque = home.slice(home.indexOf('class="prateleira-item'));
+  const destaque = home.slice(home.indexOf('class="tipo-cartao'));
   const source = destaque.match(/<source type="image\/webp"[^>]*>/);
-  assert.ok(source, "o <source> webp da primeira foto da prateleira sumiu");
+  assert.ok(source, "o <source> webp da primeira foto do topo sumiu");
   const pegar = (tag, attr) => (tag.match(new RegExp(`${attr}="([^"]*)"`, "i")) || [])[1];
   assert.equal(pegar(preload[0], "href"), pegar(source[0], "srcSet"), "preload e <source> discordam: o navegador baixaria duas imagens");
   assert.match(preload[0], /type="image\/webp"/);
 });
 
-test("com foto do painel, o preload acompanha e larga o type webp", async () => {
+test("foto do painel não muda o preload do topo", async () => {
   await apagarTodas();
-  const { id } = await (await enviarFoto({ legenda: "Capa do painel" })).json();
+  await enviarFoto({ legenda: "Capa do painel" });
   const home = await (await fetch(ORIGIN + "/")).text();
-
   const preload = home.match(/<link rel="preload" as="image"[^>]*>/);
-  assert.ok(preload, "o preload sumiu quando a foto veio do painel");
-  assert.ok(preload[0].includes(`/api/hero/fotos/${id}?w=480`),
-    "o preload continua apontando para a foto fixa em vez da do painel");
-  assert.ok(!preload[0].includes("type="), "foto do painel não tem formato fixo para declarar");
+  assert.ok(preload, "o preload sumiu");
+  assert.ok(preload[0].includes("canecas-alca-colorida.webp"), "o preload continua na primeira foto do topo");
   await apagarTodas();
 });

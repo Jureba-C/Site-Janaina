@@ -4049,7 +4049,7 @@ app.get("/api/admin/hero/fotos", auth.requireAdmin, auth.requireAdminTwoFactor, 
     })),
     max: MAX_FOTOS_HERO,
     usandoPadrao: db.countHeroPhotos() === 0,
-    padrao: lojaDados.DESTAQUES_PADRAO.map(f => ({
+    padrao: lojaDados.TIPOS_DO_TOPO.map(f => ({
       legenda: f.legenda,
       alt: f.alt,
       url: comVersao(f.src.slice(1)),

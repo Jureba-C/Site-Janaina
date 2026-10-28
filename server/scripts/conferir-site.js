@@ -223,8 +223,8 @@ async function conferirInteracoes(contexto, tela, rotaProduto, rotaMagica, probl
 
   await pagina.goto(ORIGEM + "/", { waitUntil: "networkidle" });
   await pagina.waitForTimeout(500);
-  const naPrateleira = await pagina.locator(".prateleira-item").count();
-  if(naPrateleira !== 3) anotar(`a prateleira do topo tem ${naPrateleira} fotos, devia ter 3`);
+  const tiposNoTopo = await pagina.locator(".destaque .tipo-link").count();
+  if(tiposNoTopo !== 5) anotar(`o topo tem ${tiposNoTopo} tipos, devia ter 5`);
   const coracao = pagina.locator(".botao-favorito").first();
   if(await coracao.count() && await clicar(pagina, coracao, anotar, "coração de favorito")){
     if((await coracao.getAttribute("aria-pressed")) !== "true") anotar("o coração não marcou o favorito");

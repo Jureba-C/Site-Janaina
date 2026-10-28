@@ -91,16 +91,16 @@ function dadosDaLoja(visiveis){
   };
 }
 
-const DESTAQUES_PADRAO = [
-  { src: "/img/provisorias/canecas-alca-colorida.jpg", legenda: "11 cores de alça", alt: "Canecas com alça e interior coloridos empilhadas", link: "/categoria/canecas" },
-  { src: "/img/provisorias/xicaras-casamento.jpg", legenda: "casamentos", alt: "Xícaras de casamento empilhadas", link: "/categoria/casamento" },
-  { src: "/img/provisorias/xicara-ipes.jpg", legenda: "ipês de Brasília", alt: "Xícara da coleção Ipês Brasília", link: "/categoria/ipes-brasilia" },
+const TIPOS_DO_TOPO = [
+  { src: "/img/provisorias/canecas-alca-colorida.jpg", legenda: "Canecas", alt: "Canecas com alça e interior coloridos", link: "/categoria/canecas" },
+  { src: "/img/provisorias/xicaras-casamento.jpg", legenda: "Xícaras e kits", alt: "Xícaras de casamento empilhadas", link: "/categoria/xicaras-e-kits" },
+  { src: "/img/provisorias/garrafa-professores.jpg", legenda: "Garrafas", alt: "Garrafa personalizada com fotos de alunos", link: "/categoria/garrafas-e-termicos" },
+  { src: "/img/provisorias/ipe-amarelo.jpg", legenda: "Ipês Brasília", alt: "Ipê amarelo feito à mão", link: "/categoria/ipes-brasilia" },
+  { src: "/img/provisorias/caneca-caixa-presente.jpg", legenda: "Presentes", alt: "Caneca com caixa de presente e laço", link: "/categoria/acessorios-e-embalagens" },
 ];
 
 function destaques(){
-  const doPainel = db.listHeroPhotos();
-  if(!doPainel.length) return DESTAQUES_PADRAO;
-  return doPainel.map(f => ({ src: `/api/hero/fotos/${f.id}?w=480`, legenda: f.legenda, alt: f.alt }));
+  return TIPOS_DO_TOPO;
 }
 
 function comCategoria(visiveis, slug){
@@ -295,4 +295,4 @@ function paginaProduto(id){
   };
 }
 
-module.exports = { DESTAQUES_PADRAO, paginaInicio, paginaBusca, paginaCategoria, paginaProduto, sugestoes, porIds, resumo, precoMinimo, normalizar };
+module.exports = { TIPOS_DO_TOPO, paginaInicio, paginaBusca, paginaCategoria, paginaProduto, sugestoes, porIds, resumo, precoMinimo, normalizar };
