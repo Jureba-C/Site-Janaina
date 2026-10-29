@@ -232,12 +232,34 @@ app.use(helmet({
     },
   },
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  strictTransportSecurity: false,
 }));
 
 const POLITICA_DE_PERMISSOES = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
+const CSP_EM_TESTE = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "script-src 'self' https://accounts.google.com https://challenges.cloudflare.com",
+  "script-src-attr 'none'",
+  "style-src-elem 'self' https://accounts.google.com https://challenges.cloudflare.com",
+  "style-src-attr 'unsafe-inline'",
+  "font-src 'self'",
+  "img-src 'self' data: blob: https://*.cdninstagram.com https://*.fbcdn.net https://lh3.googleusercontent.com",
+  "connect-src 'self' https://viacep.com.br https://accounts.google.com",
+  "frame-src https://accounts.google.com https://challenges.cloudflare.com",
+  "object-src 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "report-uri /api/csp-relatorio",
+  "report-to csp",
+].join("; ");
 app.use((req, res, next) => {
   res.setHeader("Permissions-Policy", POLITICA_DE_PERMISSOES);
-  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  if(EM_PRODUCAO) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  if(req.method === "GET" && !req.path.startsWith("/api/")){
+    res.setHeader("Reporting-Endpoints", 'csp="/api/csp-relatorio"');
+    res.setHeader("Content-Security-Policy-Report-Only", CSP_EM_TESTE);
+  }
   next();
 });
 
@@ -282,6 +304,19 @@ if (MAINTENANCE_MODE) {
   });
 }
 
+const cspLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, handler: (req, res) => res.status(204).end() });
+app.post("/api/csp-relatorio", cspLimiter, express.json({ limit: "16kb", type: ["application/csp-report", "application/reports+json", "application/json"] }), (req, res) => {
+  const lista = Array.isArray(req.body) ? req.body : [req.body?.["csp-report"] || req.body];
+  for(const item of lista.slice(0, 5)){
+    const r = item?.body || item || {};
+    const bloqueado = String(r["blocked-uri"] || r.blockedURL || "").slice(0, 120);
+    const diretiva = String(r["violated-directive"] || r.effectiveDirective || r["effective-directive"] || "").slice(0, 60);
+    const pagina = String(r["document-uri"] || r.documentURL || "").replace(/[?#].*$/, "").slice(0, 120);
+    if(diretiva) eventos.registrar("csp_violacao", { req, detalhes: { diretiva, bloqueado, pagina } });
+  }
+  res.status(204).end();
+});
+
 app.use(express.json({ limit: "50kb" }));
 app.use(auth.attachUser);
 
@@ -289,6 +324,7 @@ function verifyOrigin(req, res, next){
   if(["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
   if(req.path === "/webhook") return next();
   if(req.path === "/newsletter/unsubscribe") return next();
+  if(req.path === "/csp-relatorio") return next();
   const origin = req.headers.origin;
   if(!origin || !ORIGENS_CONFIAVEIS.has(origin)){
     return res.status(403).json({ error: "Requisição recusada (origem não confiável)." });

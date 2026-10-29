@@ -261,3 +261,18 @@ test("toda rota sensível do painel pede o código de novo", () => {
     assert.ok(fonte.includes(registro), `${metodo} ${rota} precisa de confirmado`);
   }
 });
+
+test("a CSP mais rígida roda em modo de teste e os relatórios viram evento", async () => {
+  const res = await fetch(ORIGIN + "/");
+  const teste = res.headers.get("content-security-policy-report-only") || "";
+  assert.match(teste, /style-src-elem 'self'/);
+  assert.doesNotMatch(teste, /style-src-elem[^;]*unsafe-inline/);
+  assert.match(teste, /report-uri \/api\/csp-relatorio/);
+  assert.equal(res.headers.get("strict-transport-security"), null, "HSTS só em produção");
+  const relatorio = await fetch(ORIGIN + "/api/csp-relatorio", {
+    method: "POST",
+    headers: { "Content-Type": "application/csp-report" },
+    body: JSON.stringify({ "csp-report": { "document-uri": ORIGIN + "/?x=1", "violated-directive": "img-src", "blocked-uri": "https://exemplo.com/a.png" } }),
+  });
+  assert.equal(relatorio.status, 204);
+});

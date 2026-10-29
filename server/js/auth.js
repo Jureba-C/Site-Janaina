@@ -85,7 +85,10 @@
     try{
       const res = await fetchWithTimeout("/api/auth/me");
       if(res.ok) user = await res.json();
-      else if(res.status !== 401) falhou = true;
+      else {
+        await res.text().catch(() => "");
+        if(res.status !== 401) falhou = true;
+      }
     }catch(err){
       console.warn("Não foi possível verificar a sessão:", err);
       falhou = true;
