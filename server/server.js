@@ -2077,29 +2077,48 @@ app.post("/api/newsletter", strictLimiter, async (req, res) => {
   res.json({ ok: true, coupon: coupon.code, percentOff: coupon.percent_off, emailed });
 });
 
-function handleNewsletterUnsubscribe(req, res) {
-  const emailAddress = auth.normalizeEmail(req.query.email || req.body?.email || "");
-  const token = req.query.token || req.body?.token || "";
-  const ok = emailAddress && token && db.unsubscribeNewsletter(emailAddress, token);
-  res.set("Content-Type", "text/html; charset=utf-8");
-  res.send(`<!DOCTYPE html>
+function escapeHTML(texto){
+  return String(texto).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+
+function paginaDeDescadastro({ icone, titulo, texto, formulario = "" }){
+  return `<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
 <title>Descadastro — Arte Canecas</title></head>
 <body style="margin:0; padding:0; background:#FBF8F3; font-family:'Segoe UI', Helvetica, Arial, sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FBF8F3;"><tr><td align="center" style="padding:64px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:420px; background:#FFFFFF; border-radius:24px; padding:36px 32px; text-align:center;">
-      <tr><td style="font-size:26px; padding-bottom:10px; color:#CD7031;">${ok ? "✿" : "!"}</td></tr>
-      <tr><td style="color:#323230; font-size:18px; font-weight:bold; padding-bottom:8px;">
-        ${ok ? "Descadastro concluído" : "Não foi possível descadastrar"}
-      </td></tr>
-      <tr><td style="color:#6B6259; font-size:14px; line-height:1.6;">
-        ${ok
-          ? "Você não vai mais receber e-mails promocionais da Arte Canecas. Pedidos e redefinições de senha continuam chegando normalmente, se você tiver conta."
-          : "O link parece inválido ou já foi usado. Se precisar de ajuda, fale pelo WhatsApp."}
-      </td></tr>
+      <tr><td style="font-size:26px; padding-bottom:10px; color:#CD7031;">${icone}</td></tr>
+      <tr><td style="color:#323230; font-size:18px; font-weight:bold; padding-bottom:8px;">${titulo}</td></tr>
+      <tr><td style="color:#6B6259; font-size:14px; line-height:1.6;">${texto}</td></tr>
+      ${formulario}
     </table>
   </td></tr></table>
-</body></html>`);
+</body></html>`;
+}
+
+function handleNewsletterUnsubscribe(req, res) {
+  const emailAddress = auth.normalizeEmail(req.query.email || req.body?.email || "");
+  const token = String(req.query.token || req.body?.token || "");
+  res.set("Content-Type", "text/html; charset=utf-8");
+  res.set("Cache-Control", "no-store");
+  if(req.method === "GET"){
+    if(!emailAddress || !/^[0-9a-f]{16,128}$/i.test(token)){
+      return res.send(paginaDeDescadastro({ icone: "!", titulo: "Link inválido", texto: "O link parece inválido. Se precisar de ajuda, fale pelo WhatsApp." }));
+    }
+    const acao = `/api/newsletter/unsubscribe?email=${encodeURIComponent(emailAddress)}&amp;token=${encodeURIComponent(token)}`;
+    return res.send(paginaDeDescadastro({
+      icone: "✿",
+      titulo: "Parar de receber novidades?",
+      texto: `Você vai deixar de receber e-mails promocionais em <strong>${escapeHTML(emailAddress)}</strong>. Pedidos e avisos da sua conta continuam chegando.`,
+      formulario: `<tr><td style="padding-top:22px;"><form method="post" action="${acao}"><button type="submit" style="background:#9E4A18; color:#FFFFFF; border:0; border-radius:999px; padding:12px 26px; font-size:15px; font-weight:bold; cursor:pointer;">Confirmar descadastro</button></form></td></tr>`,
+    }));
+  }
+  const ok = emailAddress && token && db.unsubscribeNewsletter(emailAddress, token);
+  res.send(paginaDeDescadastro(ok
+    ? { icone: "✿", titulo: "Descadastro concluído", texto: "Você não vai mais receber e-mails promocionais da Arte Canecas. Pedidos e redefinições de senha continuam chegando normalmente, se você tiver conta." }
+    : { icone: "!", titulo: "Não foi possível descadastrar", texto: "O link parece inválido ou já foi usado. Se precisar de ajuda, fale pelo WhatsApp." }));
 }
 app.get("/api/newsletter/unsubscribe", handleNewsletterUnsubscribe);
 app.post("/api/newsletter/unsubscribe", handleNewsletterUnsubscribe);

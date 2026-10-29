@@ -5,6 +5,9 @@ const { diasDoFrete } = require("./prazoFrete.js");
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, "..", "data.db");
 const db = new DatabaseSync(DB_PATH);
+const cofre = require("./cofre");
+const prepararSemCofre = db.prepare.bind(db);
+db.prepare = (sql) => cofre.envolverDeclaracao(prepararSemCofre(sql));
 
 db.exec(`
   PRAGMA busy_timeout = 5000;
@@ -190,6 +193,8 @@ ensureColumn("custom_products", "caixa", "TEXT");
 ensureColumn("orders", "customer_phone", "TEXT");
 ensureColumn("orders", "customer_email", "TEXT");
 db.exec(`CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(customer_phone);`);
+ensureColumn("orders", "customer_phone_indice", "TEXT");
+db.exec(`CREATE INDEX IF NOT EXISTS idx_orders_phone_indice ON orders(customer_phone_indice);`);
 ensureColumn("orders", "fulfillment_status", "TEXT");
 ensureColumn("orders", "shipped_at", "INTEGER");
 ensureColumn("orders", "delivered_at", "INTEGER");
@@ -457,7 +462,7 @@ const stmtGetUserById = db.prepare(`SELECT * FROM users WHERE id = ?`);
 
 function createUser({ name, email, passwordHash, cpf, googleId, semSenha }) {
   const info = stmtInsertUser.run(
-    name, email, passwordHash, cpf || null,
+    name, email, passwordHash, cofre.cifrar(cpf || null),
     googleId || null, semSenha ? 1 : 0, Date.now()
   );
   return getUserById(Number(info.lastInsertRowid));
@@ -492,7 +497,7 @@ function getSavedAddress(userId) {
   }
 }
 function saveAddress(userId, address) {
-  stmtSaveAddress.run(JSON.stringify(address), userId);
+  stmtSaveAddress.run(cofre.cifrar(JSON.stringify(address)), userId);
 }
 
 const stmtUpdatePerfil = db.prepare(`
@@ -633,7 +638,7 @@ function updateUserPassword(userId, passwordHash) {
 const stmtLimpaSemSenha = db.prepare(`UPDATE users SET sem_senha = 0 WHERE id = ?`);
 
 const stmtAnonymizeUserOrders = db.prepare(
-  `UPDATE orders SET address_json = '{"anonimizado":true}', customer_phone = NULL WHERE user_id = ?`
+  `UPDATE orders SET address_json = '{"anonimizado":true}', customer_phone = NULL, customer_phone_indice = NULL WHERE user_id = ?`
 );
 const stmtDeleteNewsletterByEmail = db.prepare(`DELETE FROM newsletter_subscribers WHERE email = ?`);
 const stmtDeleteLoginAttemptsByEmail = db.prepare(`DELETE FROM login_attempts WHERE email = ?`);
@@ -744,7 +749,7 @@ const stmtIncrementEmailCodeAttempts = db.prepare(
 );
 
 function setUserTotp(userId, { secret, recoveryJson }) {
-  stmtSetTotp.run(secret || null, secret ? Date.now() : null, recoveryJson || null, userId);
+  stmtSetTotp.run(cofre.cifrar(secret || null), secret ? Date.now() : null, recoveryJson || null, userId);
   stmtLimpaTotpPendente.run(userId);
   stmtZeraPassoTotp.run(userId);
 }
@@ -752,7 +757,7 @@ const stmtLimpaTotpPendente = db.prepare(`UPDATE users SET totp_pendente = NULL,
 const stmtZeraPassoTotp = db.prepare(`UPDATE users SET totp_ultimo_passo = NULL WHERE id = ?`);
 const stmtGuardaTotpPendente = db.prepare(`UPDATE users SET totp_pendente = ?, totp_pendente_em = ? WHERE id = ?`);
 function guardarTotpPendente(userId, segredo){
-  stmtGuardaTotpPendente.run(segredo, Date.now(), userId);
+  stmtGuardaTotpPendente.run(cofre.cifrar(segredo), Date.now(), userId);
 }
 function limparTotpPendente(userId){
   stmtLimpaTotpPendente.run(userId);
@@ -835,8 +840,8 @@ const stmtInsertOrder = db.prepare(`
   INSERT INTO orders (
     external_reference, user_id, status, items_json, address_json, shipping_json,
     coupon_code, subtotal, discount, pix_discount, promo_discount, payment_method,
-    shipping_price, total, customer_phone, customer_email, created_at, updated_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    shipping_price, total, customer_phone, customer_email, created_at, updated_at, customer_phone_indice
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 const stmtGetOrderByRef = db.prepare(`SELECT * FROM orders WHERE external_reference = ?`);
 const stmtUpdateOrderStatus = db.prepare(
@@ -887,7 +892,7 @@ function createOrder(order) {
     order.userId ?? null,
     order.status ?? "pendente",
     JSON.stringify(order.items),
-    JSON.stringify(order.address),
+    cofre.cifrar(JSON.stringify(order.address)),
     JSON.stringify(order.shipping),
     order.couponCode ?? null,
     order.subtotal,
@@ -897,10 +902,11 @@ function createOrder(order) {
     order.paymentMethod ?? "card",
     order.shippingPrice,
     order.total,
-    order.customerPhone ?? null,
+    cofre.cifrar(order.customerPhone ?? null),
     order.customerEmail ?? null,
     now,
-    now
+    now,
+    cofre.indiceCego(order.customerPhone ?? null)
   );
   return getOrderByExternalReference(order.externalReference);
 }
@@ -909,14 +915,14 @@ const stmtCouponUsedByUser = db.prepare(
   `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'pago' AND user_id = ? LIMIT 1`
 );
 const stmtCouponUsedByPhone = db.prepare(
-  `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'pago' AND customer_phone = ? LIMIT 1`
+  `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'pago' AND customer_phone_indice = ? LIMIT 1`
 );
 const COUPON_PENDING_WINDOW_MS = 2 * 60 * 60 * 1000;
 const stmtCouponPendingByUser = db.prepare(
   `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'pendente' AND user_id = ? AND created_at > ? LIMIT 1`
 );
 const stmtCouponPendingByPhone = db.prepare(
-  `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'pendente' AND customer_phone = ? AND created_at > ? LIMIT 1`
+  `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'pendente' AND customer_phone_indice = ? AND created_at > ? LIMIT 1`
 );
 
 const stmtCouponUsedByUserSince = db.prepare(
@@ -932,7 +938,7 @@ const stmtCouponEmAnaliseByUser = db.prepare(
   `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'em análise' AND user_id = ? LIMIT 1`
 );
 const stmtCouponEmAnaliseByPhone = db.prepare(
-  `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'em análise' AND customer_phone = ? LIMIT 1`
+  `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'em análise' AND customer_phone_indice = ? LIMIT 1`
 );
 
 db.exec(`
@@ -962,8 +968,9 @@ function reservaAindaVale(reserva, agora){
   if(pedido.status === "pendente") return agora - pedido.created_at < COUPON_PENDING_WINDOW_MS && !pedido.arquivado_em;
   return false;
 }
-function reservarCupom({ code, userId, phone, pedido }){
+function reservarCupom({ code, userId, phone: telefone, pedido }){
   const agora = Date.now();
+  const phone = cofre.indiceCego(telefone);
   const conflitos = stmtReservasConflitantes.all(code, userId ?? null, phone ?? null);
   for(const r of conflitos){
     if(r.pedido === pedido) continue;
@@ -982,8 +989,9 @@ function liberarCupomDoPedido(pedido){
   stmtApagaReservaDoPedido.run(pedido);
 }
 
-function hasUsedCoupon({ code, userId, phone }) {
+function hasUsedCoupon({ code, userId, phone: telefone }) {
   if (!code) return false;
+  const phone = cofre.indiceCego(telefone);
   if (userId && stmtCouponUsedByUser.get(code, userId)) return true;
   if (phone && stmtCouponUsedByPhone.get(code, phone)) return true;
   const cutoff = Date.now() - COUPON_PENDING_WINDOW_MS;
@@ -996,11 +1004,11 @@ function hasUsedCoupon({ code, userId, phone }) {
 const stmtOutrosPagosComCupom = db.prepare(`
   SELECT COUNT(*) AS n FROM orders
    WHERE coupon_code = ? AND status = 'pago' AND external_reference <> ?
-     AND ((user_id IS NOT NULL AND user_id = ?) OR (customer_phone IS NOT NULL AND customer_phone = ?))
+     AND ((user_id IS NOT NULL AND user_id = ?) OR (customer_phone_indice IS NOT NULL AND customer_phone_indice = ?))
 `);
 function cupomJaUsadoEmOutroPedidoPago(pedido){
   if(!pedido?.coupon_code) return false;
-  return stmtOutrosPagosComCupom.get(pedido.coupon_code, pedido.external_reference, pedido.user_id ?? null, pedido.customer_phone ?? null).n > 0;
+  return stmtOutrosPagosComCupom.get(pedido.coupon_code, pedido.external_reference, pedido.user_id ?? null, cofre.indiceCego(pedido.customer_phone)).n > 0;
 }
 function getOrderByExternalReference(ref) {
   return stmtGetOrderByRef.get(ref) || null;
@@ -1012,13 +1020,13 @@ const stmtUpdateOrderDraft = db.prepare(`
   UPDATE orders SET
     items_json = ?, address_json = ?, shipping_json = ?, coupon_code = ?,
     subtotal = ?, discount = ?, pix_discount = ?, promo_discount = ?, shipping_price = ?, total = ?,
-    customer_phone = ?, updated_at = ?
+    customer_phone = ?, customer_phone_indice = ?, updated_at = ?
   WHERE external_reference = ?
 `);
 function updateOrderDraft(ref, order) {
   stmtUpdateOrderDraft.run(
     JSON.stringify(order.items),
-    JSON.stringify(order.address),
+    cofre.cifrar(JSON.stringify(order.address)),
     JSON.stringify(order.shipping),
     order.couponCode ?? null,
     order.subtotal,
@@ -1027,7 +1035,8 @@ function updateOrderDraft(ref, order) {
     order.promoDiscount ?? 0,
     order.shippingPrice,
     order.total,
-    order.customerPhone ?? null,
+    cofre.cifrar(order.customerPhone ?? null),
+    cofre.indiceCego(order.customerPhone ?? null),
     Date.now(),
     ref
   );
@@ -1705,7 +1714,7 @@ function getInstagramToken() {
   return row ? { accessToken: row.access_token, refreshedAt: row.refreshed_at } : null;
 }
 function saveInstagramToken({ accessToken, refreshedAt }) {
-  stmtUpsertInstagramToken.run(accessToken, refreshedAt);
+  stmtUpsertInstagramToken.run(cofre.cifrar(accessToken), refreshedAt);
 }
 function deleteInstagramToken() {
   stmtDeleteInstagramToken.run();
@@ -2321,7 +2330,82 @@ function versaoDasEstampas(){
   return `${v.n}.${v.t}`;
 }
 
+const CAMPOS_CIFRADOS = {
+  users: ["cpf", "saved_address_json", "totp_secret", "totp_pendente"],
+  orders: ["address_json", "customer_phone"],
+  instagram_tokens: ["access_token"],
+};
+const CHAVE_PRIMARIA = { users: "id", orders: "external_reference", instagram_tokens: "id" };
+
+function regravarComChaveAtual({ forcar = false, lote = 200 } = {}){
+  if(!cofre.ativo()) return { regravados: 0, indices: 0 };
+  const atual = cofre.idAtual();
+  let regravados = 0;
+  for(const [tabela, campos] of Object.entries(CAMPOS_CIFRADOS)){
+    const pk = CHAVE_PRIMARIA[tabela];
+    const condicao = campos.map(c => `(${c} IS NOT NULL AND ${c} <> '' AND (${c} NOT LIKE 'cf1.%' ${forcar ? "OR 1 = 1" : `OR ${c} NOT LIKE 'cf1.${atual}.%'`}))`).join(" OR ");
+    const ler = prepararSemCofre(`SELECT ${pk} AS pk, ${campos.join(", ")} FROM ${tabela} WHERE ${condicao} LIMIT ?`);
+    const gravar = prepararSemCofre(`UPDATE ${tabela} SET ${campos.map(c => `${c} = ?`).join(", ")} WHERE ${pk} = ?`);
+    for(;;){
+      const linhas = ler.all(lote);
+      if(!linhas.length) break;
+      db.exec("BEGIN");
+      try {
+        for(const linha of linhas){
+          const valores = campos.map(c => {
+            const v = linha[c];
+            if(v == null || v === "") return v;
+            const aberto = cofre.decifrar(v);
+            return cofre.cifrar(aberto);
+          });
+          gravar.run(...valores, linha.pk);
+          regravados++;
+        }
+        db.exec("COMMIT");
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
+      if(linhas.length < lote) break;
+    }
+  }
+  const telefones = prepararSemCofre(`SELECT external_reference, customer_phone FROM orders WHERE customer_phone IS NOT NULL`).all();
+  const gravarIndice = prepararSemCofre(`UPDATE orders SET customer_phone_indice = ? WHERE external_reference = ?`);
+  let indices = 0;
+  for(const linha of telefones){
+    gravarIndice.run(cofre.indiceCego(cofre.decifrar(linha.customer_phone)), linha.external_reference);
+    indices++;
+  }
+  const reservas = prepararSemCofre(`SELECT rowid AS id, telefone FROM cupons_reservados WHERE telefone IS NOT NULL AND telefone NOT LIKE 'ix1.%'`).all();
+  const gravarReserva = prepararSemCofre(`UPDATE cupons_reservados SET telefone = ? WHERE rowid = ?`);
+  for(const r of reservas) gravarReserva.run(cofre.indiceCego(r.telefone), r.id);
+  return { regravados, indices };
+}
+
+function dadosAbertosQueSobraram(){
+  if(!cofre.ativo()) return null;
+  const atual = cofre.idAtual();
+  let total = 0;
+  for(const [tabela, campos] of Object.entries(CAMPOS_CIFRADOS)){
+    const condicao = campos.map(c => `(${c} IS NOT NULL AND ${c} <> '' AND ${c} NOT LIKE 'cf1.${atual}.%')`).join(" OR ");
+    total += prepararSemCofre(`SELECT COUNT(*) AS n FROM ${tabela} WHERE ${condicao}`).get().n;
+  }
+  return total;
+}
+
+if(cofre.ativo()){
+  const resultado = regravarComChaveAtual();
+  if(resultado.regravados) console.log(`Cofre: ${resultado.regravados} registro(s) com dados pessoais agora guardados criptografados.`);
+} else {
+  db.exec(`UPDATE orders SET customer_phone_indice = customer_phone WHERE customer_phone IS NOT NULL AND customer_phone_indice IS NULL AND customer_phone NOT LIKE 'cf1.%'`);
+  const trancados = Object.entries(CAMPOS_CIFRADOS).reduce((soma, [tabela, campos]) =>
+    soma + prepararSemCofre(`SELECT COUNT(*) AS n FROM ${tabela} WHERE ${campos.map(c => `${c} LIKE 'cf1.%'`).join(" OR ")}`).get().n, 0);
+  if(trancados) console.error(`🔴 Há ${trancados} registro(s) criptografados, mas CHAVES_DADOS não está definida. Coloque a chave de volta na hospedagem.`);
+}
+
 module.exports = {
+  regravarComChaveAtual,
+  dadosAbertosQueSobraram,
   listarEstampas,
   lerEstampa,
   imagemDaEstampa,

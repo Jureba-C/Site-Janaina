@@ -44,7 +44,7 @@ test("o padrão confia só em proxy da própria máquina", () => {
 });
 
 test("token de produção do Mercado Pago sem segredo do webhook impede a subida", () => {
-  const faltando = ambiente.problemasDeProducao({ NODE_ENV: "production", MP_ACCESS_TOKEN: "APP_USR-123", ADMIN_EMAIL_HASHES: "ab" });
+  const faltando = ambiente.problemasDeProducao({ NODE_ENV: "production", MP_ACCESS_TOKEN: "APP_USR-123", ADMIN_EMAIL_HASHES: "ab", CHAVES_DADOS: "k1:" + "a".repeat(64) });
   assert.equal(faltando.length, 1);
   assert.match(faltando[0], /MP_WEBHOOK_SECRET/);
   assert.deepEqual(ambiente.problemasDeProducao({ NODE_ENV: "production", MP_ACCESS_TOKEN: "TEST-1" }), []);

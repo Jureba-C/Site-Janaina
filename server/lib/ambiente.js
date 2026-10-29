@@ -38,6 +38,9 @@ function problemasDeProducao(env = process.env){
   if(aceitaPagamentoDeVerdade(env) && !env.MP_WEBHOOK_SECRET){
     faltando.push("MP_WEBHOOK_SECRET (o token do Mercado Pago é de produção e o webhook ficaria aberto)");
   }
+  if(aceitaPagamentoDeVerdade(env) && !env.CHAVES_DADOS){
+    faltando.push("CHAVES_DADOS (dados pessoais das clientes ficariam sem criptografia no banco)");
+  }
   if(aceitaPagamentoDeVerdade(env) && !env.ADMIN_EMAIL_HASHES){
     faltando.push("ADMIN_EMAIL_HASHES (loja recebendo pagamento sem ninguém no painel)");
   }
