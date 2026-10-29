@@ -248,3 +248,14 @@ test("nenhuma página começou a divergir da CSP padrão sem registro", () => {
   assert.deepEqual(semMeta, SEM_META_DE_PROPOSITO,
     "página HTML sem <meta> de CSP — ou foi esquecida, ou precisa entrar na lista");
 });
+
+test("toda rota sensível do painel pede o código de novo", () => {
+  const fonte = fs.readFileSync(path.join(RAIZ, "server.js"), "utf8");
+  const lista = fonte.slice(fonte.indexOf("const ROTAS_SENSIVEIS = ["), fonte.indexOf("];", fonte.indexOf("const ROTAS_SENSIVEIS = [")));
+  const rotas = [...lista.matchAll(/"(GET|POST|PUT|PATCH|DELETE) ([^"]+)"/g)];
+  assert.ok(rotas.length >= 10, "a lista de rotas sensíveis sumiu");
+  for(const [, metodo, rota] of rotas){
+    const registro = `app.${metodo.toLowerCase()}("${rota}", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado,`;
+    assert.ok(fonte.includes(registro), `${metodo} ${rota} precisa de confirmado`);
+  }
+});

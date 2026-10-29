@@ -182,7 +182,7 @@
     );
   }
 
-  let tfaSecret = null;
+
 
   async function startTwoFactorSetup(){
     showOnly(stateTwoFactor);
@@ -192,7 +192,7 @@
       });
       if(!res.ok) throw new Error("falha ao preparar");
       const data = await res.json();
-      tfaSecret = data.secret;
+
       document.getElementById("tfaQr").src = data.qrDataUri;
 
       document.getElementById("tfaSecret").textContent = data.secret.replace(/(.{4})/g, "$1 ").trim();
@@ -213,7 +213,7 @@
       const res = await fetch("/api/admin/2fa/activate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secret: tfaSecret, code: codeEl.value.trim() }),
+        body: JSON.stringify({ code: codeEl.value.trim() }),
       });
       const data = await res.json().catch(() => ({}));
       if(!res.ok) throw new Error(data.error || "Não foi possível ativar agora.");

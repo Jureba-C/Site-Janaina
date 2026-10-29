@@ -1005,8 +1005,10 @@ async function sendAvisoDeSegurancaDaConta({ to, nome, oQue, novoEmail }){
   const quando = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const descricao = oQue === "email"
     ? `o e-mail de acesso da sua conta foi trocado para ${novoEmail}`
-    : "a senha da sua conta foi alterada";
-  const subject = oQue === "email" ? "Seu e-mail de acesso foi alterado" : "Sua senha foi alterada";
+    : oQue === "redefinicao"
+      ? "a senha da sua conta foi redefinida pelo link de \"esqueci a senha\""
+      : "a senha da sua conta foi alterada";
+  const subject = oQue === "email" ? "Seu e-mail de acesso foi alterado" : oQue === "redefinicao" ? "Sua senha foi redefinida" : "Sua senha foi alterada";
   const text = [
     nome ? `Oi, ${nome}!` : "Oi!",
     "",

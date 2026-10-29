@@ -23,9 +23,11 @@ let adminCookie;
 let adminSem2faCookie;
 let clienteCookie;
 
-function sessao(userId){
+function sessao(userId, { segundoFator = false, confirmada = false } = {}){
   const token = crypto.randomBytes(32).toString("hex");
-  db.createSession({ tokenHash: crypto.createHash("sha256").update(token).digest("hex"), userId, expiresAt: Date.now() + 86400000 });
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  db.createSession({ tokenHash, userId, expiresAt: Date.now() + 86400000, segundoFator });
+  if(confirmada) db.marcarReautenticacao(tokenHash);
   return `plc_session=${token}`;
 }
 
@@ -45,7 +47,7 @@ before(async () => {
   }
   const admin = db.createUser({ name: "Admin", email: ADMIN_EMAIL, passwordHash: "x", cpf: null });
   db.setUserTotp(admin.id, { secret: "JBSWY3DPEHPK3PXP", recoveryJson: "[]" });
-  adminCookie = sessao(admin.id);
+  adminCookie = sessao(admin.id, { segundoFator: true, confirmada: true });
   adminSem2faCookie = sessao(db.createUser({ name: "Admin novo", email: ADMIN_SEM_2FA, passwordHash: "x", cpf: null }).id);
   clienteCookie = sessao(db.createUser({ name: "Cliente", email: "cliente-producao@test.com", passwordHash: "x", cpf: "11144477735" }).id);
 });

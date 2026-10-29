@@ -217,6 +217,15 @@ db.exec(`UPDATE newsletter_subscribers SET opt_in_at = created_at WHERE opt_in_a
 ensureColumn("users", "totp_secret", "TEXT");
 ensureColumn("users", "totp_enabled_at", "INTEGER");
 ensureColumn("users", "totp_recovery_json", "TEXT");
+ensureColumn("users", "totp_pendente", "TEXT");
+ensureColumn("users", "totp_pendente_em", "INTEGER");
+ensureColumn("users", "totp_ultimo_passo", "INTEGER");
+ensureColumn("users", "senha_redefinida_em", "INTEGER");
+ensureColumn("sessions", "segundo_fator_em", "INTEGER");
+ensureColumn("sessions", "reautenticado_em", "INTEGER");
+ensureColumn("sessions", "ultimo_uso_em", "INTEGER");
+ensureColumn("sessions", "ip", "TEXT");
+ensureColumn("sessions", "agente", "TEXT");
 ensureColumn("users", "phone", "TEXT");
 ensureColumn("users", "birth_date", "TEXT");
 
@@ -530,15 +539,45 @@ function listAccountsForAdmin() {
 }
 
 const stmtInsertSession = db.prepare(
-  `INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)`
+  `INSERT INTO sessions (token_hash, user_id, created_at, expires_at, segundo_fator_em, ultimo_uso_em, ip, agente) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 );
 const stmtGetSession = db.prepare(`SELECT * FROM sessions WHERE token_hash = ?`);
 const stmtDeleteSession = db.prepare(`DELETE FROM sessions WHERE token_hash = ?`);
 const stmtDeleteExpiredSessions = db.prepare(`DELETE FROM sessions WHERE expires_at < ?`);
 const stmtDeleteUserSessions = db.prepare(`DELETE FROM sessions WHERE user_id = ?`);
 
-function createSession({ tokenHash, userId, expiresAt }) {
-  stmtInsertSession.run(tokenHash, userId, Date.now(), expiresAt);
+const MAX_SESSOES_POR_PESSOA = 10;
+const stmtSessoesExcedentes = db.prepare(`
+  DELETE FROM sessions WHERE user_id = ? AND token_hash NOT IN (
+    SELECT token_hash FROM sessions WHERE user_id = ? ORDER BY created_at DESC LIMIT ?
+  )
+`);
+function createSession({ tokenHash, userId, expiresAt, segundoFator = false, ip = null, agente = null }) {
+  const agora = Date.now();
+  stmtInsertSession.run(tokenHash, userId, agora, expiresAt, segundoFator ? agora : null, agora, ip, agente);
+  stmtSessoesExcedentes.run(userId, userId, MAX_SESSOES_POR_PESSOA);
+}
+const stmtUsoDaSessao = db.prepare(`UPDATE sessions SET ultimo_uso_em = ? WHERE token_hash = ?`);
+function marcarUsoDaSessao(tokenHash, agora = Date.now()){
+  stmtUsoDaSessao.run(agora, tokenHash);
+}
+const stmtReautenticaSessao = db.prepare(`UPDATE sessions SET reautenticado_em = ?, ultimo_uso_em = ? WHERE token_hash = ?`);
+function marcarReautenticacao(tokenHash, agora = Date.now()){
+  stmtReautenticaSessao.run(agora, agora, tokenHash);
+}
+const stmtSessoesDoUsuario = db.prepare(
+  `SELECT token_hash, created_at, ultimo_uso_em, ip, agente, segundo_fator_em FROM sessions WHERE user_id = ? AND expires_at > ? ORDER BY COALESCE(ultimo_uso_em, created_at) DESC`
+);
+function listarSessoesDoUsuario(userId){
+  return stmtSessoesDoUsuario.all(userId, Date.now());
+}
+const stmtApagaSessaoDoUsuario = db.prepare(`DELETE FROM sessions WHERE user_id = ? AND token_hash = ?`);
+function apagarSessaoDoUsuario(userId, tokenHash){
+  return stmtApagaSessaoDoUsuario.run(userId, tokenHash).changes > 0;
+}
+const stmtApagaTodasSessoes = db.prepare(`DELETE FROM sessions`);
+function apagarTodasAsSessoes(){
+  return stmtApagaTodasSessoes.run().changes;
 }
 function getSessionByTokenHash(tokenHash) {
   stmtDeleteExpiredSessions.run(Date.now());
@@ -682,6 +721,33 @@ const stmtIncrementEmailCodeAttempts = db.prepare(
 
 function setUserTotp(userId, { secret, recoveryJson }) {
   stmtSetTotp.run(secret || null, secret ? Date.now() : null, recoveryJson || null, userId);
+  stmtLimpaTotpPendente.run(userId);
+  stmtZeraPassoTotp.run(userId);
+}
+const stmtLimpaTotpPendente = db.prepare(`UPDATE users SET totp_pendente = NULL, totp_pendente_em = NULL WHERE id = ?`);
+const stmtZeraPassoTotp = db.prepare(`UPDATE users SET totp_ultimo_passo = NULL WHERE id = ?`);
+const stmtGuardaTotpPendente = db.prepare(`UPDATE users SET totp_pendente = ?, totp_pendente_em = ? WHERE id = ?`);
+function guardarTotpPendente(userId, segredo){
+  stmtGuardaTotpPendente.run(segredo, Date.now(), userId);
+}
+function limparTotpPendente(userId){
+  stmtLimpaTotpPendente.run(userId);
+}
+const stmtPassoTotp = db.prepare(
+  `UPDATE users SET totp_ultimo_passo = ? WHERE id = ? AND (totp_ultimo_passo IS NULL OR totp_ultimo_passo < ?)`
+);
+function registrarPassoTotp(userId, passo){
+  return stmtPassoTotp.run(passo, userId, passo).changes === 1;
+}
+const stmtTrocaRecuperacao = db.prepare(
+  `UPDATE users SET totp_recovery_json = ? WHERE id = ? AND totp_recovery_json = ?`
+);
+function trocarCodigosDeRecuperacao(userId, antigoJson, novoJson){
+  return stmtTrocaRecuperacao.run(novoJson, userId, antigoJson).changes === 1;
+}
+const stmtSenhaRedefinida = db.prepare(`UPDATE users SET senha_redefinida_em = ? WHERE id = ?`);
+function marcarSenhaRedefinida(userId){
+  stmtSenhaRedefinida.run(Date.now(), userId);
 }
 function createTwoFactorChallenge({ tokenHash, userId, expiresAt }) {
   stmtInsertChallenge.run(tokenHash, userId, expiresAt, Date.now());
@@ -2192,6 +2258,16 @@ module.exports = {
   getSessionByTokenHash,
   deleteSession,
   deleteAllSessionsForUser,
+  marcarUsoDaSessao,
+  marcarReautenticacao,
+  listarSessoesDoUsuario,
+  apagarSessaoDoUsuario,
+  apagarTodasAsSessoes,
+  guardarTotpPendente,
+  limparTotpPendente,
+  registrarPassoTotp,
+  trocarCodigosDeRecuperacao,
+  marcarSenhaRedefinida,
   createPasswordReset,
   getPasswordReset,
   deletePasswordReset,

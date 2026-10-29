@@ -2505,3 +2505,14 @@ a.pedido-avaliar:focus-visible{ outline:2px solid var(--blush-600); outline-offs
 .al-molde-foto{ position:relative; max-width:260px; }
 .al-molde-foto img{ width:100%; border-radius:12px; display:block; }
 .al-molde-foto span{ position:absolute; border:2px dashed var(--blush-600); background:rgba(169,82,29,.12); border-radius:6px; }
+
+.confirmar-admin { border: 0; padding: 0; border-radius: 20px; max-width: min(420px, calc(100vw - 32px)); width: 100%; box-shadow: 0 30px 60px -20px rgba(80, 40, 20, 0.45); background: #FFFCF8; color: var(--ink, #323230); }
+.confirmar-admin::backdrop { background: rgba(50, 50, 48, 0.45); }
+.confirmar-admin-caixa { display: grid; gap: 10px; padding: 24px; margin: 0; }
+.confirmar-admin-titulo { font-size: 22px; margin: 0; }
+.confirmar-admin-texto { margin: 0; font-size: 15px; line-height: 1.5; color: #5a4f47; }
+.confirmar-admin-rotulo { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; margin-top: 4px; }
+.confirmar-admin-campo { font-size: 22px; letter-spacing: 0.3em; text-align: center; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--blush-300, #DFA1AC); background: #fff; }
+.confirmar-admin-campo:focus { outline: 2px solid var(--blush-600, #9E4A18); outline-offset: 2px; }
+.confirmar-admin-erro { min-height: 1.2em; margin: 0; font-size: 14px; color: #B42318; }
+.confirmar-admin-botoes { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }

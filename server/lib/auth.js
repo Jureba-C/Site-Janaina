@@ -3,9 +3,12 @@ const bcrypt = require("bcryptjs");
 const db = require("./db");
 const ambiente = require("./ambiente");
 
-const SESSION_COOKIE_NAME = "plc_session";
+const COOKIE_ANTIGO = "plc_session";
+const COOKIE_PROTEGIDO = "__Host-plc_session";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const ADMIN_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const ADMIN_OCIOSO_MS = 30 * 60 * 1000;
+const CONFIRMACAO_VALE_MS = 10 * 60 * 1000;
 const BCRYPT_COST = 12;
 
 const DUMMY_HASH = bcrypt.hashSync("senha-de-referencia-para-tempo-constante", BCRYPT_COST);
@@ -85,40 +88,57 @@ function emHttps() {
   return ambiente.emProducao();
 }
 
-function cookieOptions() {
+function nomeDoCookie() {
+  return emHttps() ? COOKIE_PROTEGIDO : COOKIE_ANTIGO;
+}
+
+function cookieOptions(maxAge = SESSION_TTL_MS) {
   return {
     httpOnly: true,
     secure: emHttps(),
     sameSite: "lax",
     path: "/",
-    maxAge: SESSION_TTL_MS,
+    maxAge,
   };
+}
+
+function tokenDoCookie(req) {
+  const cookies = parseCookies(req);
+  return cookies[COOKIE_PROTEGIDO] || cookies[COOKIE_ANTIGO] || null;
 }
 
 function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-function issueSession(res, userId) {
+function issueSession(res, userId, { segundoFator = false, req = null } = {}) {
   const token = crypto.randomBytes(32).toString("hex");
+  const user = db.getUserById(userId);
+  const ttl = user && isAdminEmail(user.email) ? ADMIN_SESSION_TTL_MS : SESSION_TTL_MS;
+  const antigo = req ? tokenDoCookie(req) : null;
+  if (antigo) db.deleteSession(hashToken(antigo));
   db.createSession({
     tokenHash: hashToken(token),
     userId,
-    expiresAt: Date.now() + SESSION_TTL_MS,
+    expiresAt: Date.now() + ttl,
+    segundoFator,
+    ip: req?.ip ? String(req.ip).slice(0, 64) : null,
+    agente: req?.get ? String(req.get("user-agent") || "").slice(0, 160) || null : null,
   });
-  res.cookie(SESSION_COOKIE_NAME, token, cookieOptions());
+  if (emHttps()) res.clearCookie(COOKIE_ANTIGO, { ...cookieOptions(), maxAge: undefined });
+  res.cookie(nomeDoCookie(), token, cookieOptions(ttl));
 }
 
 function sessionTokenHash(req) {
-  const token = parseCookies(req)[SESSION_COOKIE_NAME];
+  const token = tokenDoCookie(req);
   return token ? hashToken(token) : null;
 }
 
 function clearSession(req, res) {
-  const cookies = parseCookies(req);
-  const token = cookies[SESSION_COOKIE_NAME];
+  const token = tokenDoCookie(req);
   if (token) db.deleteSession(hashToken(token));
-  res.clearCookie(SESSION_COOKIE_NAME, { ...cookieOptions(), maxAge: undefined });
+  res.clearCookie(COOKIE_ANTIGO, { ...cookieOptions(), maxAge: undefined });
+  if (emHttps()) res.clearCookie(COOKIE_PROTEGIDO, { ...cookieOptions(), maxAge: undefined });
 }
 
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
@@ -211,18 +231,29 @@ function totpCodeAt(secret, counter) {
   return String(binary % 10 ** TOTP_DIGITS).padStart(TOTP_DIGITS, "0");
 }
 
-function verifyTotp(secret, code) {
+function passoDoTotp(secret, code, agora = Date.now()) {
   const clean = String(code || "").replace(/\D/g, "");
-  if (!secret || clean.length !== TOTP_DIGITS) return false;
-  const counter = Math.floor(Date.now() / 1000 / TOTP_STEP_SECONDS);
+  if (!secret || clean.length !== TOTP_DIGITS) return null;
+  const counter = Math.floor(agora / 1000 / TOTP_STEP_SECONDS);
   const expected = Buffer.from(clean);
   for (let drift = -TOTP_WINDOW; drift <= TOTP_WINDOW; drift++) {
     const candidate = Buffer.from(totpCodeAt(secret, counter + drift));
     if (candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected)) {
-      return true;
+      return counter + drift;
     }
   }
-  return false;
+  return null;
+}
+
+function verifyTotp(secret, code) {
+  return passoDoTotp(secret, code) !== null;
+}
+
+function confirmarTotpDaConta(user, code) {
+  if (!user?.totp_secret) return false;
+  const passo = passoDoTotp(user.totp_secret, code);
+  if (passo === null) return false;
+  return db.registrarPassoTotp(user.id, passo);
 }
 
 function totpAuthUri({ secret, email, issuer }) {
@@ -243,15 +274,24 @@ function generateRecoveryCodes() {
 async function hashRecoveryCodes(codes) {
   return Promise.all(codes.map(c => bcrypt.hash(c, BCRYPT_COST)));
 }
+const FORMATO_DE_RECUPERACAO = /^[0-9A-F]{5}-[0-9A-F]{5}$/;
+
 async function consumeRecoveryCode(code, hashes) {
   const clean = String(code || "").trim().toUpperCase();
-  if (!clean) return null;
+  if (!FORMATO_DE_RECUPERACAO.test(clean)) return null;
   for (let i = 0; i < hashes.length; i++) {
     if (await bcrypt.compare(clean, hashes[i])) {
       return hashes.filter((_, idx) => idx !== i);
     }
   }
   return null;
+}
+
+async function usarCodigoDeRecuperacao(user, code) {
+  const atualJson = user?.totp_recovery_json || "[]";
+  const restantes = await consumeRecoveryCode(code, JSON.parse(atualJson));
+  if (!restantes) return false;
+  return db.trocarCodigosDeRecuperacao(user.id, atualJson, JSON.stringify(restantes));
 }
 
 const TWO_FACTOR_CHALLENGE_TTL_MS = 5 * 60 * 1000;
@@ -354,19 +394,33 @@ function isAdminEmail(email) {
 }
 
 function getUserFromRequest(req) {
-  const cookies = parseCookies(req);
-  const token = cookies[SESSION_COOKIE_NAME];
+  const token = tokenDoCookie(req);
   if (!token) return null;
   const session = db.getSessionByTokenHash(hashToken(token));
   if (!session) return null;
   const user = db.getUserById(session.user_id);
   if (!user) return null;
   const isAdmin = isAdminEmail(user.email);
-  if (isAdmin && Date.now() - session.created_at > ADMIN_SESSION_TTL_MS) {
-    db.deleteSession(session.token_hash);
-    return null;
+  const agora = Date.now();
+  if (isAdmin) {
+    const ultimoUso = session.ultimo_uso_em || session.created_at;
+    if (agora - session.created_at > ADMIN_SESSION_TTL_MS || agora - ultimoUso > ADMIN_OCIOSO_MS) {
+      db.deleteSession(session.token_hash);
+      return null;
+    }
   }
-  return { id: user.id, name: user.name, email: user.email, cep: user.cep || null, cpf: user.cpf || null, isAdmin };
+  if (!session.ultimo_uso_em || agora - session.ultimo_uso_em > 60 * 1000) {
+    db.marcarUsoDaSessao(session.token_hash, agora);
+  }
+  const segundoFator = Boolean(session.segundo_fator_em) && Boolean(user.totp_secret);
+  return {
+    id: user.id, name: user.name, email: user.email, cep: user.cep || null, cpf: user.cpf || null,
+    isAdmin,
+    segundoFator,
+    adminVerificado: isAdmin && (!ADMIN_2FA_REQUIRED || segundoFator),
+    sessaoHash: session.token_hash,
+    reautenticadoEm: session.reautenticado_em || null,
+  };
 }
 
 function attachUser(req, res, next) {
@@ -403,11 +457,39 @@ function requireAdminTwoFactor(req, res, next) {
       needsTwoFactorSetup: true,
     });
   }
+  if (!req.user.segundoFator) {
+    return res.status(403).json({
+      error: "Por segurança, saia e entre de novo com o código do app autenticador.",
+      precisaEntrarDeNovo: true,
+    });
+  }
   next();
+}
+
+function exigirConfirmacaoRecente(validadeMs = CONFIRMACAO_VALE_MS) {
+  return (req, res, next) => {
+    if (!ADMIN_2FA_REQUIRED) return next();
+    const quando = req.user?.reautenticadoEm;
+    if (quando && Date.now() - quando <= validadeMs) return next();
+    return res.status(403).json({
+      error: "Confirme com o código do app autenticador para continuar.",
+      precisaConfirmar: true,
+    });
+  };
 }
 
 module.exports = {
   ADMIN_SESSION_TTL_MS,
+  ADMIN_OCIOSO_MS,
+  CONFIRMACAO_VALE_MS,
+  COOKIE_ANTIGO,
+  COOKIE_PROTEGIDO,
+  nomeDoCookie,
+  exigirConfirmacaoRecente,
+  passoDoTotp,
+  confirmarTotpDaConta,
+  usarCodigoDeRecuperacao,
+  FORMATO_DE_RECUPERACAO,
   hashPassword,
   verifyPassword,
   isValidEmail,
@@ -447,4 +529,5 @@ module.exports = {
   EMAIL_2FA_CODE_TTL_MS,
   ADMIN_2FA_REQUIRED,
   isAdminEmail,
+  hashEmail,
 };

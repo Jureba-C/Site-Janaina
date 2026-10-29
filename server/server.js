@@ -105,6 +105,19 @@ if(PROBLEMAS_DE_PRODUCAO.length){
   process.exit(1);
 }
 
+if(process.env.ADMIN_2FA_REDEFINIR){
+  const alvo = String(process.env.ADMIN_2FA_REDEFINIR).trim().toLowerCase();
+  const conta = db.listUsersForExport().find(u => auth.hashEmail(u.email) === alvo);
+  if(conta && conta.has_2fa){
+    db.setUserTotp(conta.id, { secret: null, recoveryJson: null });
+    db.deleteAllSessionsForUser(conta.id);
+    eventos.registrar("admin_2fa_redefinido", { userId: conta.id, email: conta.email });
+    console.warn("🔴 ADMIN_2FA_REDEFINIR: o app autenticador da conta do painel foi zerado. TIRE essa variável da hospedagem agora.");
+  } else {
+    console.warn("⚠️  ADMIN_2FA_REDEFINIR está definido, mas não há 2FA para zerar nessa conta. Tire a variável da hospedagem.");
+  }
+}
+
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN || "COLOQUE_SEU_ACCESS_TOKEN_NO_.ENV",
 });
@@ -2117,11 +2130,11 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
 
     if(user.totp_secret){
       const challengeToken = auth.issueTwoFactorChallenge(user.id);
-      return res.json({ twoFactorRequired: true, challengeToken });
+      return res.json({ twoFactorRequired: true, challengeToken, soApp: auth.isAdminEmail(user.email) });
     }
 
     db.recordLoginAttempt({ email: emailAddress, ip, ok: true });
-    auth.issueSession(res, user.id);
+    auth.issueSession(res, user.id, { req });
     res.json({ id: user.id, name: user.name, email: user.email, cep: user.cep || null, isAdmin: auth.isAdminEmail(user.email) });
   } catch (err) {
     console.error("Erro ao fazer login:", err);
@@ -2162,7 +2175,7 @@ app.post("/api/auth/google", authLimiter, async (req, res) => {
       const recusa = recusaGoogleParaContaProtegida(jaVinculada.email, jaVinculada);
       if(recusa) return res.status(409).json({ error: recusa });
       db.recordLoginAttempt({ email: jaVinculada.email, ip, ok: true });
-      auth.issueSession(res, jaVinculada.id);
+      auth.issueSession(res, jaVinculada.id, { req });
       return res.json({
         id: jaVinculada.id, name: jaVinculada.name, email: jaVinculada.email,
         cep: jaVinculada.cep || null, isAdmin: auth.isAdminEmail(jaVinculada.email),
@@ -2186,7 +2199,7 @@ app.post("/api/auth/google", authLimiter, async (req, res) => {
       googleId: perfil.sub, semSenha: true,
     });
     db.recordLoginAttempt({ email: emailAddress, ip, ok: true });
-    auth.issueSession(res, user.id);
+    auth.issueSession(res, user.id, { req });
     res.status(201).json({
       id: user.id, name: user.name, email: user.email, cep: null,
       isAdmin: auth.isAdminEmail(user.email),
@@ -2246,26 +2259,27 @@ app.post("/api/auth/login/2fa", authLimiter, async (req, res) => {
       return res.status(429).json({ error: `Muitas tentativas. Tente novamente em ${minutos} minuto${minutos === 1 ? "" : "s"}.` });
     }
 
-    let ok = auth.verifyTotp(user.totp_secret, code);
+    const ehAdmin = auth.isAdminEmail(user.email);
+    let ok = auth.confirmarTotpDaConta(user, code);
+    let comRecuperacao = false;
     if(!ok){
-      const restantes = await auth.consumeRecoveryCode(code, JSON.parse(user.totp_recovery_json || "[]"));
-      if(restantes){
-        ok = true;
-        db.setUserTotp(user.id, { secret: user.totp_secret, recoveryJson: JSON.stringify(restantes) });
-      }
+      ok = await auth.usarCodigoDeRecuperacao(user, code);
+      comRecuperacao = ok;
     }
-    if(!ok){
+    if(!ok && !ehAdmin){
       ok = await auth.verifyTwoFactorEmailCode(challengeToken, code);
     }
 
     if(!ok){
       db.recordLoginAttempt({ email: user.email, ip, ok: false });
+      if(ehAdmin) eventos.registrar("admin_2fa_falhou", { req, userId: user.id, email: user.email });
       return res.status(401).json({ error: "Código inválido. Confira o app e tente de novo." });
     }
 
     auth.consumeTwoFactorChallenge(challengeToken);
     db.recordLoginAttempt({ email: user.email, ip, ok: true });
-    auth.issueSession(res, user.id);
+    auth.issueSession(res, user.id, { req, segundoFator: true });
+    if(ehAdmin) eventos.registrar("admin_novo_acesso", { req, userId: user.id, email: user.email, detalhes: { recuperacao: comRecuperacao } });
     res.json({ id: user.id, name: user.name, email: user.email, cep: user.cep || null, isAdmin: auth.isAdminEmail(user.email) });
   } catch (err) {
     console.error("Erro na verificação em duas etapas:", err);
@@ -2284,6 +2298,9 @@ app.post("/api/auth/login/2fa/email", authLimiter, async (req, res) => {
     if(!user?.totp_secret){
       auth.consumeTwoFactorChallenge(challengeToken);
       return res.status(401).json({ error: "Sessão expirada. Faça login novamente.", restart: true });
+    }
+    if(auth.isAdminEmail(user.email)){
+      return res.status(403).json({ error: "No painel, entre só com o app autenticador ou com um código de recuperação.", soApp: true });
     }
 
     const ip = auth.clientIp(req);
@@ -2419,8 +2436,14 @@ app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
 
     const passwordHash = await auth.hashPassword(password);
     db.updateUserPassword(userId, passwordHash);
+    db.marcarSenhaRedefinida(userId);
     db.deleteAllSessionsForUser(userId);
     auth.clearSession(req, res);
+    const dono = db.getUserById(userId);
+    if(dono){
+      avisarContaEmSegundoPlano({ to: dono.email, nome: String(dono.name || "").split(" ")[0], oQue: "redefinicao" });
+      eventos.registrar(auth.isAdminEmail(dono.email) ? "senha_redefinida_admin" : "senha_redefinida", { req, userId, email: dono.email });
+    }
 
     res.json({ ok: true });
   } catch (err) {
@@ -2429,14 +2452,20 @@ app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
   }
 });
 
+function usuarioPublico(u){
+  if(!u) return null;
+  return { id: u.id, name: u.name, email: u.email, cep: u.cep, cpf: u.cpf, isAdmin: u.isAdmin, adminVerificado: Boolean(u.adminVerificado) };
+}
+
 app.get("/api/auth/sessao", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.json({ user: req.user || null });
+  res.json({ user: usuarioPublico(req.user) });
 });
 
 app.get("/api/auth/me", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   if(!req.user) return res.status(401).json({ error: "Não autenticado." });
-  res.json(req.user);
+  res.json(usuarioPublico(req.user));
 });
 
 function mascararCpf(cpf){
@@ -2521,6 +2550,7 @@ app.put("/api/auth/email", authLimiter, auth.requireAuth, async (req, res) => {
     }
     const antigo = user.email;
     db.updateUserEmail(user.id, novo);
+    db.deletePasswordResetsForUser(user.id);
     const saiu = db.deleteOtherSessions(user.id, auth.sessionTokenHash(req));
     avisarContaEmSegundoPlano({ to: antigo, nome: String(user.name || "").split(" ")[0], oQue: "email", novoEmail: novo });
     res.json({ ...perfilDaConta(user.id), sessoesEncerradas: saiu });
@@ -2547,6 +2577,7 @@ app.put("/api/auth/senha", authLimiter, auth.requireAuth, async (req, res) => {
       return res.status(401).json({ error: "Senha atual incorreta." });
     }
     db.updateUserPassword(user.id, await auth.hashPassword(nova));
+    db.deletePasswordResetsForUser(user.id);
     const saiu = db.deleteOtherSessions(user.id, auth.sessionTokenHash(req));
     avisarContaEmSegundoPlano({ to: user.email, nome: String(user.name || "").split(" ")[0], oQue: "senha" });
     res.json({ ok: true, sessoesEncerradas: saiu });
@@ -2623,45 +2654,92 @@ function noStore(req, res, next){
 }
 app.use("/api/admin", noStore);
 
-app.post("/api/admin/2fa/setup", auth.requireAdmin, async (req, res) => {
+const confirmado = auth.exigirConfirmacaoRecente();
+const ROTAS_SENSIVEIS = [
+  "GET /api/admin/export.xlsx",
+  "POST /api/admin/instagram/reconnect",
+  "POST /api/admin/campanhas/:id/enviar",
+  "POST /api/admin/campanhas/:id/rodar",
+  "POST /api/admin/coupons",
+  "PATCH /api/admin/coupons/:code",
+  "DELETE /api/admin/coupons/:code",
+  "DELETE /api/admin/products/:id",
+  "DELETE /api/admin/estampas/:id",
+  "DELETE /api/admin/categories/:slug",
+  "DELETE /api/admin/orders/:reference",
+];
+
+const VALIDADE_TOTP_PENDENTE_MS = 10 * 60 * 1000;
+const ESPERA_TROCA_2FA_APOS_REDEFINIR_MS = 24 * 60 * 60 * 1000;
+
+app.post("/api/admin/2fa/setup", authLimiter, auth.requireAdmin, async (req, res) => {
   try {
+    const usuarioAtual = db.getUserById(req.user.id);
+    if(usuarioAtual?.totp_secret){
+      if(usuarioAtual.senha_redefinida_em && Date.now() - usuarioAtual.senha_redefinida_em < ESPERA_TROCA_2FA_APOS_REDEFINIR_MS){
+        return res.status(409).json({ error: "A senha foi redefinida há pouco. Por segurança, a troca do app autenticador só fica liberada 24 horas depois." });
+      }
+      const senha = req.body?.password;
+      if(!senha || typeof senha !== "string" || !(await auth.verifyPassword(senha, usuarioAtual.password_hash))){
+        return res.status(401).json({ error: "Confirme sua senha para trocar o app autenticador.", needsPassword: true });
+      }
+      const codigoAtual = String(req.body?.codigoAtual || "").trim();
+      const confirmou = auth.confirmarTotpDaConta(usuarioAtual, codigoAtual) || await auth.usarCodigoDeRecuperacao(usuarioAtual, codigoAtual);
+      if(!confirmou){
+        return res.status(401).json({ error: "Digite o código atual do app (ou um código de recuperação) para trocar.", needsCurrentCode: true });
+      }
+    }
     const secret = auth.generateTotpSecret();
+    db.guardarTotpPendente(req.user.id, secret);
     const uri = auth.totpAuthUri({ secret, email: req.user.email, issuer: "Arte Canecas" });
     const qrDataUri = await qrcode.toDataURL(uri, { margin: 1, width: 240 });
+    res.setHeader("Cache-Control", "no-store");
     res.json({ secret, qrDataUri });
   } catch (err) {
-    console.error("Erro ao preparar 2FA:", err);
+    console.error("Erro ao preparar 2FA:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível preparar a verificação em duas etapas." });
   }
 });
 
 app.post("/api/admin/2fa/activate", authLimiter, auth.requireAdmin, async (req, res) => {
   try {
-    const secret = String(req.body?.secret || "").trim().toUpperCase();
     const code = String(req.body?.code || "").trim();
-    if(!/^[A-Z2-7]{32}$/.test(secret)){
-      return res.status(400).json({ error: "Segredo inválido. Recarregue a página e tente de novo." });
-    }
-    const usuarioAtual = db.getUserById(req.user.id);
-    if(usuarioAtual?.totp_secret){
-      const senha = req.body?.password;
-      if(!senha || typeof senha !== "string" || !(await auth.verifyPassword(senha, usuarioAtual.password_hash))){
-        return res.status(401).json({ error: "Confirme sua senha para trocar a verificação em duas etapas.", needsPassword: true });
-      }
+    const usuario = db.getUserById(req.user.id);
+    const secret = usuario?.totp_pendente;
+    if(!secret || !usuario.totp_pendente_em || Date.now() - usuario.totp_pendente_em > VALIDADE_TOTP_PENDENTE_MS){
+      return res.status(400).json({ error: "O QR Code expirou. Recarregue a página e leia o novo código." });
     }
     if(!auth.verifyTotp(secret, code)){
       return res.status(400).json({ error: "Código incorreto. Confira o app e tente de novo." });
     }
     const recoveryCodes = auth.generateRecoveryCodes();
     const hashes = await auth.hashRecoveryCodes(recoveryCodes);
+    const trocou = Boolean(usuario.totp_secret);
     db.setUserTotp(req.user.id, { secret, recoveryJson: JSON.stringify(hashes) });
+    db.registrarPassoTotp(req.user.id, auth.passoDoTotp(secret, code));
     db.deleteAllSessionsForUser(req.user.id);
-    auth.issueSession(res, req.user.id);
+    db.deletePasswordResetsForUser(req.user.id);
+    auth.issueSession(res, req.user.id, { req, segundoFator: true });
+    eventos.registrar("dois_fatores_trocado", { req, userId: req.user.id, email: req.user.email, detalhes: { trocou } });
+    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, recoveryCodes });
   } catch (err) {
-    console.error("Erro ao ativar 2FA:", err);
+    console.error("Erro ao ativar 2FA:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível ativar a verificação em duas etapas." });
   }
+});
+
+app.post("/api/admin/confirmar", authLimiter, auth.requireAdmin, auth.requireAdminTwoFactor, async (req, res) => {
+  const usuario = db.getUserById(req.user.id);
+  const codigo = String(req.body?.code || "").trim();
+  const ok = auth.confirmarTotpDaConta(usuario, codigo) || await auth.usarCodigoDeRecuperacao(usuario, codigo);
+  if(!ok){
+    eventos.registrar("admin_2fa_falhou", { req, userId: req.user.id, email: req.user.email, detalhes: { onde: "confirmar" } });
+    return res.status(401).json({ error: "Código incorreto. Confira o app e tente de novo." });
+  }
+  db.marcarReautenticacao(req.user.sessaoHash);
+  eventos.registrar("confirmacao_admin", { req, userId: req.user.id });
+  res.json({ ok: true, valePorMinutos: Math.round(auth.CONFIRMACAO_VALE_MS / 60000) });
 });
 
 app.get("/api/admin/2fa/status", auth.requireAdmin, (req, res) => {
@@ -2936,7 +3014,7 @@ app.get("/api/admin/leads", auth.requireAdmin, auth.requireAdminTwoFactor, (req,
   }
 });
 
-app.get("/api/admin/export.xlsx", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+app.get("/api/admin/export.xlsx", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
   try {
     const overridesMap = getProductOverridesMap();
     const buffer = spreadsheetExport.buildStoreWorkbook({
@@ -2948,6 +3026,7 @@ app.get("/api/admin/export.xlsx", auth.requireAdmin, auth.requireAdminTwoFactor,
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="loja-${stamp}.xlsx"`);
     res.setHeader("Cache-Control", "no-store");
+    eventos.registrar("export_completo", { req });
     res.send(buffer);
   } catch (err) {
     console.error("Erro ao gerar planilha de exportação (admin):", err);
@@ -3186,7 +3265,7 @@ app.get("/api/instagram/feed", async (req, res) => {
   }
 });
 
-app.post("/api/admin/instagram/reconnect", auth.requireAdmin, auth.requireAdminTwoFactor, async (req, res) => {
+app.post("/api/admin/instagram/reconnect", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, async (req, res) => {
   instagram.resetToken();
   const resultado = await instagram.testConnection();
   res.json(resultado);
@@ -3457,7 +3536,7 @@ app.patch("/api/admin/products/:id", auth.requireAdmin, auth.requireAdminTwoFact
   }
 });
 
-app.delete("/api/admin/products/:id", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+app.delete("/api/admin/products/:id", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
   try {
     const id = Number(req.params.id);
     if(!Number.isInteger(id) || id < CUSTOM_PRODUCT_ID_START){
@@ -3570,7 +3649,7 @@ app.post("/api/personalizacao/fotos", uploadPersonalizacaoLimiter, (req, res) =>
 });
 
 function podeVerFotoDePersonalizacao(req, linha){
-  if(req.user?.isAdmin) return true;
+  if(req.user?.adminVerificado) return true;
   const chave = String(req.query.chave || "");
   if(/^[0-9a-f]{32}$/.test(chave) && hashDaChave(chave) === linha.chave_hash) return true;
   if(req.user && linha.pedido){
@@ -3845,7 +3924,7 @@ app.post("/api/admin/campanhas/:id/teste", auth.requireAdmin, auth.requireAdminT
   }
 });
 
-app.post("/api/admin/campanhas/:id/enviar", auth.requireAdmin, auth.requireAdminTwoFactor, strictLimiter, (req, res) => {
+app.post("/api/admin/campanhas/:id/enviar", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, strictLimiter, (req, res) => {
   const campanha = db.getCampanha(Number(req.params.id));
   if(!campanha) return res.status(404).json({ error: "Campanha não encontrada." });
   if(campanha.status !== "rascunho"){
@@ -3859,7 +3938,7 @@ app.post("/api/admin/campanhas/:id/enviar", auth.requireAdmin, auth.requireAdmin
   res.json({ campanha: campanhaParaPainel(db.getCampanha(campanha.id)), total });
 });
 
-app.post("/api/admin/campanhas/:id/rodar", auth.requireAdmin, auth.requireAdminTwoFactor, strictLimiter, (req, res) => {
+app.post("/api/admin/campanhas/:id/rodar", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, strictLimiter, (req, res) => {
   const campanha = db.getCampanha(Number(req.params.id));
   if(!campanha) return res.status(404).json({ error: "Campanha não encontrada." });
   if(campanha.status !== "enviando"){
@@ -4010,7 +4089,7 @@ app.get("/api/estampas/:id/:tipo", (req, res) => {
   const tipo = req.params.tipo;
   if(!ID_DA_ESTAMPA.test(req.params.id) || !["miniatura", "textura"].includes(tipo)) return res.status(404).end();
   const estampa = db.lerEstampa(req.params.id);
-  if(!estampa || (!estampa.ativa && !req.user?.isAdmin)) return res.status(404).end();
+  if(!estampa || (!estampa.ativa && !req.user?.adminVerificado)) return res.status(404).end();
   const imagem = db.imagemDaEstampa(req.params.id, tipo);
   if(!imagem) return res.status(404).end();
   res.setHeader("Content-Type", imagem.mime);
@@ -4070,7 +4149,7 @@ app.patch("/api/admin/estampas/:id", auth.requireAdmin, auth.requireAdminTwoFact
   }
 });
 
-app.delete("/api/admin/estampas/:id", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+app.delete("/api/admin/estampas/:id", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
   if(!ID_DA_ESTAMPA.test(req.params.id)) return res.status(404).json({ error: "Estampa não encontrada." });
   const abertos = db.pedidosAbertosComEstampa(req.params.id);
   if(abertos){
@@ -4308,7 +4387,7 @@ app.patch("/api/admin/categories/:slug", auth.requireAdmin, auth.requireAdminTwo
   }
 });
 
-app.delete("/api/admin/categories/:slug", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+app.delete("/api/admin/categories/:slug", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
   try {
     const slug = String(req.params.slug || "");
     const isCustom = db.listCustomCategories().some(c => c.slug === slug);
@@ -4335,7 +4414,7 @@ app.delete("/api/admin/categories/:slug", auth.requireAdmin, auth.requireAdminTw
 });
 
 
-app.delete("/api/admin/orders/:reference", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+app.delete("/api/admin/orders/:reference", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
   try {
     const reference = String(req.params.reference || "");
     const order = db.getOrderByExternalReference(reference);
@@ -4366,7 +4445,7 @@ app.get("/api/admin/coupons", auth.requireAdmin, auth.requireAdminTwoFactor, (re
   }
 });
 
-app.post("/api/admin/coupons", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+app.post("/api/admin/coupons", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
   try {
     const code = String(req.body?.code || "").trim().toUpperCase().replace(/\s+/g, "");
     const percentOff = Number(req.body?.percentOff);
@@ -4392,7 +4471,7 @@ app.post("/api/admin/coupons", auth.requireAdmin, auth.requireAdminTwoFactor, (r
   }
 });
 
-app.patch("/api/admin/coupons/:code", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+app.patch("/api/admin/coupons/:code", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
   try {
     const code = String(req.params.code || "").trim().toUpperCase();
     if(!db.getCoupon(code)){
@@ -4421,7 +4500,7 @@ app.patch("/api/admin/coupons/:code", auth.requireAdmin, auth.requireAdminTwoFac
   }
 });
 
-app.delete("/api/admin/coupons/:code", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+app.delete("/api/admin/coupons/:code", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
   try {
     const code = String(req.params.code || "").trim().toUpperCase();
     if(!db.getCoupon(code)){
@@ -4448,8 +4527,14 @@ app.post("/api/admin/orders/:reference/generate-label", auth.requireAdmin, auth.
     if(ehRetirada(orderRow)){
       return res.status(409).json({ error: "Este pedido é para retirar na Asa Norte — não precisa de etiqueta." });
     }
-    if(orderRow.melhor_envio_shipment_id && req.body?.forcar !== true){
-      return res.status(409).json({ error: "Este pedido já tem etiqueta. Gerar outra cobra de novo no Melhor Envio.", jaTemEtiqueta: true });
+    if(orderRow.melhor_envio_shipment_id){
+      if(req.body?.forcar !== true){
+        return res.status(409).json({ error: "Este pedido já tem etiqueta. Gerar outra cobra de novo no Melhor Envio.", jaTemEtiqueta: true });
+      }
+      const quando = req.user.reautenticadoEm;
+      if(auth.ADMIN_2FA_REQUIRED && !(quando && Date.now() - quando <= auth.CONFIRMACAO_VALE_MS)){
+        return res.status(403).json({ error: "Confirme com o código do app autenticador para continuar.", precisaConfirmar: true });
+      }
     }
 
     const order = {

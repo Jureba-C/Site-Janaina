@@ -150,6 +150,11 @@
         setLoading(btn, false);
         resetTwoFactorStepsUI();
         setAuthMode("twofactor", true);
+        if(user.soApp){
+          showCodeStep("app");
+          twoFactorBackBtn?.classList.add("d-none");
+          twoFactorEmailBtn?.classList.add("d-none");
+        }
         return;
       }
       window.location.href = destinationFor(user);
