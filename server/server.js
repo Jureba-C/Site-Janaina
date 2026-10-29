@@ -45,6 +45,7 @@ const lojaDados = require("./lib/loja-dados.js");
 const lojaSsr = require("./lib/loja-ssr.js");
 const producao = require("./lib/producao.js");
 const etapas = require("./lib/etapas-pedido.js");
+const ambiente = require("./lib/ambiente.js");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -59,9 +60,10 @@ const ORIGENS_CONFIAVEIS = new Set([
   CLIENT_ORIGIN.replace(CANONICAL_HOST, HOST_GEMEO),
 ]);
 
-app.set("trust proxy", 1);
+const CONFIANCA_DO_PROXY = ambiente.confiancaDoProxy();
+app.set("trust proxy", CONFIANCA_DO_PROXY);
 
-const EM_PRODUCAO = CLIENT_ORIGIN.startsWith("https://");
+const EM_PRODUCAO = ambiente.emProducao();
 function avisoConfig(mensagem){
   console.warn(`${EM_PRODUCAO ? "🔴 [PRODUÇÃO] " : "⚠️  "}${mensagem}`);
 }
@@ -90,7 +92,13 @@ if(!process.env.ADMIN_EMAIL_HASHES){
   avisoConfig("ADMIN_EMAIL_HASHES não definido. NINGUÉM consegue entrar no painel administrativo (todo login vira cliente comum) até preencher o .env.");
 }
 if(EM_PRODUCAO && !process.env.MP_WEBHOOK_SECRET){
-  avisoConfig("MP_WEBHOOK_SECRET não definido. O webhook do Mercado Pago aceita chamadas SEM verificar a assinatura — configure o segredo no painel do MP e no .env para fechar essa porta.");
+  avisoConfig("MP_WEBHOOK_SECRET não definido. Em produção o webhook do Mercado Pago RECUSA toda notificação sem assinatura — configure o segredo no painel do MP e na hospedagem.");
+}
+const PROBLEMAS_DE_PRODUCAO = ambiente.problemasDeProducao();
+if(PROBLEMAS_DE_PRODUCAO.length){
+  for(const p of PROBLEMAS_DE_PRODUCAO) console.error(`🔴 [PRODUÇÃO] Falta ${p}.`);
+  console.error("🔴 [PRODUÇÃO] O servidor não vai subir assim. Preencha as variáveis na hospedagem e reinicie.");
+  process.exit(1);
 }
 
 const mpClient = new MercadoPagoConfig({
@@ -2609,6 +2617,17 @@ app.get("/api/admin/2fa/status", auth.requireAdmin, (req, res) => {
     enabled: Boolean(user?.totp_secret),
     required: auth.ADMIN_2FA_REQUIRED,
     recoveryCodesLeft: JSON.parse(user?.totp_recovery_json || "[]").length,
+  });
+});
+
+app.get("/api/admin/diagnostico-ip", auth.requireAdmin, auth.requireAdminTwoFactor, noStore, (req, res) => {
+  res.json({
+    ipVisto: req.ip,
+    cadeia: req.ips,
+    conexao: req.socket?.remoteAddress || null,
+    cabecalhoXff: req.get("x-forwarded-for") || null,
+    cabecalhoCloudflare: req.get("cf-connecting-ip") || null,
+    confianca: ambiente.descreverConfianca(CONFIANCA_DO_PROXY),
   });
 });
 

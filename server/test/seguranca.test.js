@@ -77,8 +77,12 @@ test("o cookie de sessão só é Secure quando o site é https", () => {
   const i = fonte.indexOf("function cookieOptions");
   const trecho = fonte.slice(i, i + 400);
   assert.match(trecho, /secure:\s*emHttps\(\)/, "cookieOptions deixou de consultar o https");
-  assert.match(fonte, /CLIENT_ORIGIN[^\n]*startsWith\("https:\/\/"\)/,
-    "emHttps precisa olhar o CLIENT_ORIGIN, não só NODE_ENV");
+  assert.match(fonte, /function emHttps\(\) \{\s*return ambiente\.emProducao\(\);/,
+    "emHttps precisa usar a regra única de produção");
+  const ambiente = require("../lib/ambiente.js");
+  assert.equal(ambiente.emProducao({ CLIENT_ORIGIN: "https://loja.com.br" }), true);
+  assert.equal(ambiente.emProducao({ NODE_ENV: "production", CLIENT_ORIGIN: "http://localhost:3000" }), true);
+  assert.equal(ambiente.emProducao({ CLIENT_ORIGIN: "http://localhost:3000" }), false);
 });
 
 test("toda rota /api/interno exige um segredo", () => {

@@ -1,6 +1,6 @@
 const TOKENINFO_PADRAO = "https://oauth2.googleapis.com/tokeninfo";
-const EM_PRODUCAO = String(process.env.CLIENT_ORIGIN || "").startsWith("https://");
-const TOKENINFO_URL = EM_PRODUCAO
+const ambiente = require("./ambiente");
+const TOKENINFO_URL = !ambiente.permitirOverrideDeTeste()
   ? TOKENINFO_PADRAO
   : (process.env.GOOGLE_TOKENINFO_URL || TOKENINFO_PADRAO);
 

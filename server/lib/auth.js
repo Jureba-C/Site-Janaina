@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const db = require("./db");
+const ambiente = require("./ambiente");
 
 const SESSION_COOKIE_NAME = "plc_session";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -81,8 +82,7 @@ function parseCookies(req) {
 }
 
 function emHttps() {
-  return process.env.NODE_ENV === "production"
-    || String(process.env.CLIENT_ORIGIN || "").startsWith("https://");
+  return ambiente.emProducao();
 }
 
 function cookieOptions() {
@@ -391,7 +391,8 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-const ADMIN_2FA_REQUIRED = String(process.env.ADMIN_2FA_REQUIRED || "true").toLowerCase() !== "false";
+const ADMIN_2FA_REQUIRED = ambiente.emProducao()
+  || String(process.env.ADMIN_2FA_REQUIRED || "true").toLowerCase() !== "false";
 
 function requireAdminTwoFactor(req, res, next) {
   if (!ADMIN_2FA_REQUIRED) return next();
