@@ -248,7 +248,7 @@ if (MAINTENANCE_MODE) {
   try {
     maintenancePage = fs.readFileSync(path.join(__dirname, "manutencao.html"), "utf8");
   } catch (err) {
-    console.error("Não foi possível ler manutencao.html:", err.message);
+    console.error("Não foi possível ler manutencao.html:", registro.resumoDeErro(err));
     maintenancePage = "<!doctype html><meta charset=\"utf-8\"><title>Em manutenção</title>"
       + "<p>A loja está em manutenção. Voltamos em alguns minutos.</p>";
   }
@@ -496,7 +496,7 @@ function enviarPaginaDaLoja(res, montar){
   try {
     documento = lojaSsr.montarDocumento(montar());
   } catch (err) {
-    console.error("Erro ao montar a página da loja:", err);
+    console.error("Erro ao montar a página da loja:", registro.resumoDeErro(err));
     res.status(500).setHeader("Cache-Control", "no-store");
     return res.send("<!DOCTYPE html><meta charset=\"utf-8\"><title>Arte Canecas</title><p style=\"font-family:sans-serif;padding:24px\">A loja está atualizando. Recarregue a página em instantes.</p>");
   }
@@ -736,7 +736,7 @@ function deleteOldLocalPhoto(oldPhotoUrl){
   const filePath = path.join(SITE_ROOT, oldPhotoUrl);
   fs.unlink(filePath, (err) => {
     if(err && err.code !== "ENOENT"){
-      console.error("Não foi possível apagar a foto antiga do produto:", err);
+      console.error("Não foi possível apagar a foto antiga do produto:", registro.resumoDeErro(err));
     }
   });
 }
@@ -883,7 +883,7 @@ async function opcoesDeEntrega(cep, validatedItems){
   } catch (err) {
     if(!RETIRADA_ATIVA) throw err;
     if(err.status === 422 && err.data?.errors?.postal_code) throw err;
-    console.error("Melhor Envio fora do ar ou sem token; oferecendo só a retirada:", err.message || err);
+    console.error("Melhor Envio fora do ar ou sem token; oferecendo só a retirada:", registro.resumoDeErro(err));
     aviso = "O cálculo dos Correios não respondeu agora. Tente de novo em instantes ou escolha a retirada.";
   }
   return { opcoes: RETIRADA_ATIVA ? [...doMelhorEnvio, OPCAO_RETIRADA] : doMelhorEnvio, aviso };
@@ -908,14 +908,14 @@ app.post("/api/calculate-shipping", freteLimiter, async (req, res) => {
     res.json({ options, ...(aviso ? { warning: aviso } : {}) });
   } catch (err) {
     if(!(err instanceof Error) && err.status && err.message){
-      console.error("Erro de validação/frete:", err.message);
+      console.error("Erro de validação/frete:", registro.resumoDeErro(err));
       return res.status(err.status).json({ error: err.message });
     }
     if(err.status === 422 && err.data?.errors?.postal_code){
       console.error("CEP recusado pelo Melhor Envio:", String(req.body?.cep || "").replace(/\D/g, ""));
       return res.status(400).json({ error: "CEP inválido." });
     }
-    console.error("Erro ao calcular frete:", err);
+    console.error("Erro ao calcular frete:", registro.resumoDeErro(err));
     res.status(502).json({ error: "Não foi possível calcular o frete agora. Tente novamente em instantes." });
   }
 });
@@ -953,7 +953,7 @@ app.post("/api/validate-coupon", strictLimiter, (req, res) => {
     if(!(err instanceof Error) && err.status && err.message){
       return res.status(err.status).json({ error: err.message });
     }
-    console.error("Erro ao validar cupom:", err);
+    console.error("Erro ao validar cupom:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível validar o cupom agora." });
   }
 });
@@ -987,7 +987,7 @@ async function buildCheckoutDraft(req){
     try{
       db.saveAddress(req.user.id, { ...address, cep });
     }catch(err){
-      console.error("Falha ao salvar endereço padrão da conta:", err.message);
+      console.error("Falha ao salvar endereço padrão da conta:", registro.resumoDeErro(err));
     }
   }
 
@@ -1133,7 +1133,7 @@ app.post("/api/create-preference", strictLimiter, auth.requireAuth, async (req, 
     if(!(err instanceof Error) && err.status && err.message){
       return res.status(err.status).json({ error: err.message });
     }
-    console.error("Erro ao criar preferência:", err);
+    console.error("Erro ao criar preferência:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível iniciar o pagamento. Tente novamente em instantes." });
   }
 });
@@ -1190,7 +1190,7 @@ app.post("/api/create-pix-payment", strictLimiter, auth.requireAuth, async (req,
     if(!(err instanceof Error) && err.status && err.message){
       return res.status(err.status).json({ error: err.message });
     }
-    console.error("Erro ao criar pagamento Pix:", err);
+    console.error("Erro ao criar pagamento Pix:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível gerar o Pix agora. Tente novamente em instantes." });
   }
 });
@@ -1309,7 +1309,7 @@ app.post("/api/orders/:reference/resume-payment", strictLimiter, auth.requireAut
     if(!(err instanceof Error) && err.status && err.message){
       return res.status(err.status).json({ error: err.message });
     }
-    console.error("Erro ao retomar pagamento:", err);
+    console.error("Erro ao retomar pagamento:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível retomar o pagamento agora. Tente novamente em instantes." });
   }
 });
@@ -1337,7 +1337,7 @@ app.post("/api/orders/:reference/recebi", auth.requireAuth, (req, res) => {
     db.markOrderDelivered(order.external_reference);
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao confirmar recebimento:", err);
+    console.error("Erro ao confirmar recebimento:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível confirmar agora." });
   }
 });
@@ -1379,7 +1379,7 @@ app.get("/api/orders/:reference", statusPollLimiter, auth.requireAuth, async (re
       avaliado: resumoDaAvaliacao(order).completa,
     });
   } catch (err) {
-    console.error("Erro ao carregar detalhe do pedido:", err);
+    console.error("Erro ao carregar detalhe do pedido:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível carregar o pedido agora." });
   }
 });
@@ -1487,7 +1487,7 @@ app.post("/api/avaliar/:reference", avaliacaoLimiter, (req, res) => {
       return res.status(413).json({ error: msg });
     }
     if(err){
-      console.error("Erro no upload da avaliação:", err);
+      console.error("Erro no upload da avaliação:", registro.resumoDeErro(err));
       return res.status(500).json({ error: "Não foi possível enviar agora." });
     }
 
@@ -1548,7 +1548,7 @@ app.post("/api/avaliar/:reference", avaliacaoLimiter, (req, res) => {
         else if(v.arquivo) db.apagarFotoOrfaDeAvaliacao(photoId);
       }
     }catch(procErr){
-      console.error("Erro ao gravar avaliação:", procErr);
+      console.error("Erro ao gravar avaliação:", registro.resumoDeErro(procErr));
       return res.status(500).json({ error: "Não foi possível processar a foto enviada." });
     }
 
@@ -1592,7 +1592,7 @@ app.get("/api/avaliacoes/fotos/:id", async (req, res) => {
     res.setHeader("Content-Type", mime);
     res.end(reduzida);
   }catch(err){
-    console.error("Não foi possível reduzir a foto da avaliação:", err.message || err);
+    console.error("Não foi possível reduzir a foto da avaliação:", registro.resumoDeErro(err));
     res.setHeader("Content-Type", foto.mime_type);
     res.end(Buffer.from(foto.data));
   }
@@ -1626,7 +1626,7 @@ app.get("/api/depoimentos/fotos/:id", async (req, res) => {
     res.setHeader("Content-Type", mime);
     res.end(reduzida);
   }catch(err){
-    console.error("Não foi possível reduzir a foto do depoimento:", err.message || err);
+    console.error("Não foi possível reduzir a foto do depoimento:", registro.resumoDeErro(err));
     res.setHeader("Content-Type", foto.mime_type);
     res.end(Buffer.from(foto.data));
   }
@@ -1743,10 +1743,10 @@ async function entregarEmailDaFila(id){
       html: linha.html_body,
     });
     db.markEmailSent(id);
-    console.log(`E-mail "${linha.kind}" entregue a ${linha.to_email} (pedido ${linha.order_reference || "-"}).`);
+    console.log(`E-mail "${linha.kind}" entregue a ${registro.mascararEmail(linha.to_email)} (pedido ${String(linha.order_reference || "-").slice(0, 8)}).`);
   }catch(err){
     db.markEmailFailed(id, err.message || err);
-    console.error(`Falha ao entregar e-mail "${linha.kind}" — segue na fila para nova tentativa:`, err.message || err);
+    console.error(`Falha ao entregar e-mail "${linha.kind}" — segue na fila para nova tentativa:`, registro.resumoDeErro(err));
   }
 }
 
@@ -1842,7 +1842,7 @@ async function runApprovedOrderSideEffects(orderRow, info){
       await whatsapp.notifyOwnerOfPaidOrder(notificationOrder);
       console.log(`Aviso de WhatsApp enviado à lojista para o pedido ${info.external_reference}.`);
     }catch(waErr){
-      console.error(`Falha ao enviar aviso de WhatsApp (pedido ${info.external_reference} segue pago normalmente):`, waErr.message || waErr);
+      console.error(`Falha ao enviar aviso de WhatsApp (pedido ${info.external_reference} segue pago normalmente):`, registro.resumoDeErro(waErr));
     }
   }
 
@@ -1857,7 +1857,7 @@ async function runApprovedOrderSideEffects(orderRow, info){
     });
     if(!naFila) console.warn(`OWNER_EMAIL não configurado — aviso do pedido ${info.external_reference} não foi enfileirado.`);
   }catch(mailErr){
-    console.error(`Falha ao preparar o aviso da lojista (pedido ${info.external_reference} segue pago normalmente):`, mailErr.message || mailErr);
+    console.error(`Falha ao preparar o aviso da lojista (pedido ${info.external_reference} segue pago normalmente):`, registro.resumoDeErro(mailErr));
   }
 
   if(orderRow.customer_email){
@@ -2007,7 +2007,7 @@ app.post("/api/newsletter", strictLimiter, async (req, res) => {
     });
     emailed = true;
   } catch (err) {
-    console.error("Falha ao enviar o cupom de boas-vindas por e-mail:", err.message);
+    console.error("Falha ao enviar o cupom de boas-vindas por e-mail:", registro.resumoDeErro(err));
   }
 
   res.json({ ok: true, coupon: coupon.code, percentOff: coupon.percent_off, emailed });
@@ -2057,7 +2057,7 @@ app.post("/api/contact", strictLimiter, async (req, res) => {
       conteudo: email.formatContactEmail({ nome, telefone, ocasiao, mensagem }),
     });
   }catch(err){
-    console.error("Falha ao preparar o aviso de mensagem de contato:", err.message || err);
+    console.error("Falha ao preparar o aviso de mensagem de contato:", registro.resumoDeErro(err));
   }
 
   res.json({ ok: true });
@@ -2091,7 +2091,7 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
     auth.issueSession(res, user.id);
     res.status(201).json({ id: user.id, name: user.name, email: user.email, cpf: user.cpf, isAdmin: auth.isAdminEmail(user.email) });
   } catch (err) {
-    console.error("Erro ao criar conta:", err);
+    console.error("Erro ao criar conta:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível criar a conta agora. Tente novamente em instantes." });
   }
 });
@@ -2137,7 +2137,7 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
     auth.issueSession(res, user.id, { req });
     res.json({ id: user.id, name: user.name, email: user.email, cep: user.cep || null, isAdmin: auth.isAdminEmail(user.email) });
   } catch (err) {
-    console.error("Erro ao fazer login:", err);
+    console.error("Erro ao fazer login:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível entrar agora. Tente novamente em instantes." });
   }
 });
@@ -2209,7 +2209,7 @@ app.post("/api/auth/google", authLimiter, async (req, res) => {
       return res.status(err.status === 400 ? 400 : (err.status === 503 ? 503 : 401))
         .json({ error: err.status === 503 ? "Entrar com o Google não está disponível." : "Não consegui confirmar sua conta Google. Tente de novo." });
     }
-    console.error("Erro no login com o Google:", err);
+    console.error("Erro no login com o Google:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível entrar agora. Tente novamente em instantes." });
   }
 });
@@ -2233,7 +2233,7 @@ app.post("/api/auth/google/vincular", authLimiter, auth.requireAuth, async (req,
     res.json({ ok: true, jaEstava: !vinculou });
   } catch (err) {
     if(err.status) return res.status(err.status === 400 ? 400 : 401).json({ error: "Não consegui confirmar sua conta Google." });
-    console.error("Erro ao vincular conta Google:", err);
+    console.error("Erro ao vincular conta Google:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível vincular agora. Tente novamente." });
   }
 });
@@ -2282,7 +2282,7 @@ app.post("/api/auth/login/2fa", authLimiter, async (req, res) => {
     if(ehAdmin) eventos.registrar("admin_novo_acesso", { req, userId: user.id, email: user.email, detalhes: { recuperacao: comRecuperacao } });
     res.json({ id: user.id, name: user.name, email: user.email, cep: user.cep || null, isAdmin: auth.isAdminEmail(user.email) });
   } catch (err) {
-    console.error("Erro na verificação em duas etapas:", err);
+    console.error("Erro na verificação em duas etapas:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível verificar o código agora." });
   }
 });
@@ -2331,13 +2331,13 @@ app.post("/api/auth/login/2fa/email", authLimiter, async (req, res) => {
         expiresInMinutes: Math.round(auth.EMAIL_2FA_CODE_TTL_MS / 60000),
       });
     }catch(mailErr){
-      console.error("Falha ao enviar código de verificação por e-mail:", mailErr.message);
+      console.error("Falha ao enviar código de verificação por e-mail:", registro.resumoDeErro(mailErr));
       return res.status(502).json({ error: "Não foi possível enviar o e-mail agora. Tente novamente em instantes." });
     }
 
     res.json({ ok: true, message: "Enviamos um código para o e-mail da sua conta." });
   } catch (err) {
-    console.error("Erro ao enviar código de verificação por e-mail:", err);
+    console.error("Erro ao enviar código de verificação por e-mail:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível enviar o e-mail agora." });
   }
 });
@@ -2379,7 +2379,7 @@ app.delete("/api/auth/account", authLimiter, auth.requireAuth, async (req, res) 
     auth.clearSession(req, res);
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao excluir conta:", err);
+    console.error("Erro ao excluir conta:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível excluir a conta agora. Tente novamente." });
   }
 });
@@ -2407,15 +2407,15 @@ app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
 
     email.sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl, expiresInMinutes })
       .catch(mailErr => {
-        console.error("Falha ao enviar e-mail de redefinição de senha:", mailErr.message);
-        if(!process.env.SMTP_HOST){
+        console.error("Falha ao enviar e-mail de redefinição de senha:", registro.resumoDeErro(mailErr));
+        if(!process.env.SMTP_HOST && !ambiente.emProducao() && process.env.MOSTRAR_LINKS_NO_TERMINAL === "true"){
           console.warn(`[redefinição de senha] Link para ${user.email}: ${resetUrl}`);
         }
       });
 
     return genericOk();
   } catch (err) {
-    console.error("Erro ao processar pedido de redefinição de senha:", err);
+    console.error("Erro ao processar pedido de redefinição de senha:", registro.resumoDeErro(err));
     return genericOk();
   }
 });
@@ -2447,7 +2447,7 @@ app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
 
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao redefinir senha:", err);
+    console.error("Erro ao redefinir senha:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível redefinir a senha agora. Tente novamente em instantes." });
   }
 });
@@ -2501,7 +2501,7 @@ function nascimentoValido(valor){
 
 function avisarContaEmSegundoPlano(dados){
   email.sendAvisoDeSegurancaDaConta(dados).catch(err => {
-    console.error("Não foi possível mandar o aviso de alteração da conta:", err.message || err);
+    console.error("Não foi possível mandar o aviso de alteração da conta:", registro.resumoDeErro(err));
   });
 }
 
@@ -2555,7 +2555,7 @@ app.put("/api/auth/email", authLimiter, auth.requireAuth, async (req, res) => {
     avisarContaEmSegundoPlano({ to: antigo, nome: String(user.name || "").split(" ")[0], oQue: "email", novoEmail: novo });
     res.json({ ...perfilDaConta(user.id), sessoesEncerradas: saiu });
   }catch(err){
-    console.error("Erro ao trocar e-mail:", err);
+    console.error("Erro ao trocar e-mail:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível trocar o e-mail agora." });
   }
 });
@@ -2582,7 +2582,7 @@ app.put("/api/auth/senha", authLimiter, auth.requireAuth, async (req, res) => {
     avisarContaEmSegundoPlano({ to: user.email, nome: String(user.name || "").split(" ")[0], oQue: "senha" });
     res.json({ ok: true, sessoesEncerradas: saiu });
   }catch(err){
-    console.error("Erro ao trocar senha:", err);
+    console.error("Erro ao trocar senha:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível trocar a senha agora." });
   }
 });
@@ -2643,7 +2643,7 @@ app.get("/api/orders", auth.requireAuth, (req, res) => {
     });
     res.json({ orders });
   } catch (err) {
-    console.error("Erro ao listar pedidos:", err);
+    console.error("Erro ao listar pedidos:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível carregar seus pedidos agora." });
   }
 });
@@ -2768,7 +2768,7 @@ app.get("/api/admin/login-attempts", auth.requireAdmin, auth.requireAdminTwoFact
     const rows = db.listRecentLoginAttempts({ sinceMs: 7 * 24 * 60 * 60 * 1000, limit: 200 });
     res.json(rows.map(r => ({ email: r.email, ip: r.ip, ok: Boolean(r.ok), at: r.created_at })));
   } catch (err) {
-    console.error("Erro ao listar tentativas de login:", err);
+    console.error("Erro ao listar tentativas de login:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível carregar as tentativas de login." });
   }
 });
@@ -2782,7 +2782,7 @@ app.get("/api/admin/aviso-de-venda", auth.requireAdmin, auth.requireAdminTwoFact
       tarefasEm: db.lerEstado("tarefas_periodicas_em")?.updated_at || null,
     });
   } catch (err) {
-    console.error("Erro ao ler a situação do aviso de venda:", err);
+    console.error("Erro ao ler a situação do aviso de venda:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível conferir o aviso de venda agora." });
   }
 });
@@ -2802,7 +2802,7 @@ app.post("/api/admin/aviso-de-venda/testar", auth.requireAdmin, auth.requireAdmi
     });
     res.json({ ok: true, para: destino });
   } catch (err) {
-    console.error("Falha no teste de aviso de venda:", err);
+    console.error("Falha no teste de aviso de venda:", registro.resumoDeErro(err));
     res.status(502).json({ error: err.message || "O servidor de e-mail recusou o envio." });
   }
 });
@@ -2829,7 +2829,7 @@ app.get("/api/admin/avaliacoes", auth.requireAdmin, auth.requireAdminTwoFactor, 
       })),
     });
   } catch (err) {
-    console.error("Erro ao listar avaliações:", err);
+    console.error("Erro ao listar avaliações:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível carregar as avaliações." });
   }
 });
@@ -2919,7 +2919,7 @@ app.get("/api/admin/orders", auth.requireAdmin, auth.requireAdminTwoFactor, (req
     const stats = db.getOrderStats();
     res.json({ orders, stats: { totalRevenue: stats.revenue, totalOrders: stats.count }, diasDeProducao });
   } catch (err) {
-    console.error("Erro ao listar pedidos (admin):", err);
+    console.error("Erro ao listar pedidos (admin):", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível carregar os pedidos agora." });
   }
 });
@@ -2986,7 +2986,7 @@ app.get("/api/admin/customers", auth.requireAdmin, auth.requireAdminTwoFactor, (
 
     res.json({ customers, contas });
   } catch (err) {
-    console.error("Erro ao listar clientes (admin):", err);
+    console.error("Erro ao listar clientes (admin):", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível carregar os clientes agora." });
   }
 });
@@ -3009,7 +3009,7 @@ app.get("/api/admin/leads", auth.requireAdmin, auth.requireAdminTwoFactor, (req,
       })),
     });
   } catch (err) {
-    console.error("Erro ao listar contatos (admin):", err);
+    console.error("Erro ao listar contatos (admin):", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível carregar os contatos agora." });
   }
 });
@@ -3029,7 +3029,7 @@ app.get("/api/admin/export.xlsx", auth.requireAdmin, auth.requireAdminTwoFactor,
     eventos.registrar("export_completo", { req });
     res.send(buffer);
   } catch (err) {
-    console.error("Erro ao gerar planilha de exportação (admin):", err);
+    console.error("Erro ao gerar planilha de exportação (admin):", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível gerar a planilha agora." });
   }
 });
@@ -3052,7 +3052,7 @@ app.get("/api/admin/planilha-producao.xlsx", auth.requireAdmin, auth.requireAdmi
     });
     enviarPlanilha(res, "producao", buffer);
   } catch (err) {
-    console.error("Erro ao gerar planilha de produção:", err);
+    console.error("Erro ao gerar planilha de produção:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível gerar a planilha agora." });
   }
 });
@@ -3061,7 +3061,7 @@ app.get("/api/admin/planilha-envios.xlsx", auth.requireAdmin, auth.requireAdminT
   try {
     enviarPlanilha(res, "envios", spreadsheetExport.planilhaDeEnvios());
   } catch (err) {
-    console.error("Erro ao gerar planilha de envios:", err);
+    console.error("Erro ao gerar planilha de envios:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível gerar a planilha agora." });
   }
 });
@@ -3075,7 +3075,7 @@ app.delete("/api/admin/contact-messages/:id", auth.requireAdmin, auth.requireAdm
     db.deleteContactMessage(id);
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao apagar mensagem de contato:", err);
+    console.error("Erro ao apagar mensagem de contato:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível apagar a mensagem agora." });
   }
 });
@@ -3093,7 +3093,7 @@ app.patch("/api/admin/orders/:reference/tracking", auth.requireAdmin, auth.requi
 
     entregarEmailDaFila(naFila).catch(() => {});
   } catch (err) {
-    console.error("Erro ao salvar código de rastreio:", err);
+    console.error("Erro ao salvar código de rastreio:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível salvar o código de rastreio agora." });
   }
 });
@@ -3124,7 +3124,7 @@ app.post("/api/admin/orders/:reference/conferir-entrega", auth.requireAdmin, aut
       ultimoEvento: live.events?.[0]?.description || null,
     });
   } catch (err) {
-    console.error("Erro ao conferir entrega no Melhor Envio:", err);
+    console.error("Erro ao conferir entrega no Melhor Envio:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível consultar o Melhor Envio agora." });
   }
 });
@@ -3181,7 +3181,7 @@ app.post("/api/admin/orders/:reference/pedir-avaliacao", auth.requireAdmin, auth
     await entregarEmailDaFila(id);
     res.json({ ok: true, entregue });
   }catch(err){
-    console.error("Erro ao pedir avaliação:", err);
+    console.error("Erro ao pedir avaliação:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível pedir a avaliação agora." });
   }
 });
@@ -3203,7 +3203,7 @@ app.post("/api/admin/orders/:reference/avisar-postagem", auth.requireAdmin, auth
     await entregarEmailDaFila(salvarRastreioEAvisar(reference, order.tracking_code));
     res.json({ ok: true, aviso: estadoDoAvisoDePostagem(reference) });
   } catch (err) {
-    console.error("Erro ao reenviar aviso de postagem:", err);
+    console.error("Erro ao reenviar aviso de postagem:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível reenviar o aviso agora." });
   }
 });
@@ -3226,7 +3226,7 @@ function avancarEtapa(acao){
       const atualizado = db.getOrderByExternalReference(reference);
       res.json({ ok: true, etapa: etapas.etapaDoPedido(atualizado) });
     } catch (err) {
-      console.error("Erro ao avançar a etapa do pedido:", err);
+      console.error("Erro ao avançar a etapa do pedido:", registro.resumoDeErro(err));
       res.status(500).json({ error: "Não foi possível salvar a etapa agora." });
     }
   };
@@ -3249,7 +3249,7 @@ app.patch("/api/admin/orders/:reference/delivered", auth.requireAdmin, auth.requ
     db.markOrderDelivered(reference);
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao marcar pedido como entregue:", err);
+    console.error("Erro ao marcar pedido como entregue:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível marcar o pedido como entregue agora." });
   }
 });
@@ -3260,7 +3260,7 @@ app.get("/api/instagram/feed", async (req, res) => {
     const feed = await instagram.getInstagramFeed();
     res.json(feed);
   } catch (err) {
-    console.error("[instagram] erro inesperado na rota /api/instagram/feed:", err);
+    console.error("[instagram] erro inesperado na rota /api/instagram/feed:", registro.resumoDeErro(err));
     res.json({ available: false });
   }
 });
@@ -3354,7 +3354,7 @@ app.put("/api/admin/products/order", auth.requireAdmin, auth.requireAdminTwoFact
     db.setProductsOrder(numericIds, customIds);
     res.json({ ok: true, ids: getAllProductIds() });
   } catch (err) {
-    console.error("Erro ao salvar a ordem dos produtos:", err);
+    console.error("Erro ao salvar a ordem dos produtos:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível salvar a ordem agora." });
   }
 });
@@ -3431,7 +3431,7 @@ app.post("/api/admin/products", auth.requireAdmin, auth.requireAdminTwoFactor, (
     invalidarPaginasDaLoja();
     res.status(201).json(produtoParaApi(created.id, effectiveProduct(created.id, getProductOverridesMap())));
   } catch (err) {
-    console.error("Erro ao criar produto:", err);
+    console.error("Erro ao criar produto:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível criar o produto agora." });
   }
 });
@@ -3531,7 +3531,7 @@ app.patch("/api/admin/products/:id", auth.requireAdmin, auth.requireAdminTwoFact
     invalidarPaginasDaLoja();
     res.json(produtoParaApi(id, effectiveProduct(id, getProductOverridesMap())));
   } catch (err) {
-    console.error("Erro ao atualizar produto:", err);
+    console.error("Erro ao atualizar produto:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível salvar o produto agora." });
   }
 });
@@ -3552,7 +3552,7 @@ app.delete("/api/admin/products/:id", auth.requireAdmin, auth.requireAdminTwoFac
     db.deleteCustomProduct(id);
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao apagar produto:", err);
+    console.error("Erro ao apagar produto:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível apagar o produto agora." });
   }
 });
@@ -3570,7 +3570,7 @@ app.post("/api/admin/products/:id/photo", auth.requireAdmin, auth.requireAdminTw
       return res.status(400).json({ error: "Não foi possível enviar a imagem." });
     }
     if(err){
-      console.error("Erro no upload de foto:", err);
+      console.error("Erro no upload de foto:", registro.resumoDeErro(err));
       return res.status(500).json({ error: "Não foi possível enviar a imagem agora." });
     }
     if(!req.file){
@@ -3586,7 +3586,7 @@ app.post("/api/admin/products/:id/photo", auth.requireAdmin, auth.requireAdminTw
       db.insertProductPhoto(photoId, "image/jpeg", compressed);
       res.status(201).json({ photoUrl: `/api/products/photos/${photoId}` });
     }catch(procErr){
-      console.error("Erro ao processar imagem de produto:", procErr);
+      console.error("Erro ao processar imagem de produto:", registro.resumoDeErro(procErr));
       res.status(500).json({ error: "Não foi possível processar a imagem enviada." });
     }
   });
@@ -3608,7 +3608,7 @@ app.post("/api/personalizacao/fotos", uploadPersonalizacaoLimiter, (req, res) =>
       return res.status(400).json({ error: "Não foi possível enviar a foto." });
     }
     if(err){
-      console.error("Erro no envio de foto de personalização:", err);
+      console.error("Erro no envio de foto de personalização:", registro.resumoDeErro(err));
       return res.status(500).json({ error: "Não foi possível enviar a foto agora." });
     }
     if(!req.file) return res.status(400).json({ error: "Escolha uma foto para enviar." });
@@ -3642,7 +3642,7 @@ app.post("/api/personalizacao/fotos", uploadPersonalizacaoLimiter, (req, res) =>
       });
       res.status(201).json({ id, chave, largura: original.info.width, altura: original.info.height });
     } catch (procErr) {
-      console.error("Erro ao processar foto de personalização:", procErr);
+      console.error("Erro ao processar foto de personalização:", registro.resumoDeErro(procErr));
       res.status(500).json({ error: "Não foi possível preparar a foto. Tente outra." });
     }
   });
@@ -3708,7 +3708,7 @@ app.get("/api/admin/pedidos/:reference/itens/:indice/:tipo.svg", auth.requireAdm
     res.setHeader("Content-Security-Policy", "default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'");
     res.send(svg);
   } catch (err) {
-    console.error("Erro ao montar a arte do pedido:", err);
+    console.error("Erro ao montar a arte do pedido:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível montar a arte agora." });
   }
 });
@@ -3740,7 +3740,7 @@ app.get("/api/admin/pedidos/:reference/itens/:indice/producao.svg", auth.require
     res.setHeader("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'");
     res.send(svg);
   } catch (err) {
-    console.error("Erro ao gerar o arquivo de produção:", err);
+    console.error("Erro ao gerar o arquivo de produção:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível gerar o arquivo agora." });
   }
 });
@@ -3796,7 +3796,7 @@ app.get("/api/products/photos/:id", async (req, res) => {
     res.setHeader("Content-Type", mime);
     res.end(reduzida);
   }catch(err){
-    console.error(`Falha ao reduzir a foto ${req.params.id} para ${largura}px:`, err.message || err);
+    console.error(`Falha ao reduzir a foto ${req.params.id} para ${largura}px:`, registro.resumoDeErro(err));
     res.setHeader("Content-Type", photo.mime_type);
     res.end(Buffer.from(photo.data));
   }
@@ -3919,7 +3919,7 @@ app.post("/api/admin/campanhas/:id/teste", auth.requireAdmin, auth.requireAdminT
     });
     res.json({ ok: true, destino });
   }catch(err){
-    console.error("Falha ao enviar teste de campanha:", err);
+    console.error("Falha ao enviar teste de campanha:", registro.resumoDeErro(err));
     res.status(502).json({ error: `Não consegui enviar: ${err.message || err}` });
   }
 });
@@ -4005,7 +4005,7 @@ app.post("/api/admin/depoimentos", auth.requireAdmin, auth.requireAdminTwoFactor
       return res.status(400).json({ error: "Não foi possível enviar a imagem." });
     }
     if(err){
-      console.error("Erro no upload de foto de depoimento:", err);
+      console.error("Erro no upload de foto de depoimento:", registro.resumoDeErro(err));
       return res.status(500).json({ error: "Não foi possível enviar a imagem agora." });
     }
 
@@ -4025,7 +4025,7 @@ app.post("/api/admin/depoimentos", auth.requireAdmin, auth.requireAdminTwoFactor
       const id = db.criarDepoimento({ ...campos, photoId, consentimentoEm: Date.now() });
       res.status(201).json({ id });
     }catch(procErr){
-      console.error("Erro ao gravar depoimento:", procErr);
+      console.error("Erro ao gravar depoimento:", registro.resumoDeErro(procErr));
       res.status(500).json({ error: "Não foi possível salvar o depoimento agora." });
     }
   });
@@ -4118,7 +4118,7 @@ app.post("/api/admin/estampas", auth.requireAdmin, auth.requireAdminTwoFactor, (
       return res.status(400).json({ error: "Não foi possível enviar o arquivo." });
     }
     if(err){
-      console.error("Erro no envio de estampa:", err);
+      console.error("Erro no envio de estampa:", registro.resumoDeErro(err));
       return res.status(500).json({ error: "Não foi possível enviar a estampa agora." });
     }
     if(!req.file) return res.status(400).json({ error: "Escolha o arquivo da estampa (PNG ou JPG)." });
@@ -4131,7 +4131,7 @@ app.post("/api/admin/estampas", auth.requireAdmin, auth.requireAdminTwoFactor, (
       res.status(201).json({ estampa: estampaDoPainel(db.lerEstampa(id)) });
     }catch(erro){
       if(erro && erro.status) return res.status(erro.status).json({ error: erro.message });
-      console.error("Erro ao processar estampa:", erro);
+      console.error("Erro ao processar estampa:", registro.resumoDeErro(erro));
       res.status(500).json({ error: "Não foi possível processar a estampa." });
     }
   });
@@ -4220,7 +4220,7 @@ app.post("/api/admin/hero/fotos", auth.requireAdmin, auth.requireAdminTwoFactor,
       return res.status(400).json({ error: "Não foi possível enviar a imagem." });
     }
     if(err){
-      console.error("Erro no upload de foto do topo:", err);
+      console.error("Erro no upload de foto do topo:", registro.resumoDeErro(err));
       return res.status(500).json({ error: "Não foi possível enviar a imagem agora." });
     }
     if(!req.file){
@@ -4243,7 +4243,7 @@ app.post("/api/admin/hero/fotos", auth.requireAdmin, auth.requireAdminTwoFactor,
       db.insertHeroPhoto(id, alt, legenda, focus, "image/jpeg", original);
       res.status(201).json({ id, url: `/api/hero/fotos/${id}?w=480` });
     }catch(procErr){
-      console.error("Erro ao processar foto do topo:", procErr);
+      console.error("Erro ao processar foto do topo:", registro.resumoDeErro(procErr));
       res.status(500).json({ error: "Não foi possível processar a imagem enviada." });
     }
   });
@@ -4329,7 +4329,7 @@ app.get("/api/hero/fotos/:id", async (req, res) => {
     res.setHeader("Content-Type", mime);
     res.end(recortada);
   }catch(err){
-    console.error(`Falha ao recortar a foto do topo ${req.params.id}:`, err.message || err);
+    console.error(`Falha ao recortar a foto do topo ${req.params.id}:`, registro.resumoDeErro(err));
     res.status(500).end();
   }
 });
@@ -4360,7 +4360,7 @@ app.post("/api/admin/categories", auth.requireAdmin, auth.requireAdminTwoFactor,
     invalidarPaginasDaLoja();
     res.status(201).json({ ...created, builtin: false });
   } catch (err) {
-    console.error("Erro ao criar categoria:", err);
+    console.error("Erro ao criar categoria:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível criar a categoria agora." });
   }
 });
@@ -4382,7 +4382,7 @@ app.patch("/api/admin/categories/:slug", auth.requireAdmin, auth.requireAdminTwo
     db.updateCustomCategoryLabel(slug, label);
     res.json({ slug, label });
   } catch (err) {
-    console.error("Erro ao renomear categoria:", err);
+    console.error("Erro ao renomear categoria:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível renomear a categoria agora." });
   }
 });
@@ -4408,7 +4408,7 @@ app.delete("/api/admin/categories/:slug", auth.requireAdmin, auth.requireAdminTw
     db.deleteCustomCategory(slug);
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao excluir categoria:", err);
+    console.error("Erro ao excluir categoria:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível excluir a categoria agora." });
   }
 });
@@ -4428,7 +4428,7 @@ app.delete("/api/admin/orders/:reference", auth.requireAdmin, auth.requireAdminT
     eventos.registrar("pedido_arquivado", { req, pedido: reference, detalhes: { status: order.status } });
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao apagar pedido:", err);
+    console.error("Erro ao apagar pedido:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível apagar o pedido agora." });
   }
 });
@@ -4440,7 +4440,7 @@ app.get("/api/admin/coupons", auth.requireAdmin, auth.requireAdminTwoFactor, (re
     }));
     res.json({ coupons });
   } catch (err) {
-    console.error("Erro ao listar cupons:", err);
+    console.error("Erro ao listar cupons:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível carregar os cupons agora." });
   }
 });
@@ -4466,7 +4466,7 @@ app.post("/api/admin/coupons", auth.requireAdmin, auth.requireAdminTwoFactor, co
       code: created.code, percentOff: created.percent_off, description: created.description, createdAt: created.created_at,
     });
   } catch (err) {
-    console.error("Erro ao criar cupom:", err);
+    console.error("Erro ao criar cupom:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível criar o cupom agora." });
   }
 });
@@ -4495,7 +4495,7 @@ app.patch("/api/admin/coupons/:code", auth.requireAdmin, auth.requireAdminTwoFac
       code: updated.code, percentOff: updated.percent_off, description: updated.description, createdAt: updated.created_at,
     });
   } catch (err) {
-    console.error("Erro ao editar cupom:", err);
+    console.error("Erro ao editar cupom:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível editar o cupom agora." });
   }
 });
@@ -4509,7 +4509,7 @@ app.delete("/api/admin/coupons/:code", auth.requireAdmin, auth.requireAdminTwoFa
     db.deleteCoupon(code);
     res.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao apagar cupom:", err);
+    console.error("Erro ao apagar cupom:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível apagar o cupom agora." });
   }
 });
@@ -4549,7 +4549,7 @@ app.post("/api/admin/orders/:reference/generate-label", auth.requireAdmin, auth.
     }
     res.json({ ok: true, trackingCode });
   } catch (err) {
-    console.error(`Erro ao gerar etiqueta para o pedido ${reference}:`, err);
+    console.error(`Erro ao gerar etiqueta para o pedido ${reference}:`, registro.resumoDeErro(err));
     const detail = err?.data?.errors
       ? Object.values(err.data.errors).flat().join(" ")
       : err?.message;
@@ -4582,7 +4582,7 @@ app.get("/api/interno/tarefas-periodicas", cronLimiter, async (req, res) => {
   res.json({ ok: true, iniciada: new Date().toISOString() });
 
   tarefasPeriodicas.main()
-    .catch(err => console.error("Erro numa rodada de tarefas periódicas via HTTP:", err))
+    .catch(err => console.error("Erro numa rodada de tarefas periódicas via HTTP:", registro.resumoDeErro(err)))
     .finally(() => db.destravarRodada(TRAVA_TAREFAS));
 });
 
@@ -4593,7 +4593,7 @@ app.use((err, req, res, next) => {
   const status = isBadJson ? 400 : (err.status || err.statusCode || 500);
 
   if(!isBadJson){
-    console.error("Erro não tratado:", err);
+    console.error("Erro não tratado:", registro.resumoDeErro(err));
   }
   if(res.headersSent) return next(err);
 

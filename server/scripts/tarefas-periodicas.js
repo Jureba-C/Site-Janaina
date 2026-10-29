@@ -2,6 +2,7 @@ const path = require("node:path");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env"), quiet: true });
 
 const db = require("../lib/db.js");
+const registro = require("../lib/registro.js");
 const emailPhotos = require("../lib/emailPhotos.js");
 const rastreio = require("../lib/rastreio.js");
 const melhorEnvio = require("../lib/melhorEnvio.js");
@@ -37,11 +38,11 @@ async function reenviarFilaDeEmail(){
       });
       db.markEmailSent(linha.id);
       enviados++;
-      console.log(`  ✓ ${linha.kind} → ${linha.to_email} (pedido ${linha.order_reference || "-"})`);
+      console.log(`  ✓ ${linha.kind} → ${registro.mascararEmail(linha.to_email)} (pedido ${String(linha.order_reference || "-").slice(0, 8)})`);
     }catch(err){
       db.markEmailFailed(linha.id, err.message || err);
       falhas++;
-      console.error(`  ✗ ${linha.kind} → ${linha.to_email}: ${err.message || err}`);
+      console.error(`  ✗ ${linha.kind} → ${registro.mascararEmail(linha.to_email)}: ${registro.resumoDeErro(err)}`);
     }
   }
   console.log(`Fila de e-mail: ${enviados} enviado(s), ${falhas} falha(s), ${pendentes.length} tentado(s).`);
@@ -265,7 +266,7 @@ async function main(){
 
 if(require.main === module){
   main().catch(err => {
-    console.error("Erro nas tarefas periódicas:", err);
+    console.error("Erro nas tarefas periódicas:", registro.resumoDeErro(err));
     process.exit(1);
   });
 }

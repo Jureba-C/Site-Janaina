@@ -15,6 +15,12 @@ function resumoDeErro(err){
   if(status) partes.push(`status ${status}`);
   const codigo = err.codigo ?? err.code ?? err.cause?.code;
   if(codigo) partes.push(`código ${codigo}`);
+  const onde = String(err.stack || "").split("\n").slice(1)
+    .map(l => l.trim())
+    .filter(l => l.startsWith("at ") && !l.includes("node_modules") && !l.includes("node:internal"))
+    .slice(0, 2)
+    .map(l => l.replace(/\(?\/[^)]*\/(server|lib|scripts)\//, "($1/").replace(/^at /, ""));
+  if(onde.length) partes.push(`em ${onde.join(" ← ")}`);
   return partes.join(" · ") || "erro sem mensagem";
 }
 

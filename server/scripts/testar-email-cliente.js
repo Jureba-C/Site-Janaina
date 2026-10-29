@@ -81,4 +81,4 @@ async function enviar(rotulo, conteudo) {
     console.log("scripts/testar-email.js isola se o problema é o SMTP em si.");
     process.exitCode = 1;
   }
-})().catch(err => { console.error("Erro:", err); process.exit(1); });
+})().catch(err => { console.error("Erro:", err.message || String(err)); process.exit(1); });
