@@ -2094,8 +2094,17 @@
     feedbackEl.textContent = "";
     feedbackEl.classList.remove("is-success", "is-error");
     try{
-      const res = await fetchWithTimeout(`/api/admin/orders/${encodeURIComponent(ref)}/generate-label`, { method: "POST" }, 20000);
-      const data = await res.json().catch(() => ({}));
+      let res = await fetchWithTimeout(`/api/admin/orders/${encodeURIComponent(ref)}/generate-label`, { method: "POST" }, 20000);
+      let data = await res.json().catch(() => ({}));
+      if(res.status === 409 && data.jaTemEtiqueta){
+        if(!confirm("Este pedido já tem etiqueta. Comprar OUTRA cobra de novo no Melhor Envio. Quer mesmo comprar outra?")) throw new Error("Nada foi comprado.");
+        res = await fetchWithTimeout(`/api/admin/orders/${encodeURIComponent(ref)}/generate-label`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ forcar: true }),
+        }, 20000);
+        data = await res.json().catch(() => ({}));
+      }
       if(!res.ok) throw new Error(data.error || "Não foi possível gerar a etiqueta.");
       const input = document.getElementById(`tracking-${ref}`);
       if(input && data.trackingCode) input.value = data.trackingCode;

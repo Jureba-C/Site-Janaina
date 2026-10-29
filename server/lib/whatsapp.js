@@ -71,4 +71,9 @@ async function notifyOwnerOfPaidOrder(order) {
   await sendWhatsAppMessage(ownerNumber, message);
 }
 
-module.exports = { formatOrderMessage, sendWhatsAppMessage, notifyOwnerOfPaidOrder, estaConfigurado };
+async function avisarDonaDaLoja(texto) {
+  if (!estaConfigurado()) return null;
+  return sendWhatsAppMessage(process.env.OWNER_WHATSAPP_NUMBER, `⚠️ Arte Canecas — ${String(texto).slice(0, 900)}`);
+}
+
+module.exports = { formatOrderMessage, sendWhatsAppMessage, notifyOwnerOfPaidOrder, avisarDonaDaLoja, estaConfigurado };

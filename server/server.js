@@ -46,6 +46,10 @@ const lojaSsr = require("./lib/loja-ssr.js");
 const producao = require("./lib/producao.js");
 const etapas = require("./lib/etapas-pedido.js");
 const ambiente = require("./lib/ambiente.js");
+const estadoDoPedido = require("./lib/estado-do-pedido.js");
+const mercadoPagoApi = require("./lib/mercado-pago-api.js");
+const eventos = require("./lib/eventos-seguranca.js");
+const registro = require("./lib/registro.js");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -1121,6 +1125,12 @@ app.post("/api/create-preference", strictLimiter, auth.requireAuth, async (req, 
   }
 });
 
+const VALIDADE_PIX_MIN = 60;
+function validadeDoPix(agora = Date.now()){
+  const brasilia = new Date(agora + VALIDADE_PIX_MIN * 60 * 1000 - 3 * 60 * 60 * 1000);
+  return brasilia.toISOString().replace("Z", "-03:00");
+}
+
 app.post("/api/create-pix-payment", strictLimiter, auth.requireAuth, async (req, res) => {
   try {
     const draft = await buildCheckoutDraft(req);
@@ -1135,6 +1145,7 @@ app.post("/api/create-pix-payment", strictLimiter, auth.requireAuth, async (req,
         transaction_amount: draft.total,
         description: `Pedido ${orderRef.slice(0, 8)} — Arte Canecas`,
         payment_method_id: "pix",
+        date_of_expiration: validadeDoPix(),
         external_reference: orderRef,
         notification_url: `${process.env.SERVER_PUBLIC_URL || "https://SEU-DOMINIO-DO-SERVIDOR.com"}/api/webhook`,
         payer: {
@@ -1201,12 +1212,18 @@ app.post("/api/orders/:reference/resume-payment", strictLimiter, auth.requireAut
     const orderRef = order.external_reference;
 
     if(draft.paymentMethod === "pix"){
+      if(order.payment_id && mercadoPagoApi.idValido(order.payment_id)){
+        await mercadoPagoApi.cancelarPagamento(order.payment_id).catch(err => {
+          console.warn(`Não deu para cancelar o Pix anterior do pedido ${orderRef.slice(0, 8)}:`, registro.resumoDeErro(err));
+        });
+      }
       const payment = new Payment(mpClient);
       const result = await payment.create({
         body: {
           transaction_amount: draft.total,
           description: `Pedido ${orderRef.slice(0, 8)} — Arte Canecas`,
           payment_method_id: "pix",
+          date_of_expiration: validadeDoPix(),
           external_reference: orderRef,
           notification_url: `${process.env.SERVER_PUBLIC_URL || "https://SEU-DOMINIO-DO-SERVIDOR.com"}/api/webhook`,
           payer: {
@@ -1223,8 +1240,16 @@ app.post("/api/orders/:reference/resume-payment", strictLimiter, auth.requireAut
         return res.status(502).json({ error: "Não foi possível gerar o código Pix agora. Tente novamente em instantes." });
       }
 
-      db.updateOrderDraft(orderRef, orderRowFrom(draft, orderRef, req.user.id));
-      db.updateOrderStatus(orderRef, "pendente", String(result.id));
+      const pedidoAgora = db.getOrderByExternalReference(orderRef);
+      if(db.pedidoJaFoiPago(pedidoAgora)){
+        await mercadoPagoApi.cancelarPagamento(result.id).catch(() => {});
+        return res.status(409).json({ error: "Este pedido acabou de receber um pagamento. Atualize a página." });
+      }
+      db.updateOrderDraft(orderRef, orderRowFrom(draft, orderRef, req.user));
+      if(!db.trocarStatusDoPedido(orderRef, { de: pedidoAgora.status, para: "pendente", paymentId: String(result.id) })){
+        await mercadoPagoApi.cancelarPagamento(result.id).catch(() => {});
+        return res.status(409).json({ error: "O pedido mudou enquanto o Pix era gerado. Atualize a página e tente de novo." });
+      }
 
       return res.json({
         reference: orderRef,
@@ -1261,7 +1286,10 @@ app.post("/api/orders/:reference/resume-payment", strictLimiter, auth.requireAut
       },
     });
 
-    db.updateOrderDraft(orderRef, orderRowFrom(draft, orderRef, req.user.id));
+    if(db.pedidoJaFoiPago(db.getOrderByExternalReference(orderRef))){
+      return res.status(409).json({ error: "Este pedido acabou de receber um pagamento. Atualize a página." });
+    }
+    db.updateOrderDraft(orderRef, orderRowFrom(draft, orderRef, req.user));
 
     res.json({ id: result.id, init_point: result.init_point });
   } catch (err) {
@@ -1669,15 +1697,6 @@ async function purchaseShippingLabel(order, externalReference){
   return generated;
 }
 
-const PAYMENT_STATUS_MAP = {
-  approved: "pago",
-  pending: "pendente",
-  in_process: "em análise",
-  rejected: "recusado",
-  cancelled: "cancelado",
-  refunded: "reembolsado",
-  charged_back: "estornado",
-};
 
 async function avisarLojista({ kind, orderReference, conteudo }){
   const destino = process.env.OWNER_EMAIL;
@@ -1693,6 +1712,11 @@ async function avisarLojista({ kind, orderReference, conteudo }){
   await entregarEmailDaFila(id);
   return id;
 }
+
+eventos.configurar({
+  entregar: (id) => entregarEmailDaFila(id),
+  avisarWhatsapp: (texto) => whatsapp.avisarDonaDaLoja(texto),
+});
 
 async function entregarEmailDaFila(id){
   if(!id) return;
@@ -1772,12 +1796,17 @@ async function runApprovedOrderSideEffects(orderRow, info){
   let rastreioDaEtiqueta = null;
 
   if(process.env.AUTO_PURCHASE_SHIPPING_LABEL === "true"){
-    try{
-      const label = await purchaseShippingLabel(order, info.external_reference);
-      console.log("Etiqueta de envio comprada:", label);
-      rastreioDaEtiqueta = label?.[0]?.tracking || label?.tracking || null;
-    }catch(labelErr){
-      console.error("Falha ao comprar etiqueta automaticamente (pedido ficou pago, mas sem etiqueta — gere manualmente no painel do Melhor Envio):", labelErr);
+    if(!db.reservarEtiqueta(info.external_reference)){
+      eventos.registrar("etiqueta_repetida_bloqueada", { pedido: info.external_reference });
+    } else {
+      try{
+        const label = await purchaseShippingLabel(order, info.external_reference);
+        rastreioDaEtiqueta = label?.[0]?.tracking || label?.tracking || null;
+        console.log(`Etiqueta de envio comprada para o pedido ${String(info.external_reference).slice(0, 8)}${rastreioDaEtiqueta ? ` (rastreio ${rastreioDaEtiqueta})` : ""}.`);
+      }catch(labelErr){
+        db.soltarEtiqueta(info.external_reference);
+        console.error("Falha ao comprar etiqueta automaticamente (pedido ficou pago, mas sem etiqueta — gere manualmente no painel do Melhor Envio):", registro.resumoDeErro(labelErr));
+      }
     }
   } else {
     console.log("Pagamento aprovado. Gere a etiqueta manualmente no painel do Melhor Envio para o pedido:", info.external_reference);
@@ -1853,61 +1882,85 @@ async function runApprovedOrderSideEffects(orderRow, info){
   }
 }
 
-function verifyMpWebhookSignature(req, dataId) {
-  return pagamento.assinaturaDoWebhookValida(process.env.MP_WEBHOOK_SECRET, req.get("x-signature"), req.get("x-request-id"), dataId);
-}
-
 const { pagamentoBateComPedido } = pagamento;
+
+async function processarPagamentoDoMercadoPago(paymentId, req){
+  const info = await mercadoPagoApi.buscarPagamento(paymentId);
+  if(!info || String(info.id) !== String(paymentId)){
+    console.warn(`Webhook: o Mercado Pago devolveu outro pagamento para ${paymentId} — ignorado.`);
+    return;
+  }
+  const ref = info.external_reference ? String(info.external_reference) : null;
+  const pedidoAntes = ref ? db.getOrderByExternalReference(ref) : null;
+  if(!pedidoAntes){
+    console.warn(`Webhook: pagamento ${paymentId} não corresponde a nenhum pedido conhecido.`);
+    return;
+  }
+  db.registrarPagamentoMp(info);
+
+  let pedido = pedidoAntes;
+  let decisao = null;
+  for(let tentativa = 0; tentativa < 3; tentativa++){
+    const confere = info.status === "approved" ? pagamentoBateComPedido(info, pedido) : true;
+    decisao = estadoDoPedido.decidir({ pedido, pagamento: { id: info.id, status: info.status, confere } });
+    if(decisao.acao !== "aplicar") break;
+    const ok = db.trocarStatusDoPedido(ref, {
+      de: pedido.status,
+      para: decisao.novoStatus,
+      paymentId: String(info.id),
+      vencedor: decisao.definirVencedor ? String(info.id) : null,
+    });
+    if(ok) break;
+    pedido = db.getOrderByExternalReference(ref);
+    decisao = null;
+  }
+  if(!decisao) return;
+
+  console.log(`Webhook: pagamento ${paymentId} (${info.status}) → pedido ${ref.slice(0, 8)} ${decisao.acao === "aplicar" ? `agora "${decisao.novoStatus}"` : "sem mudança"}.`);
+  if(decisao.alerta){
+    eventos.registrar(decisao.alerta, {
+      req,
+      pedido: ref,
+      detalhes: {
+        pagamento: String(info.id),
+        status_mp: info.status,
+        valor: info.transaction_amount,
+        forma: info.payment_method_id,
+        motivo: info.status === "approved" ? pagamento.motivoDaDivergencia(info, pedido) : null,
+      },
+    });
+  }
+  if(decisao.virouPago && db.reservarEfeitosDoPagamento(ref)){
+    db.markOrderInProduction(ref);
+    const atualizado = db.getOrderByExternalReference(ref);
+    runApprovedOrderSideEffects(atualizado, info).catch(err => {
+      console.error(`Falha inesperada processando efeitos do pedido ${ref.slice(0, 8)}:`, registro.resumoDeErro(err));
+    });
+  }
+}
 
 app.post("/api/webhook", async (req, res) => {
   try {
     const paymentId = req.query?.["data.id"] || req.body?.data?.id;
     const topic = req.query?.type || req.body?.type;
 
-    if (topic === "payment" && paymentId && /^[0-9]{1,24}$/.test(String(paymentId))) {
-      if (!verifyMpWebhookSignature(req, paymentId)) {
-        console.warn(`Webhook: assinatura x-signature inválida para ${paymentId} — ignorado.`);
+    if (topic === "payment" && paymentId && mercadoPagoApi.idValido(paymentId)) {
+      const conferida = pagamento.conferirAssinatura(process.env.MP_WEBHOOK_SECRET, req.get("x-signature"), req.get("x-request-id"), paymentId);
+      if(!conferida.ok){
+        if(conferida.motivo === "sem_segredo"){
+          eventos.registrar("webhook_sem_segredo", { req, detalhes: { pagamento: String(paymentId) } });
+          return res.sendStatus(503);
+        }
+        eventos.registrar(conferida.motivo === "ts_antigo" ? "webhook_ts_antigo" : "webhook_assinatura_invalida", { req, detalhes: { pagamento: String(paymentId), motivo: conferida.motivo } });
         return res.sendStatus(401);
       }
-      const payment = new Payment(mpClient);
-      const info = await payment.get({ id: paymentId });
-      console.log(`Webhook recebido — pagamento ${paymentId}: ${info.status}`);
-
-      const orderRow = info.external_reference
-        ? db.getOrderByExternalReference(info.external_reference)
-        : null;
-
-      if(!orderRow){
-        console.warn(`Webhook: pagamento ${paymentId} não corresponde a nenhum pedido conhecido (external_reference=${info.external_reference || "ausente"}).`);
-        return res.sendStatus(200);
-      }
-
-      if(info.status === "approved" && !pagamentoBateComPedido(info, orderRow)){
-        console.error(`Webhook: pagamento ${paymentId} aprovado com valor ${info.transaction_amount} ${info.currency_id} diferente do pedido ${orderRow.external_reference} (R$ ${orderRow.total}) — pedido NÃO marcado como pago.`);
-        db.updateOrderStatus(info.external_reference, "em análise", String(paymentId));
-        return res.sendStatus(200);
-      }
-
-      const wasAlreadyApproved = orderRow.status === "pago";
-      const status = PAYMENT_STATUS_MAP[info.status] || info.status;
-      db.updateOrderStatus(info.external_reference, status, String(paymentId));
-      if(info.status === "approved" && !wasAlreadyApproved){
-        db.markOrderInProduction(info.external_reference);
-      }
-
-      res.sendStatus(200);
-
-      if(info.status === "approved" && !wasAlreadyApproved){
-        runApprovedOrderSideEffects(orderRow, info).catch(err => {
-          console.error(`Falha inesperada processando efeitos do pedido ${info.external_reference}:`, err);
-        });
-      }
-      return;
+      await processarPagamentoDoMercadoPago(String(paymentId), req);
+      return res.sendStatus(200);
     }
 
     res.sendStatus(200);
   } catch (err) {
-    console.error("Erro no webhook:", err);
+    console.error("Erro no webhook:", registro.resumoDeErro(err));
     if(!res.headersSent) res.sendStatus(500);
   }
 });
@@ -4289,10 +4342,11 @@ app.delete("/api/admin/orders/:reference", auth.requireAdmin, auth.requireAdminT
     if(!order){
       return res.status(404).json({ error: "Pedido não encontrado." });
     }
-    if(order.status === "pago"){
-      return res.status(409).json({ error: "Pedidos pagos não podem ser apagados — é o histórico financeiro do pedido." });
+    if(db.pedidoJaFoiPago(order)){
+      return res.status(409).json({ error: "Pedidos que já receberam pagamento não podem ser apagados — é o histórico financeiro do pedido." });
     }
-    db.deleteOrder(reference);
+    db.arquivarPedido(reference);
+    eventos.registrar("pedido_arquivado", { req, pedido: reference, detalhes: { status: order.status } });
     res.json({ ok: true });
   } catch (err) {
     console.error("Erro ao apagar pedido:", err);
@@ -4394,6 +4448,9 @@ app.post("/api/admin/orders/:reference/generate-label", auth.requireAdmin, auth.
     if(ehRetirada(orderRow)){
       return res.status(409).json({ error: "Este pedido é para retirar na Asa Norte — não precisa de etiqueta." });
     }
+    if(orderRow.melhor_envio_shipment_id && req.body?.forcar !== true){
+      return res.status(409).json({ error: "Este pedido já tem etiqueta. Gerar outra cobra de novo no Melhor Envio.", jaTemEtiqueta: true });
+    }
 
     const order = {
       items: JSON.parse(orderRow.items_json),
@@ -4405,7 +4462,7 @@ app.post("/api/admin/orders/:reference/generate-label", auth.requireAdmin, auth.
     if(trackingCode){
       entregarEmailDaFila(salvarRastreioEAvisar(reference, trackingCode)).catch(() => {});
     }
-    res.json({ ok: true, trackingCode, raw: generated });
+    res.json({ ok: true, trackingCode });
   } catch (err) {
     console.error(`Erro ao gerar etiqueta para o pedido ${reference}:`, err);
     const detail = err?.data?.errors

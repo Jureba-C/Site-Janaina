@@ -201,6 +201,10 @@ ensureColumn("orders", "nfe_status", "TEXT");
 ensureColumn("orders", "nfe_number", "TEXT");
 ensureColumn("orders", "nfe_url", "TEXT");
 ensureColumn("orders", "nfe_error", "TEXT");
+ensureColumn("orders", "pagamento_aprovado_id", "TEXT");
+ensureColumn("orders", "efeitos_pagamento_em", "INTEGER");
+ensureColumn("orders", "etiqueta_reservada_em", "INTEGER");
+ensureColumn("orders", "arquivado_em", "INTEGER");
 ensureColumn("coupons", "once_per_customer", "INTEGER NOT NULL DEFAULT 0");
 ensureColumn("users", "cep", "TEXT");
 ensureColumn("users", "cpf", "TEXT");
@@ -710,7 +714,7 @@ const stmtUpdateOrderStatus = db.prepare(
 const stmtListOrdersByUser = db.prepare(
   `SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC`
 );
-const stmtListAllOrders = db.prepare(`SELECT * FROM orders ORDER BY created_at DESC`);
+const stmtListAllOrders = db.prepare(`SELECT * FROM orders WHERE arquivado_em IS NULL ORDER BY created_at DESC`);
 const stmtPedidosAguardandoEntrega = db.prepare(
   `SELECT * FROM orders WHERE fulfillment_status = 'postado' AND tracking_code IS NOT NULL AND tracking_code <> '' ORDER BY shipped_at ASC`
 );
@@ -726,7 +730,7 @@ const stmtUpdateOrderTracking = db.prepare(`
   WHERE external_reference = ?
 `);
 const stmtMarkOrderInProduction = db.prepare(
-  `UPDATE orders SET fulfillment_status = 'em_producao', pago_em = COALESCE(pago_em, ?), updated_at = ? WHERE external_reference = ?`
+  `UPDATE orders SET fulfillment_status = 'em_producao', pago_em = COALESCE(pago_em, ?), updated_at = ? WHERE external_reference = ? AND fulfillment_status IS NULL`
 );
 const stmtMarcarArteAprovada = db.prepare(
   `UPDATE orders SET arte_aprovada_em = COALESCE(arte_aprovada_em, ?), updated_at = ? WHERE external_reference = ?`
@@ -870,6 +874,133 @@ function getOrderStats() {
 }
 function deleteOrder(ref) {
   stmtDeleteOrder.run(ref);
+}
+
+db.exec(`
+  UPDATE orders SET pagamento_aprovado_id = payment_id, efeitos_pagamento_em = COALESCE(pago_em, updated_at)
+    WHERE status IN ('pago', 'reembolsado', 'estornado') AND pagamento_aprovado_id IS NULL;
+  CREATE TABLE IF NOT EXISTS pagamentos_mp (
+    payment_id    TEXT PRIMARY KEY,
+    pedido        TEXT NOT NULL,
+    status        TEXT,
+    valor         REAL,
+    moeda         TEXT,
+    tipo          TEXT,
+    metodo        TEXT,
+    criado_em     INTEGER NOT NULL,
+    atualizado_em INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_pagamentos_mp_pedido ON pagamentos_mp(pedido);
+`);
+
+const stmtRegistraPagamentoMp = db.prepare(`
+  INSERT INTO pagamentos_mp (payment_id, pedido, status, valor, moeda, tipo, metodo, criado_em, atualizado_em)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(payment_id) DO UPDATE SET
+    status = excluded.status, valor = excluded.valor, moeda = excluded.moeda,
+    tipo = excluded.tipo, metodo = excluded.metodo, atualizado_em = excluded.atualizado_em
+`);
+function registrarPagamentoMp(info){
+  const agora = Date.now();
+  stmtRegistraPagamentoMp.run(
+    String(info.id), String(info.external_reference || ""), info.status ?? null,
+    Number.isFinite(Number(info.transaction_amount)) ? Number(info.transaction_amount) : null,
+    info.currency_id ?? null, info.payment_type_id ?? null, info.payment_method_id ?? null, agora, agora
+  );
+}
+const stmtPagamentosDoPedido = db.prepare(`SELECT * FROM pagamentos_mp WHERE pedido = ? ORDER BY criado_em`);
+function listarPagamentosDoPedido(ref){ return stmtPagamentosDoPedido.all(ref); }
+
+const stmtTrocaStatus = db.prepare(`
+  UPDATE orders SET
+    status = ?,
+    payment_id = ?,
+    pagamento_aprovado_id = CASE WHEN ? IS NOT NULL THEN ? ELSE pagamento_aprovado_id END,
+    updated_at = ?
+  WHERE external_reference = ? AND status = ?
+`);
+function trocarStatusDoPedido(ref, { de, para, paymentId, vencedor = null }){
+  const r = stmtTrocaStatus.run(para, paymentId ?? null, vencedor, vencedor, Date.now(), ref, de);
+  return r.changes === 1;
+}
+const stmtReservaEfeitos = db.prepare(
+  `UPDATE orders SET efeitos_pagamento_em = ? WHERE external_reference = ? AND efeitos_pagamento_em IS NULL`
+);
+function reservarEfeitosDoPagamento(ref){
+  return stmtReservaEfeitos.run(Date.now(), ref).changes === 1;
+}
+const stmtReservaEtiqueta = db.prepare(`
+  UPDATE orders SET etiqueta_reservada_em = ?
+  WHERE external_reference = ? AND etiqueta_reservada_em IS NULL
+    AND (melhor_envio_shipment_id IS NULL OR melhor_envio_shipment_id = '')
+`);
+function reservarEtiqueta(ref){
+  return stmtReservaEtiqueta.run(Date.now(), ref).changes === 1;
+}
+const stmtSoltaEtiqueta = db.prepare(
+  `UPDATE orders SET etiqueta_reservada_em = NULL WHERE external_reference = ? AND (melhor_envio_shipment_id IS NULL OR melhor_envio_shipment_id = '')`
+);
+function soltarEtiqueta(ref){ stmtSoltaEtiqueta.run(ref); }
+const stmtArquivaPedido = db.prepare(
+  `UPDATE orders SET arquivado_em = ?, updated_at = ? WHERE external_reference = ? AND arquivado_em IS NULL`
+);
+function arquivarPedido(ref){
+  const agora = Date.now();
+  return stmtArquivaPedido.run(agora, agora, ref).changes === 1;
+}
+const stmtPagamentoAprovadoDoPedido = db.prepare(
+  `SELECT 1 FROM pagamentos_mp WHERE pedido = ? AND status IN ('approved', 'refunded', 'charged_back') LIMIT 1`
+);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS eventos_seguranca (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo       TEXT NOT NULL,
+    gravidade  TEXT NOT NULL,
+    user_id    INTEGER,
+    email_hash TEXT,
+    ip         TEXT,
+    agente     TEXT,
+    pedido     TEXT,
+    detalhes   TEXT,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_eventos_quando ON eventos_seguranca(created_at);
+  CREATE INDEX IF NOT EXISTS idx_eventos_tipo ON eventos_seguranca(tipo, created_at);
+`);
+const stmtInsereEvento = db.prepare(`
+  INSERT INTO eventos_seguranca (tipo, gravidade, user_id, email_hash, ip, agente, pedido, detalhes, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+`);
+function inserirEventoDeSeguranca(e){
+  const r = stmtInsereEvento.run(
+    e.tipo, e.gravidade, e.userId ?? null, e.emailHash ?? null, e.ip ?? null,
+    e.agente ?? null, e.pedido ?? null, e.detalhes ?? null, e.quando ?? Date.now()
+  );
+  return Number(r.lastInsertRowid);
+}
+const stmtListaEventos = db.prepare(`
+  SELECT * FROM eventos_seguranca WHERE created_at >= ? ORDER BY created_at DESC, id DESC LIMIT ?
+`);
+const stmtListaEventosDoTipo = db.prepare(`
+  SELECT * FROM eventos_seguranca WHERE created_at >= ? AND tipo = ? ORDER BY created_at DESC, id DESC LIMIT ?
+`);
+function listarEventosDeSeguranca({ desde = 0, tipo = null, limite = 200 } = {}){
+  return tipo ? stmtListaEventosDoTipo.all(desde, tipo, limite) : stmtListaEventos.all(desde, limite);
+}
+const stmtContaEventos = db.prepare(`SELECT COUNT(*) AS n FROM eventos_seguranca WHERE tipo = ? AND created_at >= ?`);
+function contarEventosDeSeguranca(tipo, desde){
+  return stmtContaEventos.get(tipo, desde).n;
+}
+const stmtPodaEventos = db.prepare(`DELETE FROM eventos_seguranca WHERE created_at < ?`);
+function podarEventosDeSeguranca(antesDe){
+  return stmtPodaEventos.run(antesDe).changes;
+}
+
+function pedidoJaFoiPago(pedido){
+  if(!pedido) return false;
+  if(pedido.pagamento_aprovado_id || pedido.pago_em) return true;
+  if(["pago", "em análise", "reembolsado", "estornado"].includes(pedido.status)) return true;
+  return Boolean(stmtPagamentoAprovadoDoPedido.get(pedido.external_reference));
 }
 
 const stmtInsertProductPhoto = db.prepare(
@@ -2098,6 +2229,18 @@ module.exports = {
   setMelhorEnvioShipmentId,
   getOrderStats,
   deleteOrder,
+  registrarPagamentoMp,
+  listarPagamentosDoPedido,
+  trocarStatusDoPedido,
+  reservarEfeitosDoPagamento,
+  reservarEtiqueta,
+  soltarEtiqueta,
+  arquivarPedido,
+  pedidoJaFoiPago,
+  inserirEventoDeSeguranca,
+  listarEventosDeSeguranca,
+  contarEventosDeSeguranca,
+  podarEventosDeSeguranca,
   hasUsedCoupon,
   insertProductPhoto,
   getProductPhoto,

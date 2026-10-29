@@ -1038,7 +1038,45 @@ async function sendAvisoDeSegurancaDaConta({ to, nome, oQue, novoEmail }){
   return sendEmail({ to, subject, text, html });
 }
 
+function formatAlertaDeSegurancaEmail({ titulo, resumo, dados = [], orientacao }){
+  const quando = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+  const linhas = [...dados, ["Quando", quando]].filter(([, v]) => v != null && v !== "");
+  const subject = `⚠️ ${titulo}`;
+  const text = [
+    resumo,
+    "",
+    ...linhas.map(([r, v]) => `${r}: ${v}`),
+    "",
+    orientacao || "",
+  ].join("\n").trim();
+  const html = emailShell({
+    titulo: subject,
+    preheader: resumo,
+    eyebrow: "alerta de segurança",
+    tituloCartao: titulo,
+    corpoHtml: `
+      <tr>
+        <td class="e-apoio" align="left" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:14px; line-height:1.6; padding-bottom:14px;">
+          ${escapeHTML(resumo)}
+        </td>
+      </tr>
+      <tr>
+        <td class="e-apoio" align="left" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:13px; line-height:1.6; padding-bottom:18px;">
+          ${linhas.map(([r, v]) => linhaDado(r, String(v))).join("")}
+        </td>
+      </tr>
+      ${orientacao ? `<tr>
+        <td class="e-texto e-caixa" align="left" style="font-family:${FONT_CORPO}; color:${CORES.texto}; font-size:14px; line-height:1.6; background:${CORES.caixaSuave}; border-radius:14px; padding:16px 18px;">
+          ${escapeHTML(orientacao)}
+        </td>
+      </tr>` : ""}
+    `,
+  });
+  return { subject, text, html };
+}
+
 module.exports = {
+  formatAlertaDeSegurancaEmail,
   formatAniversarioEmail,
   sendAvisoDeSegurancaDaConta,
   formatConfirmarRecebimentoEmail,
