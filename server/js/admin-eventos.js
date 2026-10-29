@@ -67,9 +67,16 @@
     return [navegador, sistema].filter(Boolean).join(" no ");
   }
 
+  const SO_INFORMATIVOS = new Set(["admin_novo_acesso", "dois_fatores_trocado", "backup_ok"]);
+
+  function nivel(e){
+    return SO_INFORMATIVOS.has(e.tipo) ? "info" : e.gravidade;
+  }
+
   function icone(e){
-    if(e.gravidade === "critico") return "bi-exclamation-octagon";
-    if(e.gravidade === "aviso") return "bi-exclamation-triangle";
+    if(e.tipo === "admin_novo_acesso") return "bi-door-open";
+    if(nivel(e) === "critico") return "bi-exclamation-octagon";
+    if(nivel(e) === "aviso") return "bi-exclamation-triangle";
     return "bi-info-circle";
   }
 
@@ -97,7 +104,7 @@
 
   function desenharLista(){
     const visiveis = eventos.filter(e => {
-      if(filtro === "critico") return e.gravidade === "critico";
+      if(filtro === "critico") return nivel(e) === "critico";
       if(GRUPOS[filtro]) return GRUPOS[filtro].test(e.tipo);
       return e.tipo !== "login_ok";
     }).slice(0, 150);
@@ -110,7 +117,7 @@
     }
     lista.replaceChildren(...visiveis.map(e => {
       const li = document.createElement("li");
-      li.className = `seg-item is-${e.gravidade}`;
+      li.className = `seg-item is-${nivel(e)}`;
       const i = document.createElement("i");
       i.className = `bi ${icone(e)}`;
       i.setAttribute("aria-hidden", "true");
