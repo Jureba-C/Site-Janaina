@@ -16,7 +16,11 @@
     "verificar": "node scripts/sem-comentarios.js && npm run construir --silent && node --disable-warning=ExperimentalWarning --test test/*.test.js",
     "conferir": "node --disable-warning=ExperimentalWarning scripts/conferir-site.js",
     "aplicar-marca": "node scripts/aplicar-marca.js",
-    "construir": "tsc -p loja/tsconfig.json && vite build --config loja/vite.config.mts && vite build --config loja/vite.config.mts --ssr src/entrada-servidor.tsx"
+    "construir": "tsc -p loja/tsconfig.json && vite build --config loja/vite.config.mts && vite build --config loja/vite.config.mts --ssr src/entrada-servidor.tsx",
+    "seguranca": "node --disable-warning=ExperimentalWarning --test test/seguranca*.test.js",
+    "auditar": "npm audit --omit=dev --audit-level=moderate",
+    "derrubar-sessoes": "node --disable-warning=ExperimentalWarning scripts/derrubar-sessoes.js",
+    "girar-chave-dados": "node --disable-warning=ExperimentalWarning scripts/girar-chave-dados.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

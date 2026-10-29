@@ -250,3 +250,106 @@ Pendências que dependem da hospedagem (⚠️ Caio):
   o valor ainda é conferido no Mercado Pago, mas a assinatura fecha a porta).
 - Site só em HTTPS (o `Strict-Transport-Security` já vai no cabeçalho).
 - `ADMIN_EMAIL_HASHES` só com o e-mail da Janaina (e o do Caio, se quiser).
+
+## Rodada de 29/10/2026 — plano completo de segurança
+
+Três auditorias (login e painel; pagamentos e entradas; servidor, dados e
+LGPD) acharam furos reais. Tudo abaixo tem teste em `test/seguranca-*.test.js`
+(`npm run seguranca`).
+
+### Dinheiro
+
+- **Máquina de estados do pedido** (`lib/estado-do-pedido.js`). Antes o
+  webhook sobrescrevia o status: um Pix antigo que vencia cancelava um pedido
+  já pago, e a aprovação seguinte repetia e-mails, WhatsApp e podia comprar
+  etiqueta de novo. Agora: pedido pago nunca volta; pagamento mais antigo não
+  muda o pedido; toda gravação é condicional ao status atual
+  (`trocarStatusDoPedido`); efeitos, produção e etiqueta rodam uma vez só
+  (`reservarEfeitosDoPagamento`, `reservarEtiqueta`); todo pagamento recebido
+  fica em `pagamentos_mp`; pedido que já recebeu pagamento não pode ser
+  apagado (os outros são arquivados).
+- **Webhook autêntico:** sem `MP_WEBHOOK_SECRET`, em produção, todo aviso é
+  recusado (503, o Mercado Pago tenta de novo); assinatura com mais de 15 min
+  é recusada; o servidor nem sobe com token `APP_USR-` sem o segredo.
+- **Pedido com desconto do Pix só aprova se o pagamento foi Pix.**
+- **Pix vence em 60 min** e "continuar pagamento" cancela o Pix anterior.
+- **Cupom de uso único reservado na hora** (`cupons_reservados`, sem `await`
+  entre conferir e reservar): duas compras ao mesmo tempo não levam o
+  desconto duas vezes. Liberado quando o pagamento cai; alerta se repetir.
+- **Cupom de aniversário:** a data só é cadastrada uma vez e o cupom só vale
+  30 dias depois de cadastrada (antes dava para trocar a data para hoje).
+
+### Painel e contas
+
+- **Painel só com o app autenticador.** O código por e-mail deixou de valer
+  para o painel: antes, quem tivesse a caixa de e-mail fazia "esqueci a
+  senha" e recebia o código no mesmo lugar.
+- A sessão guarda a **prova do 2FA** (`sessions.segundo_fator_em`); o mesmo
+  código do app não vale duas vezes; código de recuperação vale uma vez só,
+  mesmo em duas abas ao mesmo tempo.
+- O segredo do app é gerado e **guardado no servidor**; trocar o app pede
+  senha + código atual e fica travado 24 h depois de redefinir a senha.
+- Primeira ativação do painel pede **código enviado ao e-mail do painel**.
+- **Confirmar de novo** (código do app, vale 10 min) para exportar, baixar
+  backup, cupons, campanhas, apagar, reconectar Instagram, etiqueta repetida
+  e desconectar todo mundo (`ROTAS_SENSIVEIS`, teste estático).
+- Sessão do painel cai com **30 min parada**, dura 12 h; cookie
+  `__Host-plc_session` em produção; no máximo 10 sessões por pessoa; lista de
+  aparelhos em Minha conta.
+- **Limite por conta** somando todos os IPs (fica lenta, não trava) e limites
+  separados para login, cadastro, esqueci a senha e 2FA.
+- **Senha:** mínimo 10 (12 no painel), sem senhas comuns, sequências, o
+  e-mail ou o nome da loja (`lib/senhas.js`).
+- Redefinir a senha avisa por e-mail (e alerta, se for o painel); trocar
+  senha, e-mail ou 2FA cancela links pendentes; troca de e-mail só vale
+  depois de confirmar pelo link no endereço novo.
+- **Google:** nonce de uso único (token capturado não serve de novo).
+- **IP verdadeiro** (`lib/ambiente.js`, `TRUST_PROXY`): com Cloudflare, só
+  vale o IP que veio dela; sem proxy, `X-Forwarded-For` é ignorado.
+
+### Dados
+
+- **Criptografia no banco** (`lib/cofre.js`, AES-256-GCM, `CHAVES_DADOS`):
+  CPF, endereços, telefone dos pedidos (com índice cego para o cupom),
+  segredo do 2FA e token do Instagram. A leitura passa por uma camada única em
+  `lib/db.js`, então o resto do site não mudou. Troca de chave com
+  `scripts/girar-chave-dados.js`. Protege contra vazamento do arquivo do
+  banco e de backups; não protege contra quem tomar o servidor inteiro.
+- **Backup diário fora do servidor** (`lib/backup-remoto.js`, S3/R2,
+  assinatura SigV4 própria conferida com o exemplo oficial da AWS), alerta se
+  falhar ou atrasar.
+- **Registro sem dado pessoal** (`lib/registro.js`): e-mail mascarado, erro
+  resumido sem o corpo da requisição, link de redefinição nunca em produção.
+- **Fotos:** só JPG/PNG/WEBP/HEIC, até 40 MP, 2 processando por vez, 10 a cada
+  15 min e 40 por dia por IP, cota de fotos soltas, limpeza automática.
+- **Endereço** com campos fixos, sem quebra de linha (antes dava para forjar
+  linhas na mensagem de WhatsApp da lojista), UF e telefone conferidos.
+- **LGPD:** excluir a conta tira o e-mail de todos os pedidos e apaga a fila
+  de e-mails; texto de e-mails enviados some em 30 dias; planilha completa com
+  CPF mascarado; registros guardados 180 dias (Marco Civil); política
+  reescrita com bases legais, transferência internacional e direitos.
+
+### Monitoramento
+
+- `eventos_seguranca` + aba **Segurança** no painel; alertas por e-mail (um
+  por janela, `idx_outbox_unico`) e WhatsApp nos graves.
+- `/api/saude` para monitor externo; erros inesperados viram evento.
+- CSP mais rígida em **modo de teste** (`Content-Security-Policy-Report-Only`)
+  com relatórios em `/api/csp-relatorio`. Depois de uma semana sem relatórios
+  estranhos na aba Segurança, trocar a CSP do helmet pela `CSP_EM_TESTE`.
+- HSTS só em produção e sem `preload` até o domínio ser definitivo.
+- Turnstile da Cloudflare no cadastro e no "esqueci a senha".
+
+### Decisões que ficaram como estavam (e por quê)
+
+- **Cadastro diz "já existe uma conta com este e-mail".** Esconder isso
+  obrigaria toda cliente nova a confirmar o e-mail antes de comprar. O risco
+  (saber se um e-mail tem conta) é baixo e o limite de cadastro por IP + o
+  Turnstile seguram robôs.
+- **Link do carrinho esquecido não pede login:** ele vem no e-mail da própria
+  cliente, com referência impossível de adivinhar; pedir login atrapalharia
+  justamente quem esqueceu o carrinho.
+- **Chave da foto continua no pedido salvo:** tirar exigiria mudar a
+  validação compartilhada com a loja; quem lê o banco já veria a foto.
+- **Frete grátis antes do cupom e cupom da newsletter na hora:** regras de
+  negócio, ⚠️ Janaina decide.

@@ -151,8 +151,27 @@ Tudo fica em `server/` (é a pasta que a hospedagem usa como raiz). O
   a mesma conta. Nome e frase sobre estampa ganham uma etiqueta lisa atrás
   para dar para ler. O servidor mede as letras com as fontes reais
   (`larguraDoTexto`), então o texto do arquivo sai do tamanho da prévia.
-- **Tarefas periódicas**: `GET /api/interno/tarefas-periodicas?token=CRON_SECRET`
-  a cada 15 min (hospedagem sem cron).
+- **Tarefas periódicas**: `POST /api/interno/tarefas-periodicas` com
+  `Authorization: Bearer CRON_SECRET` a cada 15 min (hospedagem sem cron).
+  Inclui o backup diário fora do servidor e a limpeza de registros antigos.
+- **Segurança** (detalhes em `server/docs/SECURITY-AUDIT.md`, rodada de
+  29/10/2026; testes em `test/seguranca-*.test.js`, `npm run seguranca`):
+  - pagamento: máquina de estados em `lib/estado-do-pedido.js` (pedido pago
+    nunca volta, efeitos uma vez só), API do Mercado Pago em
+    `lib/mercado-pago-api.js`, assinatura em `lib/pagamento.js`;
+  - painel: só app autenticador, `exigirConfirmacaoRecente` nas
+    `ROTAS_SENSIVEIS` do `server.js`, modal em `js/admin-seguranca.js`, aba
+    Segurança em `js/admin-eventos.js`;
+  - eventos e alertas: `lib/eventos-seguranca.js` (tabela
+    `eventos_seguranca`); toda ação sensível nova deve chamar
+    `eventos.registrar`;
+  - dados: criptografia transparente em `lib/cofre.js` (todo `db.prepare`
+    decifra na leitura; campo sensível novo precisa de `cofre.cifrar` na
+    gravação e entrar em `CAMPOS_CIFRADOS` no `lib/db.js`);
+  - IP e produção: `lib/ambiente.js` (`TRUST_PROXY`); senhas em
+    `lib/senhas.js`; endereço em `lib/endereco.js`; fotos em
+    `lib/fila-de-imagens.js`; backup em `lib/backup-remoto.js`; registro sem
+    dado pessoal em `lib/registro.js` (usar `resumoDeErro`, nunca o erro cru).
 
 ## Documentos
 
@@ -165,3 +184,5 @@ Tudo fica em `server/` (é a pasta que a hospedagem usa como raiz). O
 - `server/docs/instagram-setup.md` — token do Instagram.
 - `server/docs/PEDIDO-DA-CLIENTE.md` — lista do que pedir para a Janaina.
 - `server/docs/PAINEL-PRODUCAO.md` — etapas do pedido, prazo e planilhas da aba Produção.
+- `server/docs/CHECKLIST-DEPLOY.md` — o que conferir antes e depois de publicar.
+- `server/docs/RESPOSTA-A-INCIDENTE.md` — o que fazer se algo der errado.

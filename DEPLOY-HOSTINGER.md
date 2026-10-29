@@ -101,6 +101,23 @@ puro, ninguém consegue entrar na conta nem no painel — e não aparece erro
 nenhum, o cookie é simplesmente descartado. É um problema que parece um bug
 de login e não é.
 
+### 4.1 Cloudflare na frente do site (grátis)
+
+A Cloudflare segura ataques, robôs e picos de acesso antes de chegarem na
+Hostinger.
+
+1. Crie a conta em cloudflare.com, adicione o domínio (plano Free) e troque
+   os servidores DNS no registro do domínio pelos que a Cloudflare indicar.
+2. Deixe o registro do site com a **nuvem laranja (proxy) ligada**.
+3. SSL/TLS → modo **Full (strict)**; ative "Always Use HTTPS".
+4. Security → ligue o **Bot Fight Mode**.
+5. Turnstile → crie um widget para o domínio e cole `TURNSTILE_SITE_KEY` e
+   `TURNSTILE_SECRET` na hospedagem.
+6. Na hospedagem, `TRUST_PROXY=cloudflare`. Sem isso, os limites de tentativa
+   enxergam todo mundo com o mesmo IP (o da Cloudflare).
+7. **Não** ligue o CDN da Hostinger junto: dois proxies na frente confundem o
+   IP das clientes.
+
 ---
 
 ## 5. Depois do primeiro deploy
@@ -120,9 +137,20 @@ nada sozinha.
 
 ### 5.2 Criar a conta de administradora
 
-O painel não tem cadastro próprio: acesse `https://seudominio.com.br/conta.html`
-e crie a conta com o e-mail cujo hash está em `ADMIN_EMAIL_HASHES`. Ao
-entrar, você já cai no painel.
+O painel não tem cadastro próprio. **Antes** de colocar o hash em
+`ADMIN_EMAIL_HASHES`, acesse `https://seudominio.com.br/conta.html` e crie a
+conta com o e-mail do painel (senha de pelo menos 12 caracteres). Depois
+coloque o hash e reinicie.
+
+No primeiro acesso ao painel:
+
+1. O site manda um código de 6 números para o e-mail do painel. Digite-o.
+2. Leia o QR Code com o app autenticador (Google Authenticator, Authy ou o
+   gerenciador de senhas) e digite o código que aparecer.
+3. Guarde os 8 códigos de recuperação **fora do celular** (papel ou
+   gerenciador de senhas). São a única saída se o celular sumir.
+
+Daqui em diante o painel só entra com senha + código do app.
 
 ### 5.3 Conferir que subiu inteiro
 
@@ -209,9 +237,28 @@ vieram em `users`/`orders`/`contact_messages`. Se a chave estiver errada ou o
 arquivo tiver sido adulterado, ele aborta sem escrever nada.
 
 ⚠️ Os `.db.enc` são cópias dos dados das clientes: guarde uma cópia fora do
-servidor também (baixe pelo gerenciador de arquivos ou sincronize para um
-armazenamento em nuvem). Um backup que mora só na máquina que pode falhar não
+servidor também. Um backup que mora só na máquina que pode falhar não
 protege contra a falha dessa máquina.
+
+### 6.2 Cópia diária automática fora do servidor (Cloudflare R2, grátis até 10 GB)
+
+1. No painel da Cloudflare → R2 → crie um bucket (ex.: `arte-canecas-backup`).
+2. R2 → Manage API tokens → crie um token **Object Read & Write só para esse
+   bucket** (o site só grava; para restaurar você baixa pelo painel da
+   Cloudflare). Se quiser travar de vez, ative as regras de retenção do bucket.
+3. Na hospedagem: `BACKUP_S3_URL=https://ID-DA-CONTA.r2.cloudflarestorage.com/arte-canecas-backup`,
+   `BACKUP_S3_REGIAO=auto`, `BACKUP_S3_CHAVE_ID`, `BACKUP_S3_CHAVE_SECRETA`
+   e a mesma `BACKUP_ENCRYPTION_KEY` do item 6.1.
+
+A rotina de 15 em 15 minutos manda uma cópia por dia. A aba **Segurança** do
+painel mostra "Backup diário enviado"; se falhar ou atrasar, chega alerta.
+Teste a restauração uma vez antes de lançar (`node server/scripts/restore-db.js`).
+
+### 6.3 Dados pessoais criptografados
+
+Gere `CHAVES_DADOS` (ver `server/docs/CONFIGURACAO.md`) **antes** do primeiro
+pedido de verdade e guarde uma cópia fora do servidor. Sem ela, os CPFs,
+endereços e telefones guardados não abrem.
 
 ---
 
@@ -220,4 +267,4 @@ protege contra a falha dessa máquina.
 Nada disso bloqueia a publicação:
 
 - Minificar CSS/JS (`npx clean-css-cli`, `npx terser`)
-- Ativar o CDN que já vem no plano
+- Cache da Cloudflare (item 4.1) para imagens, CSS e JS — não ligue também o CDN da Hostinger
