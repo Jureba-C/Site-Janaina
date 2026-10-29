@@ -1,7 +1,7 @@
 /* GERADO por scripts/subset-icones.js — não editar à mão.
-   82 de 2050 ícones do Bootstrap Icons v1.11.3 (MIT).
+   84 de 2050 ícones do Bootstrap Icons v1.11.3 (MIT).
    Para adicionar um ícone: use a classe no HTML/JS e rode o script de novo. */
-@font-face{font-display:block;font-family:bootstrap-icons;src:url("fonts/bootstrap-icons.subset-9391b205.woff2") format("woff2")}
+@font-face{font-display:block;font-family:bootstrap-icons;src:url("fonts/bootstrap-icons.subset-d40afd0c.woff2") format("woff2")}
 .bi::before,[class*=" bi-"]::before,[class^=bi-]::before{display:inline-block;font-family:bootstrap-icons!important;font-style:normal;font-weight:400!important;font-variant:normal;text-transform:none;line-height:1;vertical-align:-.125em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .bi-arrow-down::before{content:"\f128"}
 .bi-arrow-left::before{content:"\f12f"}
@@ -25,10 +25,12 @@
 .bi-cloud-arrow-up::before{content:"\f297"}
 .bi-cookie::before{content:"\f6ee"}
 .bi-crop::before{content:"\f2dd"}
+.bi-door-closed::before{content:"\f306"}
 .bi-download::before{content:"\f30a"}
 .bi-envelope::before{content:"\f32f"}
 .bi-envelope-heart::before{content:"\f737"}
 .bi-exclamation-circle-fill::before{content:"\f332"}
+.bi-exclamation-octagon::before{content:"\f337"}
 .bi-exclamation-triangle::before{content:"\f33b"}
 .bi-eye::before{content:"\f341"}
 .bi-eye-slash::before{content:"\f340"}

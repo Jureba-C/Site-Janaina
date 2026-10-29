@@ -590,9 +590,9 @@ const stmtApagaSessaoDoUsuario = db.prepare(`DELETE FROM sessions WHERE user_id 
 function apagarSessaoDoUsuario(userId, tokenHash){
   return stmtApagaSessaoDoUsuario.run(userId, tokenHash).changes > 0;
 }
-const stmtApagaTodasSessoes = db.prepare(`DELETE FROM sessions`);
-function apagarTodasAsSessoes(){
-  return stmtApagaTodasSessoes.run().changes;
+const stmtApagaTodasSessoes = db.prepare(`DELETE FROM sessions WHERE token_hash <> ?`);
+function apagarTodasAsSessoes(exceto = ""){
+  return stmtApagaTodasSessoes.run(exceto).changes;
 }
 function getSessionByTokenHash(tokenHash) {
   stmtDeleteExpiredSessions.run(Date.now());

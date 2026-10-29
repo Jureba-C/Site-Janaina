@@ -2848,6 +2848,7 @@ const ROTAS_SENSIVEIS = [
   "DELETE /api/admin/categories/:slug",
   "DELETE /api/admin/orders/:reference",
   "GET /api/admin/backup",
+  "POST /api/admin/derrubar-sessoes",
 ];
 
 const VALIDADE_CONFIRMAR_EMAIL_MS = 60 * 60 * 1000;
@@ -2975,6 +2976,27 @@ app.get("/api/admin/2fa/status", auth.requireAdmin, (req, res) => {
     required: auth.ADMIN_2FA_REQUIRED,
     recoveryCodesLeft: JSON.parse(user?.totp_recovery_json || "[]").length,
   });
+});
+
+app.get("/api/admin/eventos", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
+  const dias = Math.min(180, Math.max(1, Number(req.query.dias) || 30));
+  res.json({ eventos: eventos.listar({ desde: Date.now() - dias * 86400000, limite: 1000 }) });
+});
+
+app.post("/api/admin/derrubar-sessoes", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
+  const derrubadas = db.apagarTodasAsSessoes(req.user.sessaoHash);
+  eventos.registrar("sessoes_derrubadas", { req, detalhes: { quantas: derrubadas, todas: true } });
+  res.json({ ok: true, derrubadas });
+});
+
+app.get("/api/saude", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    db.lerEstado("saude");
+    res.json({ ok: true });
+  } catch {
+    res.status(503).json({ ok: false });
+  }
 });
 
 app.get("/api/admin/diagnostico-ip", auth.requireAdmin, auth.requireAdminTwoFactor, noStore, (req, res) => {
@@ -4871,8 +4893,9 @@ app.use((err, req, res, next) => {
   const isBadJson = err.type === "entity.parse.failed" || err instanceof SyntaxError;
   const status = isBadJson ? 400 : (err.status || err.statusCode || 500);
 
-  if(!isBadJson){
+  if(!isBadJson && status >= 500){
     console.error("Erro não tratado:", registro.resumoDeErro(err));
+    eventos.registrar("erro_nao_tratado", { req, detalhes: { rota: req.path.slice(0, 80), erro: registro.resumoDeErro(err).slice(0, 180) } });
   }
   if(res.headersSent) return next(err);
 
@@ -4884,6 +4907,11 @@ app.use((err, req, res, next) => {
     return res.status(status).json({ error: message });
   }
   return res.status(status).type("text/plain").send(message);
+});
+
+process.on("unhandledRejection", (motivo) => {
+  console.error("Promessa rejeitada sem tratamento:", registro.resumoDeErro(motivo));
+  eventos.registrar("erro_nao_tratado", { detalhes: { tipo: "promessa", erro: registro.resumoDeErro(motivo).slice(0, 180) } });
 });
 
 app.listen(PORT, () => {

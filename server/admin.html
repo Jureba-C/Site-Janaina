@@ -196,6 +196,7 @@
               <button type="button" class="loja-atalho" data-tab-ir="depoimentos"><i class="bi bi-chat-heart" aria-hidden="true"></i><span><strong>Depoimentos</strong><small>Elogios recebidos por WhatsApp ou Instagram</small></span></button>
               <button type="button" class="loja-atalho" data-tab-ir="novidades"><i class="bi bi-send" aria-hidden="true"></i><span><strong>Novidades por e-mail</strong><small>Mandar novidades para quem deixou o e-mail</small></span></button>
               <button type="button" class="loja-atalho" data-tab-ir="mensagens"><i class="bi bi-chat-dots" aria-hidden="true"></i><span><strong>Mensagens</strong><small>Recebidas pelo formulário de contato</small></span></button>
+              <button type="button" class="loja-atalho" data-tab-ir="seguranca"><i class="bi bi-shield-lock" aria-hidden="true"></i><span><strong>Segurança</strong><small>Acessos ao painel, alertas e backups</small></span></button>
             </div>
 
             <h3 class="admin-subtitulo">Configurações</h3>
@@ -465,6 +466,25 @@
               <p class="section-sub mt-3 mb-0">Nenhuma mensagem recebida ainda.</p>
             </div>
             <div id="messagesList" class="orders-list d-none"></div>
+          </section>
+
+          <section class="admin-tab-panel d-none" data-tab-panel="seguranca" data-grupo="loja">
+            <button type="button" class="admin-voltar" data-tab-ir="loja"><i class="bi bi-arrow-left" aria-hidden="true"></i> Loja e configurações</button>
+            <h2 class="admin-section-title">Segurança</h2>
+            <p class="admin-hint">O que aconteceu de importante nos últimos 30 dias. Os alertas graves também chegam por e-mail.</p>
+            <div class="seg-resumo" id="segResumo"></div>
+            <div class="seg-filtros" role="group" aria-label="Filtrar eventos">
+              <button type="button" class="seg-filtro is-ativo" data-seg-filtro="tudo">Tudo</button>
+              <button type="button" class="seg-filtro" data-seg-filtro="critico">Só os graves</button>
+              <button type="button" class="seg-filtro" data-seg-filtro="acessos">Acessos</button>
+              <button type="button" class="seg-filtro" data-seg-filtro="pagamentos">Pagamentos</button>
+            </div>
+            <ul class="seg-lista" id="segLista" aria-live="polite"></ul>
+            <div class="admin-export-row">
+              <p class="admin-hint">Achou algo estranho? Derrube todos os acessos à loja (clientes e painel). Só este aparelho continua conectado.</p>
+              <button type="button" class="btn-outline-blush btn-sm-blush" id="segDerrubarBtn"><i class="bi bi-door-closed me-1"></i>Desconectar todo mundo</button>
+            </div>
+            <p class="small account-msg" id="segMsg" role="status"></p>
           </section>
 
           <section class="admin-tab-panel d-none" data-tab-panel="avaliacoes">
@@ -984,5 +1004,6 @@
 <script src="js/admin-producao.js" defer></script>
 <script src="js/admin-estampas.js" defer></script>
 <script src="js/admin.js" defer></script>
+<script src="js/admin-eventos.js" defer></script>
 </body>
 </html>
