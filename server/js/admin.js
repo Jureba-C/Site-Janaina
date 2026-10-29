@@ -184,22 +184,62 @@
 
 
 
+  async function pedirQrCode(corpo){
+    const res = await fetch("/api/admin/2fa/setup", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corpo || {}),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { res, data };
+  }
+
+  function mostrarQrCode(data){
+    document.getElementById("tfaEmailEtapa")?.classList.add("d-none");
+    document.getElementById("tfaPassos")?.classList.remove("d-none");
+    document.getElementById("tfaQr").src = data.qrDataUri;
+    document.getElementById("tfaSecret").textContent = data.secret.replace(/(.{4})/g, "$1 ").trim();
+  }
+
+  function mostrarEtapaDoEmail(mensagem){
+    document.getElementById("tfaPassos")?.classList.add("d-none");
+    document.getElementById("tfaEmailEtapa")?.classList.remove("d-none");
+    if(mensagem) document.getElementById("tfaEmailTexto").textContent = mensagem;
+    setTimeout(() => document.getElementById("tfaEmailCodigo")?.focus(), 50);
+  }
+
   async function startTwoFactorSetup(){
     showOnly(stateTwoFactor);
     try{
-      const res = await fetch("/api/admin/2fa/setup", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-      });
+      const { res, data } = await pedirQrCode();
+      if(res.status === 202 && data.precisaCodigoDoEmail) return mostrarEtapaDoEmail(data.message);
       if(!res.ok) throw new Error("falha ao preparar");
-      const data = await res.json();
-
-      document.getElementById("tfaQr").src = data.qrDataUri;
-
-      document.getElementById("tfaSecret").textContent = data.secret.replace(/(.{4})/g, "$1 ").trim();
+      mostrarQrCode(data);
     }catch{
       showOnly(stateError);
     }
   }
+
+  document.getElementById("tfaEmailForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("tfaEmailBtn");
+    const msg = document.getElementById("tfaEmailMsg");
+    const campo = document.getElementById("tfaEmailCodigo");
+    msg.textContent = "";
+    msg.classList.remove("text-danger");
+    btn.disabled = true;
+    try{
+      const { res, data } = await pedirQrCode({ codigoDoEmail: campo.value.trim() });
+      if(res.ok && data.qrDataUri) return mostrarQrCode(data);
+      msg.textContent = data.error || data.message || "Não deu para conferir o código.";
+      msg.classList.add("text-danger");
+      campo.select();
+    }catch{
+      msg.textContent = "Sem conexão. Tente de novo.";
+      msg.classList.add("text-danger");
+    }finally{
+      btn.disabled = false;
+    }
+  });
 
   document.getElementById("tfaActivateForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();

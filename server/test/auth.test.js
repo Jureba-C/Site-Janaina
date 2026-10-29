@@ -13,9 +13,9 @@ test("verifyPassword não quebra com hash ausente (comparação dummy)", async (
   assert.equal(await auth.verifyPassword("qualquer", undefined), false);
 });
 
-test("isValidPassword — mínimo 8 e limite de 72 bytes do bcrypt", () => {
-  assert.equal(auth.isValidPassword("1234567"), false);
-  assert.equal(auth.isValidPassword("12345678"), true);
+test("isValidPassword — mínimo 10 e limite de 72 bytes do bcrypt", () => {
+  assert.equal(auth.isValidPassword("123456789"), false);
+  assert.equal(auth.isValidPassword("1234567890"), true);
   assert.equal(auth.isValidPassword("a".repeat(72)), true);
   assert.equal(auth.isValidPassword("a".repeat(73)), false);
   assert.equal(auth.isValidPassword("á".repeat(40)), false, "40 'á' = 80 bytes > 72");

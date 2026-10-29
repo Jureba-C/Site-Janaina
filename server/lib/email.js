@@ -343,6 +343,42 @@ async function sendPasswordResetEmail({ to, name, resetUrl, expiresInMinutes }) 
   await sendEmail({ to, subject, text, html });
 }
 
+async function sendConfirmarNovoEmail({ to, name, link, expiresInMinutes }) {
+  const firstName = String(name || "").trim().split(" ")[0] || "cliente";
+  const subject = "Confirme o seu novo e-mail — Arte Canecas";
+  const text = [
+    `Olá, ${firstName}!`,
+    "",
+    "Pediram para usar este e-mail para entrar na sua conta da Arte Canecas.",
+    "",
+    `Para confirmar a troca, abra este link (vale por ${expiresInMinutes} minutos):`,
+    link,
+    "",
+    "Se não foi você, ignore esta mensagem — nada muda.",
+  ].join("\n");
+  const html = emailShell({
+    titulo: subject,
+    preheader: "Confirme a troca do e-mail de acesso da sua conta.",
+    eyebrow: "troca de e-mail",
+    tituloCartao: "Confirme o seu novo e-mail",
+    corpoHtml: `
+      <tr>
+        <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:15px; line-height:1.6; padding-bottom:26px;">
+          Olá, ${escapeHTML(firstName)}! Pediram para usar este e-mail para entrar na sua conta.
+          Clique no botão para confirmar — o link vale por <strong class="e-texto" style="color:${CORES.texto};">${escapeHTML(String(expiresInMinutes))} minutos</strong>.
+        </td>
+      </tr>
+      ${botaoEmail(link, "Confirmar novo e-mail")}
+      <tr>
+        <td class="e-apoio" align="center" style="font-family:${FONT_CORPO}; color:${CORES.apoio}; font-size:13px; line-height:1.6; padding-top:22px;">
+          Se não foi você, ignore esta mensagem — nada muda.
+        </td>
+      </tr>
+    `,
+  });
+  await sendEmail({ to, subject, text, html });
+}
+
 async function sendTwoFactorEmailCode({ to, name, code, expiresInMinutes }) {
   const firstName = String(name || "").trim().split(" ")[0] || "";
   const subject = "Seu código de verificação — Arte Canecas";
@@ -1095,6 +1131,7 @@ module.exports = {
   notifyOwnerOfContactMessage,
   sendPasswordResetEmail,
   sendTwoFactorEmailCode,
+  sendConfirmarNovoEmail,
   sendWelcomeCouponEmail,
   sendAdminLoginAlert,
 };

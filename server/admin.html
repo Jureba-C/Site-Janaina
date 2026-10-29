@@ -79,7 +79,18 @@
           </p>
         </div>
 
-        <ol class="tfa-steps">
+        <div id="tfaEmailEtapa" class="tfa-email-etapa d-none">
+          <p class="tfa-subtitle" id="tfaEmailTexto">Primeiro, confirme que este é mesmo o e-mail do painel: enviamos um código de 6 números para ele.</p>
+          <form id="tfaEmailForm" class="tfa-activate" novalidate>
+            <input type="text" class="form-control auth-code-input tfa-code-input" id="tfaEmailCodigo" required
+                   inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"
+                   aria-label="Código de 6 números enviado por e-mail">
+            <button class="btn-blush" type="submit" id="tfaEmailBtn">Continuar</button>
+          </form>
+          <div class="small mt-2 account-msg" id="tfaEmailMsg" role="alert"></div>
+        </div>
+
+        <ol class="tfa-steps" id="tfaPassos">
           <li>
             <strong>Instale um app de autenticação</strong> no celular, se ainda não tiver.
             Google Authenticator, Authy ou o próprio gerenciador de senhas servem.

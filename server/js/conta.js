@@ -47,6 +47,24 @@
     blocosGoogle.forEach(bloco => showMessage(bloco.querySelector("[data-auth-google-msg]"), texto, tipo));
   }
 
+  let googleClientId = null;
+
+  async function novoNonceDoGoogle(){
+    try{
+      const res = await fetch("/api/auth/google/config");
+      const config = await res.json();
+      if(config?.enabled && config.nonce && window.google?.accounts?.id){
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: entrarComGoogle,
+          ux_mode: "popup",
+          cancel_on_tap_outside: true,
+          nonce: config.nonce,
+        });
+      }
+    }catch{}
+  }
+
   async function entrarComGoogle(resposta){
     avisoGoogle("Entrando...", "");
     try{
@@ -54,6 +72,7 @@
       window.location.href = destinationFor(user);
     }catch(err){
       avisoGoogle(err.message, "error");
+      novoNonceDoGoogle();
     }
   }
 
@@ -79,11 +98,13 @@
 
     if(!window.google?.accounts?.id) return;
 
+    googleClientId = config.clientId;
     window.google.accounts.id.initialize({
       client_id: config.clientId,
       callback: entrarComGoogle,
       ux_mode: "popup",
       cancel_on_tap_outside: true,
+      nonce: config.nonce,
     });
 
     blocosGoogle.forEach(bloco => {
@@ -133,6 +154,18 @@
   const loginMsg = document.getElementById("loginMsg");
 
   let pendingChallengeToken = null;
+
+  const tokenDaTrocaDeEmail = new URLSearchParams(location.search).get("confirmarEmail");
+  if(tokenDaTrocaDeEmail){
+    history.replaceState(null, "", location.pathname);
+    postJSON("/api/auth/email/confirmar", { token: tokenDaTrocaDeEmail })
+      .then(dados => {
+        const campo = document.getElementById("loginEmail");
+        if(campo && dados.email) campo.value = dados.email;
+        showMessage(loginMsg, "Novo e-mail confirmado! Entre com ele e a sua senha.", "success");
+      })
+      .catch(err => showMessage(loginMsg, err.message, "error"));
+  }
 
   loginForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -333,8 +366,8 @@
     showMessage(registerMsg, "", null);
 
     const password = document.getElementById("registerPassword").value;
-    if(password.length < 8){
-      showMessage(registerMsg, "A senha precisa ter pelo menos 8 caracteres.", "error");
+    if(password.length < 10){
+      showMessage(registerMsg, "A senha precisa ter pelo menos 10 caracteres.", "error");
       return;
     }
     const cpf = registerCpf.value.replace(/\D/g, "");

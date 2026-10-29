@@ -27,6 +27,7 @@
       history.replaceState(null, "", url);
     }
     if(nome === "dados" && !perfilCarregado) carregarPerfil();
+    if(nome === "seguranca") carregarAcessos();
   }
 
   abasEl.addEventListener("click", (e) => {
@@ -260,7 +261,9 @@
         const dados = await enviar("/api/auth/email", "PUT", { email: emailNovo.value, senhaAtual: emailSenha.value });
         preencherPerfil(dados);
         abrirEmail(false);
-        mensagem(emailMsgFora, "E-mail trocado. Use o novo para entrar — avisamos o antigo.", "ok");
+        mensagem(emailMsgFora, dados.pendente
+          ? `Quase lá: enviamos um link para ${dados.novoEmail}. Abra esse e-mail para confirmar a troca (vale por 1 hora).`
+          : "E-mail atualizado.", "ok");
         emailAbrir.focus();
       }catch(err){
         mensagem(emailMsg, err.message, "erro");
@@ -277,7 +280,7 @@
     e.preventDefault();
     limpar(senhaMsg);
     if(!senhaAtual.value){ mensagem(senhaMsg, "Digite sua senha atual.", "erro"); senhaAtual.focus(); return; }
-    if(senhaNova.value.length < 8){ mensagem(senhaMsg, "A nova senha precisa ter pelo menos 8 caracteres.", "erro"); senhaNova.focus(); return; }
+    if(senhaNova.value.length < 10){ mensagem(senhaMsg, "A nova senha precisa ter pelo menos 10 caracteres.", "erro"); senhaNova.focus(); return; }
     if(senhaNova.value !== senhaConfirma.value){ mensagem(senhaMsg, "As duas senhas novas não são iguais.", "erro"); senhaConfirma.focus(); return; }
     comBotao(document.getElementById("senhaSalvar"), "Trocando...", async () => {
       try{
@@ -294,6 +297,63 @@
 
   const sairOutrosBtn = document.getElementById("sairOutrosBtn");
   const sairOutrosMsg = document.getElementById("sairOutrosMsg");
+  const acessosEl = document.getElementById("contaAcessos");
+
+  function quandoFoi(ms){
+    const minutos = Math.round((Date.now() - ms) / 60000);
+    if(minutos < 2) return "agora";
+    if(minutos < 60) return `há ${minutos} min`;
+    const horas = Math.round(minutos / 60);
+    if(horas < 24) return `há ${horas} h`;
+    return new Date(ms).toLocaleDateString("pt-BR");
+  }
+
+  async function carregarAcessos(){
+    if(!acessosEl) return;
+    try{
+      const res = await fetch("/api/auth/acessos");
+      if(!res.ok) return;
+      const { acessos } = await res.json();
+      acessosEl.replaceChildren(...acessos.map(a => {
+        const li = document.createElement("li");
+        const icone = document.createElement("i");
+        icone.className = `bi ${a.celular ? "bi-phone" : "bi-laptop"}`;
+        icone.setAttribute("aria-hidden", "true");
+        const texto = document.createElement("span");
+        texto.className = "conta-acesso-texto";
+        const nome = document.createElement("strong");
+        nome.textContent = a.aparelho;
+        const detalhe = document.createElement("small");
+        detalhe.textContent = `${a.ip ? `${a.ip} · ` : ""}usado ${quandoFoi(a.ultimoUso)}`;
+        texto.append(nome, detalhe);
+        li.append(icone, texto);
+        if(a.atual){
+          const selo = document.createElement("span");
+          selo.className = "conta-acesso-atual";
+          selo.textContent = "Este aparelho";
+          li.append(selo);
+        } else {
+          const sair = document.createElement("button");
+          sair.type = "button";
+          sair.className = "conta-acesso-sair";
+          sair.textContent = "Desconectar";
+          sair.addEventListener("click", async () => {
+            sair.disabled = true;
+            try{
+              await enviar(`/api/auth/acessos/${encodeURIComponent(a.id)}`, "DELETE");
+              li.remove();
+            }catch(err){
+              mensagem(sairOutrosMsg, err.message, "erro");
+              sair.disabled = false;
+            }
+          });
+          li.append(sair);
+        }
+        return li;
+      }));
+    }catch{}
+  }
+
   sairOutrosBtn.addEventListener("click", () => {
     limpar(sairOutrosMsg);
     comBotao(sairOutrosBtn, "Encerrando...", async () => {
@@ -302,6 +362,7 @@
         mensagem(sairOutrosMsg, dados.sessoesEncerradas > 0
           ? `Pronto: ${dados.sessoesEncerradas === 1 ? "1 aparelho desconectado" : `${dados.sessoesEncerradas} aparelhos desconectados`}.`
           : "Nenhum outro aparelho estava conectado.", "ok");
+        carregarAcessos();
       }catch(err){
         mensagem(sairOutrosMsg, err.message, "erro");
       }

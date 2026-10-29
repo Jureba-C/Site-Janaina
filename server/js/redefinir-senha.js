@@ -38,8 +38,8 @@
     const confirmation = document.getElementById("resetPasswordConfirm").value;
     showMessage("", null);
 
-    if(password.length < 8){
-      showMessage("A senha precisa ter pelo menos 8 caracteres.", "error");
+    if(password.length < 10){
+      showMessage("A senha precisa ter pelo menos 10 caracteres.", "error");
       return;
     }
     if(password !== confirmation){

@@ -28,7 +28,7 @@ function normalizeEmail(v) {
   return String(v || "").trim().toLowerCase();
 }
 function isValidPassword(v) {
-  return typeof v === "string" && v.length >= 8 && Buffer.byteLength(v, "utf8") <= 72;
+  return typeof v === "string" && v.length >= 10 && Buffer.byteLength(v, "utf8") <= 72;
 }
 function isValidName(v) {
   return typeof v === "string" && v.trim().length >= 2 && v.trim().length <= 120;
@@ -163,11 +163,30 @@ function consumePasswordReset(token) {
   return row.user_id;
 }
 
+function donoDoLinkDeRedefinicao(token) {
+  if (!token || typeof token !== "string") return null;
+  const row = db.getPasswordReset(hashToken(token));
+  if (!row || row.expires_at < Date.now()) return null;
+  return db.getUserById(row.user_id);
+}
+
 const LOGIN_MAX_FAILURES = 5;
 const LOGIN_LOCKOUT_MS = 30 * 60 * 1000;
 
 function clientIp(req) {
   return String(req.ip || req.socket?.remoteAddress || "desconhecido");
+}
+
+const CONTA_JANELA_MS = 60 * 60 * 1000;
+const CONTA_LIMITE_FALHAS = 20;
+const CONTA_ESPERA_MAXIMA_MS = 15 * 60 * 1000;
+
+function esperaDaConta(email, agora = Date.now()) {
+  const { falhas, ips, ultima } = db.falhasDaConta(email, CONTA_JANELA_MS);
+  if (falhas < CONTA_LIMITE_FALHAS) return { esperaMs: 0, falhas, ips };
+  const excesso = falhas - CONTA_LIMITE_FALHAS;
+  const espera = Math.min(CONTA_ESPERA_MAXIMA_MS, 60 * 1000 * 2 ** Math.min(excesso, 10));
+  return { esperaMs: Math.max(0, ultima + espera - agora), falhas, ips };
 }
 
 function checkLoginLockout(email, ip) {
@@ -506,6 +525,7 @@ module.exports = {
   sessionTokenHash,
   issuePasswordReset,
   consumePasswordReset,
+  donoDoLinkDeRedefinicao,
   PASSWORD_RESET_TTL_MS,
   attachUser,
   requireAuth,
@@ -513,6 +533,8 @@ module.exports = {
   requireAdminTwoFactor,
   clientIp,
   checkLoginLockout,
+  esperaDaConta,
+  CONTA_LIMITE_FALHAS,
   LOGIN_MAX_FAILURES,
   LOGIN_LOCKOUT_MS,
   generateTotpSecret,

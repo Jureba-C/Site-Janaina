@@ -95,9 +95,19 @@ test("trocar e-mail exige a senha, recusa e-mail em uso e e-mail de administrado
     "virar admin trocando o e-mail não pode");
 
   const novo = `trocado-${Date.now()}@t.com`;
+  const antigo = db.getUserById(user.id).email;
   const ok = await chamar("PUT", "/api/auth/email", { cookie, body: { email: novo.toUpperCase(), senhaAtual: SENHA } });
   assert.equal(ok.status, 200);
+  assert.equal((await ok.json()).pendente, true);
+  assert.equal(db.getUserById(user.id).email, antigo, "só troca depois de confirmar pelo link no e-mail novo");
+
+  const token = require("node:crypto").randomBytes(32).toString("hex");
+  db.criarVerificacaoDeEmail({ tokenHash: require("node:crypto").createHash("sha256").update(token).digest("hex"), userId: user.id, email: novo, expiresAt: Date.now() + 60000 });
+  const confirmou = await chamar("POST", "/api/auth/email/confirmar", { body: { token } });
+  assert.equal(confirmou.status, 200);
   assert.equal(db.getUserById(user.id).email, novo);
+  assert.equal((await chamar("GET", "/api/auth/perfil", { cookie })).status, 401, "a troca derruba as sessões");
+  assert.equal((await chamar("POST", "/api/auth/email/confirmar", { body: { token } })).status, 400, "o link só vale uma vez");
 });
 
 test("trocar senha derruba os outros aparelhos e mantém este; sair-outros faz o mesmo", async () => {

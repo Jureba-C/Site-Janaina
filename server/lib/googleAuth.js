@@ -12,6 +12,29 @@ function ehVerdadeiro(valor){
   return valor === true || valor === "true";
 }
 
+const crypto = require("node:crypto");
+const NONCE_VALE_MS = 10 * 60 * 1000;
+const MAX_NONCES = 10000;
+const nonces = new Map();
+
+function emitirNonce(agora = Date.now()){
+  const nonce = crypto.randomBytes(18).toString("base64url");
+  for(const [chave, expira] of nonces){
+    if(expira < agora || nonces.size >= MAX_NONCES) nonces.delete(chave);
+    else break;
+  }
+  nonces.set(crypto.createHash("sha256").update(nonce).digest("hex"), agora + NONCE_VALE_MS);
+  return nonce;
+}
+
+function consumirNonce(nonce, agora = Date.now()){
+  if(typeof nonce !== "string" || !nonce) return false;
+  const chave = crypto.createHash("sha256").update(nonce).digest("hex");
+  const expira = nonces.get(chave);
+  nonces.delete(chave);
+  return Boolean(expira && expira >= agora);
+}
+
 function estaConfigurado(){
   return Boolean(process.env.GOOGLE_CLIENT_ID);
 }
@@ -50,8 +73,9 @@ async function verificarTokenDoGoogle(credential){
   if(!ehVerdadeiro(dados.email_verified)) throw recusa("e-mail não verificado no Google");
   if(!dados.email) throw recusa("token sem e-mail");
   if(!dados.sub) throw recusa("token sem sub");
+  if(!consumirNonce(dados.nonce)) throw recusa("nonce ausente, vencido ou já usado");
 
   return { sub: String(dados.sub), email: String(dados.email), nome: dados.name || dados.given_name || "" };
 }
 
-module.exports = { verificarTokenDoGoogle, estaConfigurado };
+module.exports = { verificarTokenDoGoogle, estaConfigurado, emitirNonce, consumirNonce };

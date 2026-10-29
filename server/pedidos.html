@@ -193,10 +193,10 @@
               <label class="form-label" for="senhaNova">Nova senha</label>
               <div class="conta-input-icone conta-senha">
                 <i class="bi bi-key" aria-hidden="true"></i>
-                <input type="password" class="form-control" id="senhaNova" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="senhaNovaDica">
+                <input type="password" class="form-control" id="senhaNova" autocomplete="new-password" minlength="10" maxlength="72" required aria-describedby="senhaNovaDica">
                 <button type="button" class="conta-senha-olho" aria-label="Mostrar senha" aria-pressed="false"><i class="bi bi-eye" aria-hidden="true"></i></button>
               </div>
-              <span class="conta-dica" id="senhaNovaDica">Pelo menos 8 caracteres.</span>
+              <span class="conta-dica" id="senhaNovaDica">Pelo menos 10 caracteres, sem datas, nomes ou sequências como 123456.</span>
             </div>
             <div class="conta-campo">
               <label class="form-label" for="senhaConfirma">Repita a nova senha</label>
@@ -221,6 +221,7 @@
               <p class="conta-form-sub">Entrou num computador emprestado e esqueceu de sair? Encerre o acesso nos outros aparelhos — este continua conectado.</p>
             </div>
           </div>
+          <ul class="conta-acessos" id="contaAcessos" aria-live="polite"></ul>
           <div class="conta-rodape">
             <p class="conta-msg d-none" id="sairOutrosMsg" role="status"></p>
             <button type="button" class="btn-outline-blush" id="sairOutrosBtn">Sair dos outros aparelhos</button>

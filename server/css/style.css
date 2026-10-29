@@ -2516,3 +2516,13 @@ a.pedido-avaliar:focus-visible{ outline:2px solid var(--blush-600); outline-offs
 .confirmar-admin-campo:focus { outline: 2px solid var(--blush-600, #9E4A18); outline-offset: 2px; }
 .confirmar-admin-erro { min-height: 1.2em; margin: 0; font-size: 14px; color: #B42318; }
 .confirmar-admin-botoes { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+
+.conta-acessos { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
+.conta-acessos li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--blush-150, #F2D8D3); border-radius: 14px; background: #fff; }
+.conta-acessos i { font-size: 1.25rem; color: var(--blush-600, #9E4A18); }
+.conta-acesso-texto { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.conta-acesso-texto strong { font-size: .92rem; color: var(--ink, #323230); }
+.conta-acesso-texto small { font-size: .78rem; color: var(--ink-soft, #6f6259); overflow-wrap: anywhere; }
+.conta-acesso-atual { font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #2E6B4F; background: #E6F2EC; border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
+.conta-acesso-sair { border: 0; background: none; color: var(--blush-700, #8E4317); font-weight: 600; font-size: .85rem; padding: 6px 4px; cursor: pointer; white-space: nowrap; }
+.conta-acesso-sair:hover { text-decoration: underline; }

@@ -51,6 +51,7 @@ const mercadoPagoApi = require("./lib/mercado-pago-api.js");
 const eventos = require("./lib/eventos-seguranca.js");
 const registro = require("./lib/registro.js");
 const backupRemoto = require("./lib/backup-remoto.js");
+const senhas = require("./lib/senhas.js");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -285,6 +286,10 @@ function verifyOrigin(req, res, next){
   next();
 }
 app.use("/api", verifyOrigin);
+app.use(["/api/auth", "/api/admin", "/api/orders", "/api/avaliar", "/api/carrinho-esquecido", "/api/personalizacao"], (req, res, next) => {
+  res.set("Cache-Control", "no-store, private");
+  next();
+});
 
 app.use(rateLimit({
   windowMs: 60 * 1000, max: 1200, handler: sendTooManyRequests,
@@ -309,6 +314,26 @@ const avaliacaoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, handler:
 
 const MAX_AUTH_POR_JANELA = EM_PRODUCAO ? 10 : (Number(process.env.AUTH_RATE_LIMIT_MAX) || 10);
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: MAX_AUTH_POR_JANELA, handler: sendTooManyRequests });
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: MAX_AUTH_POR_JANELA, handler: sendTooManyRequests });
+const doisFatoresLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: MAX_AUTH_POR_JANELA, handler: sendTooManyRequests });
+const cadastroLimiter = rateLimit(EM_PRODUCAO
+  ? { windowMs: 60 * 60 * 1000, max: 5, handler: sendTooManyRequests }
+  : { windowMs: 15 * 60 * 1000, max: MAX_AUTH_POR_JANELA, handler: sendTooManyRequests });
+const esqueciLimiter = rateLimit(EM_PRODUCAO
+  ? { windowMs: 60 * 60 * 1000, max: 5, handler: sendTooManyRequests }
+  : { windowMs: 15 * 60 * 1000, max: MAX_AUTH_POR_JANELA, handler: sendTooManyRequests });
+
+function contaEmEspera(req, res, email){
+  const { esperaMs, falhas, ips } = auth.esperaDaConta(email);
+  if(falhas === auth.CONTA_LIMITE_FALHAS){
+    eventos.registrar("conta_lenta", { req, email, detalhes: { falhas, ips } });
+  }
+  if(!esperaMs) return false;
+  const minutos = Math.max(1, Math.ceil(esperaMs / 60000));
+  res.setHeader("Retry-After", String(Math.ceil(esperaMs / 1000)));
+  res.status(429).json({ error: `Muitas tentativas nesta conta. Tente de novo em ${minutos} minuto${minutos === 1 ? "" : "s"}.`, lockedForMs: esperaMs });
+  return true;
+}
 
 const statusPollLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, handler: sendTooManyRequests });
 
@@ -2064,7 +2089,7 @@ app.post("/api/contact", strictLimiter, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.post("/api/auth/register", authLimiter, async (req, res) => {
+app.post("/api/auth/register", cadastroLimiter, async (req, res) => {
   try {
     const name = String(req.body?.name || "").trim();
     const email = auth.normalizeEmail(req.body?.email);
@@ -2077,8 +2102,9 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
     if(!auth.isValidEmail(email)){
       return res.status(400).json({ error: "E-mail inválido." });
     }
-    if(!auth.isValidPassword(password)){
-      return res.status(400).json({ error: "A senha precisa ter entre 8 e 72 caracteres." });
+    const problemaDaSenha = senhas.senhaAceitavel(password, { email, nome: name, admin: auth.isAdminEmail(email) });
+    if(problemaDaSenha){
+      return res.status(400).json({ error: problemaDaSenha });
     }
     if(!auth.isValidCpf(cpf)){
       return res.status(400).json({ error: "CPF inválido — confira os números digitados." });
@@ -2097,7 +2123,7 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
   }
 });
 
-app.post("/api/auth/login", authLimiter, async (req, res) => {
+app.post("/api/auth/login", loginLimiter, async (req, res) => {
   try {
     const emailAddress = auth.normalizeEmail(req.body?.email);
     const password = String(req.body?.password || "");
@@ -2116,6 +2142,7 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
         lockedForMs: lockout.retryAfterMs,
       });
     }
+    if(contaEmEspera(req, res, emailAddress)) return;
 
     const user = db.getUserByEmail(emailAddress);
     const ok = await auth.verifyPassword(password, user?.password_hash);
@@ -2143,10 +2170,10 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
   }
 });
 
-app.get("/api/auth/google/config", (req, res) => {
+app.get("/api/auth/google/config", strictLimiter, (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.json(googleAuth.estaConfigurado()
-    ? { enabled: true, clientId: process.env.GOOGLE_CLIENT_ID }
+    ? { enabled: true, clientId: process.env.GOOGLE_CLIENT_ID, nonce: googleAuth.emitirNonce() }
     : { enabled: false });
 });
 
@@ -2162,7 +2189,7 @@ function recusaGoogleParaContaProtegida(emailAddress, user){
   return null;
 }
 
-app.post("/api/auth/google", authLimiter, async (req, res) => {
+app.post("/api/auth/google", loginLimiter, async (req, res) => {
   const ip = req.ip;
   try {
     const perfil = await googleAuth.verificarTokenDoGoogle(req.body?.credential);
@@ -2239,7 +2266,7 @@ app.post("/api/auth/google/vincular", authLimiter, auth.requireAuth, async (req,
   }
 });
 
-app.post("/api/auth/login/2fa", authLimiter, async (req, res) => {
+app.post("/api/auth/login/2fa", doisFatoresLimiter, async (req, res) => {
   try {
     const challengeToken = String(req.body?.challengeToken || "");
     const code = String(req.body?.code || "").trim();
@@ -2259,6 +2286,7 @@ app.post("/api/auth/login/2fa", authLimiter, async (req, res) => {
       const minutos = Math.ceil(lockout.retryAfterMs / 60000);
       return res.status(429).json({ error: `Muitas tentativas. Tente novamente em ${minutos} minuto${minutos === 1 ? "" : "s"}.` });
     }
+    if(contaEmEspera(req, res, user.email)) return;
 
     const ehAdmin = auth.isAdminEmail(user.email);
     let ok = auth.confirmarTotpDaConta(user, code);
@@ -2288,7 +2316,7 @@ app.post("/api/auth/login/2fa", authLimiter, async (req, res) => {
   }
 });
 
-app.post("/api/auth/login/2fa/email", authLimiter, async (req, res) => {
+app.post("/api/auth/login/2fa/email", doisFatoresLimiter, async (req, res) => {
   try {
     const challengeToken = String(req.body?.challengeToken || "");
     const userId = auth.peekTwoFactorChallenge(challengeToken);
@@ -2362,7 +2390,8 @@ app.delete("/api/auth/account", authLimiter, auth.requireAuth, async (req, res) 
     if(credential){
       try{
         const perfil = await googleAuth.verificarTokenDoGoogle(credential);
-        ok = user && auth.normalizeEmail(perfil.email) === auth.normalizeEmail(user.email);
+        ok = user && auth.normalizeEmail(perfil.email) === auth.normalizeEmail(user.email)
+          && (!user.google_id || String(user.google_id) === perfil.sub);
       }catch{
         ok = false;
       }
@@ -2385,7 +2414,7 @@ app.delete("/api/auth/account", authLimiter, auth.requireAuth, async (req, res) 
   }
 });
 
-app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
+app.post("/api/auth/forgot-password", esqueciLimiter, async (req, res) => {
   const genericOk = () => res.json({
     ok: true,
     message: "Se existir uma conta com esse e-mail, enviamos o link de redefinição.",
@@ -2421,13 +2450,22 @@ app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
   }
 });
 
-app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
+app.post("/api/auth/reset-password", esqueciLimiter, async (req, res) => {
   try {
     const token = String(req.body?.token || "");
     const password = String(req.body?.password || "");
 
     if(!auth.isValidPassword(password)){
-      return res.status(400).json({ error: "A senha precisa ter entre 8 e 72 caracteres." });
+      return res.status(400).json({ error: "A senha precisa ter entre 10 e 72 caracteres." });
+    }
+
+    const donoDoLink = auth.donoDoLinkDeRedefinicao(token);
+    if(!donoDoLink){
+      return res.status(400).json({ error: "Este link de redefinição é inválido ou já expirou. Peça um novo." });
+    }
+    const problemaDaSenha = senhas.senhaAceitavel(password, { email: donoDoLink.email, nome: donoDoLink.name, admin: auth.isAdminEmail(donoDoLink.email) });
+    if(problemaDaSenha){
+      return res.status(400).json({ error: problemaDaSenha });
     }
 
     const userId = auth.consumePasswordReset(token);
@@ -2549,15 +2587,46 @@ app.put("/api/auth/email", authLimiter, auth.requireAuth, async (req, res) => {
     if(auth.isAdminEmail(user.email) || auth.isAdminEmail(novo) || db.getUserByEmail(novo)){
       return res.status(409).json({ error: "Este e-mail não pode ser usado. Se ele já tem conta, entre por ela." });
     }
-    const antigo = user.email;
-    db.updateUserEmail(user.id, novo);
-    db.deletePasswordResetsForUser(user.id);
-    const saiu = db.deleteOtherSessions(user.id, auth.sessionTokenHash(req));
-    avisarContaEmSegundoPlano({ to: antigo, nome: String(user.name || "").split(" ")[0], oQue: "email", novoEmail: novo });
-    res.json({ ...perfilDaConta(user.id), sessoesEncerradas: saiu });
+    const token = require("crypto").randomBytes(32).toString("hex");
+    db.criarVerificacaoDeEmail({
+      tokenHash: require("crypto").createHash("sha256").update(token).digest("hex"),
+      userId: user.id, email: novo, expiresAt: Date.now() + VALIDADE_CONFIRMAR_EMAIL_MS,
+    });
+    const link = `${CLIENT_ORIGIN}/conta.html?confirmarEmail=${encodeURIComponent(token)}`;
+    email.sendConfirmarNovoEmail({ to: novo, name: user.name, link, expiresInMinutes: Math.round(VALIDADE_CONFIRMAR_EMAIL_MS / 60000) })
+      .catch(err => {
+        if(!ambiente.emProducao() && process.env.MOSTRAR_LINKS_NO_TERMINAL === "true") console.warn(`[troca de e-mail] Link: ${link}`);
+        else console.error("Não deu para mandar a confirmação do novo e-mail:", registro.resumoDeErro(err));
+      });
+    res.json({ ...perfilDaConta(user.id), pendente: true, novoEmail: novo });
   }catch(err){
     console.error("Erro ao trocar e-mail:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível trocar o e-mail agora." });
+  }
+});
+
+app.post("/api/auth/email/confirmar", esqueciLimiter, async (req, res) => {
+  try{
+    const token = String(req.body?.token || "");
+    if(!/^[0-9a-f]{64}$/.test(token)) return res.status(400).json({ error: "Link inválido." });
+    const pedido = db.consumirVerificacaoDeEmail(require("crypto").createHash("sha256").update(token).digest("hex"));
+    if(!pedido) return res.status(400).json({ error: "Este link venceu ou já foi usado. Peça a troca de novo em Minha conta." });
+    const user = db.getUserById(pedido.user_id);
+    if(!user) return res.status(400).json({ error: "Conta não encontrada." });
+    if(auth.isAdminEmail(user.email) || auth.isAdminEmail(pedido.email) || db.getUserByEmail(pedido.email)){
+      return res.status(409).json({ error: "Este e-mail não pode mais ser usado. Se ele já tem conta, entre por ela." });
+    }
+    const antigo = user.email;
+    db.updateUserEmail(user.id, pedido.email);
+    db.deletePasswordResetsForUser(user.id);
+    db.deleteAllSessionsForUser(user.id);
+    auth.clearSession(req, res);
+    avisarContaEmSegundoPlano({ to: antigo, nome: String(user.name || "").split(" ")[0], oQue: "email", novoEmail: pedido.email });
+    eventos.registrar("email_trocado", { req, userId: user.id, email: antigo });
+    res.json({ ok: true, email: pedido.email });
+  }catch(err){
+    console.error("Erro ao confirmar troca de e-mail:", registro.resumoDeErro(err));
+    res.status(500).json({ error: "Não foi possível confirmar agora." });
   }
 });
 
@@ -2572,8 +2641,9 @@ app.put("/api/auth/senha", authLimiter, auth.requireAuth, async (req, res) => {
       });
     }
     if(typeof atual !== "string" || !atual) return res.status(400).json({ error: "Digite sua senha atual." });
-    if(!auth.isValidPassword(nova)) return res.status(400).json({ error: "A nova senha precisa ter entre 8 e 72 caracteres." });
     const user = db.getUserById(req.user.id);
+    const problemaDaSenha = senhas.senhaAceitavel(nova, { email: user?.email, nome: user?.name, admin: auth.isAdminEmail(user?.email) });
+    if(problemaDaSenha) return res.status(400).json({ error: problemaDaSenha });
     if(!user || !(await auth.verifyPassword(atual, user.password_hash))){
       return res.status(401).json({ error: "Senha atual incorreta." });
     }
@@ -2586,6 +2656,46 @@ app.put("/api/auth/senha", authLimiter, auth.requireAuth, async (req, res) => {
     console.error("Erro ao trocar senha:", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível trocar a senha agora." });
   }
+});
+
+function idDoAcesso(tokenHash){
+  return require("crypto").createHash("sha256").update(`acesso:${tokenHash}`).digest("hex").slice(0, 20);
+}
+
+function descreverAparelho(agente){
+  const ua = String(agente || "");
+  const celular = /Mobi|Android|iPhone|iPad/i.test(ua);
+  const sistema = /iPhone|iPad/.test(ua) ? "iPhone/iPad" : /Android/.test(ua) ? "Android" : /Mac OS X/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "Aparelho";
+  const navegador = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "navegador";
+  return { aparelho: ua ? `${navegador} no ${sistema}` : "Aparelho desconhecido", celular };
+}
+
+function ipResumido(ip){
+  const texto = String(ip || "").replace(/^::ffff:/, "");
+  if(/^\d+\.\d+\.\d+\.\d+$/.test(texto)) return texto.split(".").slice(0, 2).join(".") + ".x.x";
+  if(texto.includes(":")) return texto.split(":").slice(0, 3).join(":") + ":…";
+  return null;
+}
+
+app.get("/api/auth/acessos", strictLimiter, auth.requireAuth, (req, res) => {
+  const atual = req.user.sessaoHash;
+  const acessos = db.listarSessoesDoUsuario(req.user.id).map(s => ({
+    id: idDoAcesso(s.token_hash),
+    atual: s.token_hash === atual,
+    ...descreverAparelho(s.agente),
+    ip: ipResumido(s.ip),
+    ultimoUso: s.ultimo_uso_em || s.created_at,
+  }));
+  res.json({ acessos });
+});
+
+app.delete("/api/auth/acessos/:id", strictLimiter, auth.requireAuth, (req, res) => {
+  const alvo = db.listarSessoesDoUsuario(req.user.id).find(s => idDoAcesso(s.token_hash) === String(req.params.id));
+  if(!alvo) return res.status(404).json({ error: "Esse acesso já foi encerrado." });
+  if(alvo.token_hash === req.user.sessaoHash) return res.status(409).json({ error: "Para sair deste aparelho, use o botão Sair." });
+  db.apagarSessaoDoUsuario(req.user.id, alvo.token_hash);
+  eventos.registrar("sessoes_derrubadas", { req, detalhes: { quantas: 1 } });
+  res.json({ ok: true });
 });
 
 app.post("/api/auth/sair-outros", strictLimiter, auth.requireAuth, (req, res) => {
@@ -2671,6 +2781,47 @@ const ROTAS_SENSIVEIS = [
   "GET /api/admin/backup",
 ];
 
+const VALIDADE_CONFIRMAR_EMAIL_MS = 60 * 60 * 1000;
+const CODIGO_DO_PAINEL_VALE_MS = 10 * 60 * 1000;
+const CODIGO_DO_PAINEL_ESPERA_MS = 60 * 1000;
+const CODIGO_DO_PAINEL_TENTATIVAS = 5;
+
+function hashDoCodigoDoPainel(userId, codigo){
+  return require("crypto").createHash("sha256").update(`painel:${userId}:${codigo}`).digest("hex");
+}
+
+async function provaDoEmailDoPainel(req, usuario){
+  const digitado = String(req.body?.codigoDoEmail || "").replace(/\D/g, "");
+  if(digitado){
+    const vencido = !usuario.painel_codigo_hash || !usuario.painel_codigo_expira || usuario.painel_codigo_expira < Date.now();
+    if(vencido) return { status: 400, corpo: { error: "O código venceu. Peça um novo.", precisaCodigoDoEmail: true } };
+    if((usuario.painel_codigo_tentativas || 0) >= CODIGO_DO_PAINEL_TENTATIVAS){
+      db.limparCodigoDoPainel(usuario.id);
+      return { status: 429, corpo: { error: "Tentativas demais. Peça um novo código.", precisaCodigoDoEmail: true } };
+    }
+    const esperado = Buffer.from(usuario.painel_codigo_hash, "hex");
+    const recebido = Buffer.from(hashDoCodigoDoPainel(usuario.id, digitado), "hex");
+    if(!require("crypto").timingSafeEqual(esperado, recebido)){
+      db.contarTentativaDoCodigoDoPainel(usuario.id);
+      return { status: 401, corpo: { error: "Código incorreto. Confira o e-mail.", precisaCodigoDoEmail: true } };
+    }
+    db.limparCodigoDoPainel(usuario.id);
+    return null;
+  }
+  if(usuario.painel_codigo_enviado && Date.now() - usuario.painel_codigo_enviado < CODIGO_DO_PAINEL_ESPERA_MS){
+    return { status: 202, corpo: { precisaCodigoDoEmail: true, message: "Enviamos um código para o e-mail do painel. Confira a caixa de entrada." } };
+  }
+  const codigo = String(require("crypto").randomInt(0, 1_000_000)).padStart(6, "0");
+  db.guardarCodigoDoPainel(usuario.id, { hash: hashDoCodigoDoPainel(usuario.id, codigo), expira: Date.now() + CODIGO_DO_PAINEL_VALE_MS });
+  try {
+    await email.sendTwoFactorEmailCode({ to: usuario.email, name: usuario.name, code: codigo, expiresInMinutes: Math.round(CODIGO_DO_PAINEL_VALE_MS / 60000) });
+  } catch (err) {
+    if(!ambiente.emProducao() && process.env.MOSTRAR_LINKS_NO_TERMINAL === "true") console.warn(`[ativar painel] Código para ${usuario.email}: ${codigo}`);
+    else console.error("Não deu para enviar o código de ativação do painel:", registro.resumoDeErro(err));
+  }
+  return { status: 202, corpo: { precisaCodigoDoEmail: true, message: "Enviamos um código para o e-mail do painel. Confira a caixa de entrada." } };
+}
+
 const VALIDADE_TOTP_PENDENTE_MS = 10 * 60 * 1000;
 const ESPERA_TROCA_2FA_APOS_REDEFINIR_MS = 24 * 60 * 60 * 1000;
 
@@ -2690,6 +2841,10 @@ app.post("/api/admin/2fa/setup", authLimiter, auth.requireAdmin, async (req, res
       if(!confirmou){
         return res.status(401).json({ error: "Digite o código atual do app (ou um código de recuperação) para trocar.", needsCurrentCode: true });
       }
+    }
+    if(!usuarioAtual?.totp_secret){
+      const prova = await provaDoEmailDoPainel(req, usuarioAtual);
+      if(prova) return res.status(prova.status).json(prova.corpo);
     }
     const secret = auth.generateTotpSecret();
     db.guardarTotpPendente(req.user.id, secret);
@@ -4582,18 +4737,27 @@ app.post("/api/admin/orders/:reference/generate-label", auth.requireAdmin, auth.
 
 const TRAVA_TAREFAS = "tarefas_periodicas_rodando";
 
-app.get("/api/interno/tarefas-periodicas", cronLimiter, async (req, res) => {
+function chaveDoCron(req){
+  const cabecalho = String(req.get("authorization") || "");
+  if(/^Bearer\s+/i.test(cabecalho)) return { valor: cabecalho.replace(/^Bearer\s+/i, "").trim(), pelaUrl: false };
+  return { valor: String(req.query.token || ""), pelaUrl: true };
+}
+
+async function rodarTarefasPeriodicas(req, res){
   const segredo = process.env.CRON_SECRET;
   if(!segredo){
     return res.status(503).json({ error: "CRON_SECRET não configurado no servidor." });
   }
-  const recebido = Buffer.from(String(req.query.token || ""));
+  const { valor, pelaUrl } = chaveDoCron(req);
+  const recebido = Buffer.from(valor);
   const esperado = Buffer.from(segredo);
   const bateu = recebido.length === esperado.length
     && crypto.timingSafeEqual(recebido, esperado);
   if(!bateu){
+    eventos.registrar("cron_token_invalido", { req });
     return res.status(401).json({ error: "Token inválido." });
   }
+  if(pelaUrl) res.setHeader("Deprecation", "true");
   if(!db.tentarTravarRodada(TRAVA_TAREFAS)){
     return res.status(409).json({ error: "Já tem uma rodada em andamento." });
   }
@@ -4603,7 +4767,10 @@ app.get("/api/interno/tarefas-periodicas", cronLimiter, async (req, res) => {
   tarefasPeriodicas.main()
     .catch(err => console.error("Erro numa rodada de tarefas periódicas via HTTP:", registro.resumoDeErro(err)))
     .finally(() => db.destravarRodada(TRAVA_TAREFAS));
-});
+}
+
+app.get("/api/interno/tarefas-periodicas", cronLimiter, rodarTarefasPeriodicas);
+app.post("/api/interno/tarefas-periodicas", cronLimiter, rodarTarefasPeriodicas);
 
 app.use(sendNotFound);
 

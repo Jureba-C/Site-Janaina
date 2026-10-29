@@ -62,7 +62,7 @@ test("não dá para se cadastrar com o e-mail de admin", async () => {
     headers: { "Content-Type": "application/json", Origin: ORIGIN },
     body: JSON.stringify({
       name: "Invasora", email: "seg@test.com",
-      password: "senha-123456", cpf: "39053344705", consent: true,
+      password: "Caneca-Rosa-9182", cpf: "39053344705", consent: true,
     }),
   });
   assert.equal(res.status, 409);
@@ -89,8 +89,10 @@ test("toda rota /api/interno exige um segredo", () => {
   const fonte = fs.readFileSync(path.join(RAIZ, "server.js"), "utf8");
   const rotas = [...fonte.matchAll(/app\.(get|post|put|patch|delete)\(\s*"(\/api\/interno[^"]*)"/g)];
   assert.ok(rotas.length >= 1, "sumiu a rota interna? confira este teste");
-  for(const [, , rota] of rotas){
-    const i = fonte.indexOf(`"${rota}"`);
+  for(const [, metodo, rota] of rotas){
+    const linha = fonte.match(new RegExp(`app\\.${metodo}\\(\\s*"${rota.replace(/[/]/g, "\\/")}"[^\\n]*`))[0];
+    const manipulador = (linha.match(/,\s*([A-Za-z]+)\);\s*$/) || [])[1];
+    const i = manipulador ? fonte.indexOf(`function ${manipulador}(`) : fonte.indexOf(`"${rota}"`);
     const corpo = fonte.slice(i, i + 1500);
     assert.match(corpo, /CRON_SECRET/, `${rota} precisa conferir um segredo`);
     assert.match(corpo, /timingSafeEqual/, `${rota} precisa comparar em tempo constante`);

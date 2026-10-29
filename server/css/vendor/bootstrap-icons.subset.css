@@ -1,7 +1,7 @@
 /* GERADO por scripts/subset-icones.js — não editar à mão.
-   80 de 2050 ícones do Bootstrap Icons v1.11.3 (MIT).
+   82 de 2050 ícones do Bootstrap Icons v1.11.3 (MIT).
    Para adicionar um ícone: use a classe no HTML/JS e rode o script de novo. */
-@font-face{font-display:block;font-family:bootstrap-icons;src:url("fonts/bootstrap-icons.subset-dd635c59.woff2") format("woff2")}
+@font-face{font-display:block;font-family:bootstrap-icons;src:url("fonts/bootstrap-icons.subset-9391b205.woff2") format("woff2")}
 .bi::before,[class*=" bi-"]::before,[class^=bi-]::before{display:inline-block;font-family:bootstrap-icons!important;font-style:normal;font-weight:400!important;font-variant:normal;text-transform:none;line-height:1;vertical-align:-.125em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .bi-arrow-down::before{content:"\f128"}
 .bi-arrow-left::before{content:"\f12f"}
@@ -46,6 +46,7 @@
 .bi-info-circle::before{content:"\f431"}
 .bi-instagram::before{content:"\f437"}
 .bi-key::before{content:"\f44f"}
+.bi-laptop::before{content:"\f456"}
 .bi-lightning-charge-fill::before{content:"\f46c"}
 .bi-link-45deg::before{content:"\f470"}
 .bi-lock::before{content:"\f47b"}
@@ -54,6 +55,7 @@
 .bi-pencil::before{content:"\f4cb"}
 .bi-people::before{content:"\f4d0"}
 .bi-person::before{content:"\f4e1"}
+.bi-phone::before{content:"\f4e7"}
 .bi-pinterest::before{content:"\f663"}
 .bi-plus-lg::before{content:"\f64d"}
 .bi-printer::before{content:"\f501"}

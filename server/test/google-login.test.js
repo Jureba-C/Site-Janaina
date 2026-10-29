@@ -25,6 +25,7 @@ let child;
 let googleFake;
 let respostaDoGoogle;
 let chamadasNoGoogle = 0;
+let nonceAtual = null;
 
 function tokenInfoPadrao(extra){
   return {
@@ -44,6 +45,10 @@ function limpar(){
 }
 
 async function chamar(caminho, { body, cookie, method = "POST" } = {}){
+  if(body?.credential){
+    const config = await (await fetch(ORIGIN + "/api/auth/google/config")).json();
+    nonceAtual = config.nonce;
+  }
   const res = await fetch(ORIGIN + caminho, {
     method,
     headers: {
@@ -59,9 +64,9 @@ async function chamar(caminho, { body, cookie, method = "POST" } = {}){
 before(async () => {
   googleFake = http.createServer((req, res) => {
     chamadasNoGoogle++;
-    const { status = 200, corpo = tokenInfoPadrao() } = respostaDoGoogle || {};
+    const { status = 200, corpo = tokenInfoPadrao(), semNonce = false } = respostaDoGoogle || {};
     res.writeHead(status, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(corpo));
+    res.end(JSON.stringify(semNonce ? corpo : { nonce: nonceAtual, ...corpo }));
   });
   await new Promise(r => googleFake.listen(PORT_GOOGLE, r));
 
@@ -224,4 +229,18 @@ test("sem GOOGLE_CLIENT_ID o site não oferece nem anuncia o botão", async () =
   delete process.env.GOOGLE_CLIENT_ID;
   assert.equal(semConfig.estaConfigurado(), false);
   process.env.GOOGLE_CLIENT_ID = guardado;
+});
+
+test("o mesmo token do Google não serve duas vezes (nonce de uso único)", async () => {
+  respostaDoGoogle = null;
+  const config = await (await fetch(ORIGIN + "/api/auth/google/config")).json();
+  nonceAtual = config.nonce;
+  const corpo = { credential: TOKEN_OK };
+  const primeira = await fetch(ORIGIN + "/api/auth/google", { method: "POST", headers: { "Content-Type": "application/json", Origin: ORIGIN }, body: JSON.stringify(corpo) });
+  assert.ok([200, 201].includes(primeira.status));
+  const repetida = await fetch(ORIGIN + "/api/auth/google", { method: "POST", headers: { "Content-Type": "application/json", Origin: ORIGIN }, body: JSON.stringify(corpo) });
+  assert.equal(repetida.status, 401);
+  respostaDoGoogle = { semNonce: true };
+  const semNonce = await chamar("/api/auth/google", { body: { credential: TOKEN_OK } });
+  assert.equal(semNonce.status, 401, "token sem nonce é recusado");
 });

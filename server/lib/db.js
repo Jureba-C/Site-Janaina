@@ -221,6 +221,10 @@ ensureColumn("users", "totp_pendente", "TEXT");
 ensureColumn("users", "totp_pendente_em", "INTEGER");
 ensureColumn("users", "totp_ultimo_passo", "INTEGER");
 ensureColumn("users", "senha_redefinida_em", "INTEGER");
+ensureColumn("users", "painel_codigo_hash", "TEXT");
+ensureColumn("users", "painel_codigo_expira", "INTEGER");
+ensureColumn("users", "painel_codigo_tentativas", "INTEGER");
+ensureColumn("users", "painel_codigo_enviado", "INTEGER");
 ensureColumn("sessions", "segundo_fator_em", "INTEGER");
 ensureColumn("sessions", "reautenticado_em", "INTEGER");
 ensureColumn("sessions", "ultimo_uso_em", "INTEGER");
@@ -691,6 +695,20 @@ function getLoginLockout({ email, ip, maxFailures, windowMs }) {
   };
 }
 
+const stmtFalhasDaConta = db.prepare(`
+  SELECT COUNT(*) AS n, COUNT(DISTINCT ip) AS ips, MAX(created_at) AS ultima
+    FROM login_attempts WHERE email = ? AND ok = 0 AND created_at >= ?
+`);
+const stmtUltimoSucessoDaConta = db.prepare(
+  `SELECT MAX(created_at) AS at FROM login_attempts WHERE email = ? AND ok = 1`
+);
+function falhasDaConta(email, janelaMs){
+  const agora = Date.now();
+  const desde = Math.max(agora - janelaMs, Number(stmtUltimoSucessoDaConta.get(String(email || ""))?.at) || 0);
+  const linha = stmtFalhasDaConta.get(String(email || ""), desde);
+  return { falhas: linha.n, ips: linha.ips, ultima: linha.ultima || 0 };
+}
+
 function listRecentLoginAttempts({ sinceMs, limit = 200 }) {
   return stmtListLoginAttempts.all(Date.now() - sinceMs, limit);
 }
@@ -745,6 +763,47 @@ const stmtTrocaRecuperacao = db.prepare(
 function trocarCodigosDeRecuperacao(userId, antigoJson, novoJson){
   return stmtTrocaRecuperacao.run(novoJson, userId, antigoJson).changes === 1;
 }
+db.exec(`
+  CREATE TABLE IF NOT EXISTS verificacoes_email (
+    token_hash TEXT PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email      TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+`);
+const stmtApagaVerificacoesDoUsuario = db.prepare(`DELETE FROM verificacoes_email WHERE user_id = ?`);
+const stmtCriaVerificacao = db.prepare(
+  `INSERT INTO verificacoes_email (token_hash, user_id, email, expires_at, created_at) VALUES (?, ?, ?, ?, ?)`
+);
+function criarVerificacaoDeEmail({ tokenHash, userId, email, expiresAt }){
+  stmtApagaVerificacoesDoUsuario.run(userId);
+  stmtCriaVerificacao.run(tokenHash, userId, email, expiresAt, Date.now());
+}
+const stmtPegaVerificacao = db.prepare(`SELECT * FROM verificacoes_email WHERE token_hash = ?`);
+const stmtApagaVerificacao = db.prepare(`DELETE FROM verificacoes_email WHERE token_hash = ?`);
+function consumirVerificacaoDeEmail(tokenHash){
+  const linha = stmtPegaVerificacao.get(tokenHash);
+  if(!linha) return null;
+  stmtApagaVerificacao.run(tokenHash);
+  return linha.expires_at < Date.now() ? null : linha;
+}
+
+const stmtGuardaCodigoDoPainel = db.prepare(
+  `UPDATE users SET painel_codigo_hash = ?, painel_codigo_expira = ?, painel_codigo_tentativas = 0, painel_codigo_enviado = ? WHERE id = ?`
+);
+function guardarCodigoDoPainel(userId, { hash, expira }){
+  stmtGuardaCodigoDoPainel.run(hash, expira, Date.now(), userId);
+}
+const stmtTentativaCodigoDoPainel = db.prepare(
+  `UPDATE users SET painel_codigo_tentativas = COALESCE(painel_codigo_tentativas, 0) + 1 WHERE id = ?`
+);
+function contarTentativaDoCodigoDoPainel(userId){ stmtTentativaCodigoDoPainel.run(userId); }
+const stmtLimpaCodigoDoPainel = db.prepare(
+  `UPDATE users SET painel_codigo_hash = NULL, painel_codigo_expira = NULL, painel_codigo_tentativas = NULL WHERE id = ?`
+);
+function limparCodigoDoPainel(userId){ stmtLimpaCodigoDoPainel.run(userId); }
+
 const stmtSenhaRedefinida = db.prepare(`UPDATE users SET senha_redefinida_em = ? WHERE id = ?`);
 function marcarSenhaRedefinida(userId){
   stmtSenhaRedefinida.run(Date.now(), userId);
@@ -2266,8 +2325,14 @@ module.exports = {
   guardarTotpPendente,
   limparTotpPendente,
   registrarPassoTotp,
+  falhasDaConta,
   trocarCodigosDeRecuperacao,
   marcarSenhaRedefinida,
+  guardarCodigoDoPainel,
+  criarVerificacaoDeEmail,
+  consumirVerificacaoDeEmail,
+  contarTentativaDoCodigoDoPainel,
+  limparCodigoDoPainel,
   createPasswordReset,
   getPasswordReset,
   deletePasswordReset,
