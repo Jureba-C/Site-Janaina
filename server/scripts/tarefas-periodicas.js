@@ -278,12 +278,15 @@ async function fazerBackupDiario(){
 }
 
 const DIAS_DE_REGISTRO = 180;
+const DIAS_DE_EMAIL_GUARDADO = 30;
 
 function podarRegistrosAntigos(){
   const corte = Date.now() - DIAS_DE_REGISTRO * 24 * 60 * 60 * 1000;
   const eventosApagados = db.podarEventosDeSeguranca(corte);
   db.pruneLoginAttempts(DIAS_DE_REGISTRO * 24 * 60 * 60 * 1000);
   if(eventosApagados) console.log(`Registro de segurança: ${eventosApagados} evento(s) com mais de ${DIAS_DE_REGISTRO} dias apagado(s).`);
+  const esvaziados = db.esvaziarEmailsEnviados(Date.now() - DIAS_DE_EMAIL_GUARDADO * 24 * 60 * 60 * 1000);
+  if(esvaziados) console.log(`E-mails enviados: conteúdo de ${esvaziados} com mais de ${DIAS_DE_EMAIL_GUARDADO} dias apagado.`);
 }
 
 if(require.main === module){

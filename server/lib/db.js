@@ -210,6 +210,18 @@ ensureColumn("orders", "pagamento_aprovado_id", "TEXT");
 ensureColumn("orders", "efeitos_pagamento_em", "INTEGER");
 ensureColumn("orders", "etiqueta_reservada_em", "INTEGER");
 ensureColumn("orders", "arquivado_em", "INTEGER");
+db.exec(`
+  CREATE TABLE IF NOT EXISTS cupons_reservados (
+    codigo    TEXT NOT NULL,
+    user_id   INTEGER,
+    telefone  TEXT,
+    pedido    TEXT NOT NULL,
+    criado_em INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_cupom_reservado_usuario ON cupons_reservados(codigo, user_id) WHERE user_id IS NOT NULL;
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_cupom_reservado_telefone ON cupons_reservados(codigo, telefone) WHERE telefone IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS idx_cupom_reservado_pedido ON cupons_reservados(pedido);
+`);
 ensureColumn("coupons", "once_per_customer", "INTEGER NOT NULL DEFAULT 0");
 ensureColumn("users", "cep", "TEXT");
 ensureColumn("users", "cpf", "TEXT");
@@ -647,11 +659,26 @@ const stmtDeleteUserById = db.prepare(`DELETE FROM users WHERE id = ?`);
 const stmtDeleteAniversarioPendente = db.prepare(
   `DELETE FROM email_outbox WHERE kind = 'aniversario' AND sent_at IS NULL AND order_reference LIKE ?`
 );
+const stmtFotosDePedidosNaoPagos = db.prepare(`
+  DELETE FROM personalizacao_fotos WHERE pedido IN (
+    SELECT external_reference FROM orders WHERE user_id = ? AND status NOT IN ('pago', 'em análise', 'reembolsado', 'estornado')
+  )
+`);
+const stmtTiraEmailDosPedidos = db.prepare(
+  `UPDATE orders SET customer_email = NULL, review_token = NULL WHERE user_id = ? OR customer_email = ?`
+);
+const stmtApagaFilaDoEmail = db.prepare(`DELETE FROM email_outbox WHERE to_email = ? AND sent_at IS NULL`);
+const stmtApagaReservasDoUsuario = db.prepare(`DELETE FROM cupons_reservados WHERE user_id = ?`);
+
 function deleteUserAccount(userId) {
   const user = getUserById(userId);
   if (!user) return false;
   db.exec("BEGIN");
   try {
+    stmtFotosDePedidosNaoPagos.run(userId);
+    stmtTiraEmailDosPedidos.run(userId, user.email);
+    stmtApagaFilaDoEmail.run(user.email);
+    stmtApagaReservasDoUsuario.run(userId);
     stmtAnonymizeUserOrders.run(userId);
     deleteAllSessionsForUser(userId);
     deletePasswordResetsForUser(userId);
@@ -723,6 +750,13 @@ function falhasDaConta(email, janelaMs){
 function listRecentLoginAttempts({ sinceMs, limit = 200 }) {
   return stmtListLoginAttempts.all(Date.now() - sinceMs, limit);
 }
+const stmtEsvaziaEmailsAntigos = db.prepare(
+  `UPDATE email_outbox SET text_body = '', html_body = '' WHERE sent_at IS NOT NULL AND sent_at < ? AND (text_body <> '' OR html_body <> '')`
+);
+function esvaziarEmailsEnviados(antesDe){
+  return stmtEsvaziaEmailsAntigos.run(antesDe).changes;
+}
+
 function pruneLoginAttempts(olderThanMs) {
   stmtPruneLoginAttempts.run(Date.now() - olderThanMs);
 }
@@ -941,18 +975,6 @@ const stmtCouponEmAnaliseByPhone = db.prepare(
   `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'em análise' AND customer_phone_indice = ? LIMIT 1`
 );
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS cupons_reservados (
-    codigo    TEXT NOT NULL,
-    user_id   INTEGER,
-    telefone  TEXT,
-    pedido    TEXT NOT NULL,
-    criado_em INTEGER NOT NULL
-  );
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_cupom_reservado_usuario ON cupons_reservados(codigo, user_id) WHERE user_id IS NOT NULL;
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_cupom_reservado_telefone ON cupons_reservados(codigo, telefone) WHERE telefone IS NOT NULL;
-  CREATE INDEX IF NOT EXISTS idx_cupom_reservado_pedido ON cupons_reservados(pedido);
-`);
 const stmtInsereReserva = db.prepare(
   `INSERT INTO cupons_reservados (codigo, user_id, telefone, pedido, criado_em) VALUES (?, ?, ?, ?, ?)`
 );
@@ -2550,6 +2572,7 @@ module.exports = {
   soltarEtiqueta,
   arquivarPedido,
   pedidoJaFoiPago,
+  esvaziarEmailsEnviados,
   linkDeAvaliacaoVenceu,
   bytesDeFotosSoltas,
   reservarCupom,

@@ -3282,8 +3282,10 @@ app.get("/api/admin/backup", auth.requireAdmin, auth.requireAdminTwoFactor, conf
 app.get("/api/admin/export.xlsx", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
   try {
     const overridesMap = getProductOverridesMap();
+    const cpfCompleto = req.query.cpfCompleto === "1";
     const buffer = spreadsheetExport.buildStoreWorkbook({
       resolveProductName: (id) => effectiveProduct(id, overridesMap)?.name || `Produto #${id}`,
+      cpfCompleto,
     });
     const stamp = new Intl.DateTimeFormat("sv-SE", {
       timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
@@ -3291,7 +3293,7 @@ app.get("/api/admin/export.xlsx", auth.requireAdmin, auth.requireAdminTwoFactor,
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="loja-${stamp}.xlsx"`);
     res.setHeader("Cache-Control", "no-store");
-    eventos.registrar("export_completo", { req });
+    eventos.registrar("export_completo", { req, detalhes: { cpfCompleto } });
     res.send(buffer);
   } catch (err) {
     console.error("Erro ao gerar planilha de exportação (admin):", registro.resumoDeErro(err));

@@ -39,10 +39,16 @@ function paymentStatusFor(orderStatus) {
 
 const PAYMENT_METHOD_LABELS = { pix: "PIX", card: "Cartão", boleto: "Boleto" };
 
-function buildSheets({ resolveProductName } = {}) {
+function cpfMascarado(cpf){
+  const d = String(cpf || "").replace(/\D/g, "");
+  return d.length === 11 ? `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**` : "";
+}
+
+function buildSheets({ resolveProductName, cpfCompleto = false } = {}) {
   const nameOf = typeof resolveProductName === "function"
     ? resolveProductName
     : (id) => `Produto #${id}`;
+  const mostrarCpf = cpfCompleto ? (cpf) => cpf || "" : cpfMascarado;
 
   const users = db.listUsersForExport();
   const orders = db.listAllOrders();
@@ -62,7 +68,7 @@ function buildSheets({ resolveProductName } = {}) {
       id: u.id,
       nome: u.name,
       email: u.email,
-      cpf: u.cpf || "",
+      cpf: mostrarCpf(u.cpf),
       twofa: u.has_2fa ? "Sim" : "Não",
       criado: formatDateTime(u.created_at),
     })),
@@ -157,7 +163,7 @@ function buildSheets({ resolveProductName } = {}) {
         usuario: o.user_id ?? "",
         nome: a.nome || "",
         telefone: a.telefone || "",
-        cpf: a.cpf || "",
+        cpf: mostrarCpf(a.cpf),
         rua: a.rua || "",
         numero: a.numero || "",
         complemento: a.complemento || "",
