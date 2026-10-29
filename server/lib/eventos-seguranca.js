@@ -31,6 +31,7 @@ const TIPOS = {
   estorno: { gravidade: "critico", alertar: true, agruparMin: 1, titulo: "Estorno (chargeback) num pedido", resumo: "A cliente contestou o pagamento no cartão.", orientacao: "Responda a disputa no Mercado Pago com as provas de entrega." },
   estorno_revertido: { gravidade: "aviso", alertar: true, agruparMin: 1, titulo: "Estorno revertido", resumo: "Um estorno foi revertido e o pedido voltou a ficar pago.", orientacao: "Nada a fazer." },
   disputa_aberta: { gravidade: "critico", alertar: true, agruparMin: 1, titulo: "Disputa aberta num pedido", resumo: "A cliente abriu uma disputa sobre o pagamento.", orientacao: "Responda no Mercado Pago o quanto antes." },
+  cupom_repetido: { gravidade: "aviso", alertar: true, agruparMin: 1, titulo: "Cupom de uso único usado de novo", resumo: "Um pedido pago usou um cupom de uso único que a mesma cliente já tinha usado em outro pedido pago.", orientacao: "Confira o pedido. Se quiser, cobre a diferença com a cliente." },
   reembolso_sem_pagamento: { gravidade: "aviso" },
   estorno_sem_pagamento: { gravidade: "aviso" },
   status_desconhecido: { gravidade: "aviso" },

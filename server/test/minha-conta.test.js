@@ -143,8 +143,16 @@ test("cupom de aniversário: só a aniversariante logada, dentro de 30 dias", as
   const aniversario = `1990-${String(hoje.getUTCMonth() + 1).padStart(2, "0")}-${String(hoje.getUTCDate()).padStart(2, "0")}`;
   const aniversariante = await novaConta();
   db.updatePerfil(aniversariante.user.id, { name: "Ana", phone: null, birthDate: aniversario });
+  const recemCadastrada = await chamar("POST", "/api/validate-coupon", { cookie: aniversariante.cookie, body: cupom });
+  assert.equal(recemCadastrada.status, 409, "data cadastrada agora não vale (evita inventar o aniversário para hoje)");
+  const { DatabaseSync } = require("node:sqlite");
+  const escrita = new DatabaseSync(process.env.DB_PATH);
+  escrita.prepare("UPDATE users SET nascimento_definido_em = ? WHERE id = ?").run(Date.now() - 400 * DIA, aniversariante.user.id);
+  escrita.close();
   const vale = await chamar("POST", "/api/validate-coupon", { cookie: aniversariante.cookie, body: cupom });
   assert.equal(vale.status, 200, "3 dias depois do aniversário vale");
+  const troca = await chamar("PUT", "/api/auth/perfil", { cookie: aniversariante.cookie, body: { name: "Ana", nascimento: "1991-01-01" } });
+  assert.equal(troca.status, 409, "a data só pode ser cadastrada uma vez");
 
   const longe = new Date(Date.now() - 60 * DIA);
   const outra = await novaConta();

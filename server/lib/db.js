@@ -232,6 +232,8 @@ ensureColumn("sessions", "ip", "TEXT");
 ensureColumn("sessions", "agente", "TEXT");
 ensureColumn("users", "phone", "TEXT");
 ensureColumn("users", "birth_date", "TEXT");
+ensureColumn("users", "nascimento_definido_em", "INTEGER");
+db.exec(`UPDATE users SET nascimento_definido_em = created_at WHERE birth_date IS NOT NULL AND nascimento_definido_em IS NULL`);
 
 ensureColumn("users", "google_id", "TEXT");
 ensureColumn("users", "sem_senha", "INTEGER");
@@ -493,9 +495,13 @@ function saveAddress(userId, address) {
   stmtSaveAddress.run(JSON.stringify(address), userId);
 }
 
-const stmtUpdatePerfil = db.prepare(`UPDATE users SET name = ?, phone = ?, birth_date = ? WHERE id = ?`);
+const stmtUpdatePerfil = db.prepare(`
+  UPDATE users SET name = ?, phone = ?, birth_date = ?,
+    nascimento_definido_em = CASE WHEN ? IS NOT NULL AND birth_date IS NULL THEN ? ELSE nascimento_definido_em END
+  WHERE id = ?
+`);
 function updatePerfil(userId, { name, phone, birthDate }) {
-  stmtUpdatePerfil.run(name, phone || null, birthDate || null, userId);
+  stmtUpdatePerfil.run(name, phone || null, birthDate || null, birthDate || null, Date.now(), userId);
 }
 const stmtUpdateUserEmail = db.prepare(`UPDATE users SET email = ? WHERE id = ?`);
 function updateUserEmail(userId, email) {
@@ -922,6 +928,60 @@ function hasUsedCouponSince({ code, userId, since }) {
   return Boolean(stmtCouponUsedByUserSince.get(code, userId, since, Date.now() - COUPON_PENDING_WINDOW_MS));
 }
 
+const stmtCouponEmAnaliseByUser = db.prepare(
+  `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'em análise' AND user_id = ? LIMIT 1`
+);
+const stmtCouponEmAnaliseByPhone = db.prepare(
+  `SELECT 1 FROM orders WHERE coupon_code = ? AND status = 'em análise' AND customer_phone = ? LIMIT 1`
+);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS cupons_reservados (
+    codigo    TEXT NOT NULL,
+    user_id   INTEGER,
+    telefone  TEXT,
+    pedido    TEXT NOT NULL,
+    criado_em INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_cupom_reservado_usuario ON cupons_reservados(codigo, user_id) WHERE user_id IS NOT NULL;
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_cupom_reservado_telefone ON cupons_reservados(codigo, telefone) WHERE telefone IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS idx_cupom_reservado_pedido ON cupons_reservados(pedido);
+`);
+const stmtInsereReserva = db.prepare(
+  `INSERT INTO cupons_reservados (codigo, user_id, telefone, pedido, criado_em) VALUES (?, ?, ?, ?, ?)`
+);
+const stmtReservasConflitantes = db.prepare(
+  `SELECT * FROM cupons_reservados WHERE codigo = ? AND ((user_id IS NOT NULL AND user_id = ?) OR (telefone IS NOT NULL AND telefone = ?))`
+);
+const stmtApagaReservaDoPedido = db.prepare(`DELETE FROM cupons_reservados WHERE pedido = ?`);
+const stmtApagaReservaExata = db.prepare(`DELETE FROM cupons_reservados WHERE codigo = ? AND pedido = ?`);
+function reservaAindaVale(reserva, agora){
+  const pedido = stmtGetOrderByRef.get(reserva.pedido);
+  if(!pedido) return agora - reserva.criado_em < 5 * 60 * 1000;
+  if(["pago", "em análise", "reembolsado", "estornado"].includes(pedido.status)) return true;
+  if(pedido.status === "pendente") return agora - pedido.created_at < COUPON_PENDING_WINDOW_MS && !pedido.arquivado_em;
+  return false;
+}
+function reservarCupom({ code, userId, phone, pedido }){
+  const agora = Date.now();
+  const conflitos = stmtReservasConflitantes.all(code, userId ?? null, phone ?? null);
+  for(const r of conflitos){
+    if(r.pedido === pedido) continue;
+    if(reservaAindaVale(r, agora)) return false;
+    stmtApagaReservaExata.run(r.codigo, r.pedido);
+  }
+  if(conflitos.some(r => r.pedido === pedido)) return true;
+  try {
+    stmtInsereReserva.run(code, userId ?? null, phone ?? null, pedido, agora);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function liberarCupomDoPedido(pedido){
+  stmtApagaReservaDoPedido.run(pedido);
+}
+
 function hasUsedCoupon({ code, userId, phone }) {
   if (!code) return false;
   if (userId && stmtCouponUsedByUser.get(code, userId)) return true;
@@ -929,7 +989,18 @@ function hasUsedCoupon({ code, userId, phone }) {
   const cutoff = Date.now() - COUPON_PENDING_WINDOW_MS;
   if (userId && stmtCouponPendingByUser.get(code, userId, cutoff)) return true;
   if (phone && stmtCouponPendingByPhone.get(code, phone, cutoff)) return true;
+  if (userId && stmtCouponEmAnaliseByUser.get(code, userId)) return true;
+  if (phone && stmtCouponEmAnaliseByPhone.get(code, phone)) return true;
   return false;
+}
+const stmtOutrosPagosComCupom = db.prepare(`
+  SELECT COUNT(*) AS n FROM orders
+   WHERE coupon_code = ? AND status = 'pago' AND external_reference <> ?
+     AND ((user_id IS NOT NULL AND user_id = ?) OR (customer_phone IS NOT NULL AND customer_phone = ?))
+`);
+function cupomJaUsadoEmOutroPedidoPago(pedido){
+  if(!pedido?.coupon_code) return false;
+  return stmtOutrosPagosComCupom.get(pedido.coupon_code, pedido.external_reference, pedido.user_id ?? null, pedido.customer_phone ?? null).n > 0;
 }
 function getOrderByExternalReference(ref) {
   return stmtGetOrderByRef.get(ref) || null;
@@ -1651,9 +1722,20 @@ function garantirTokenDeAvaliacao(ref){
   return stmtGetReviewToken.get(ref)?.review_token || null;
 }
 
+const DIAS_DO_LINK_DE_AVALIACAO = 90;
+const stmtDatasDoPedido = db.prepare(`SELECT delivered_at, shipped_at, pago_em, created_at FROM orders WHERE external_reference = ?`);
+function linkDeAvaliacaoVenceu(ref, agora = Date.now()){
+  const d = stmtDatasDoPedido.get(ref);
+  if(!d) return true;
+  const base = d.delivered_at || d.shipped_at || d.pago_em || d.created_at;
+  const folga = d.delivered_at ? DIAS_DO_LINK_DE_AVALIACAO : DIAS_DO_LINK_DE_AVALIACAO + 60;
+  return agora - base > folga * 86400000;
+}
+
 function tokenDeAvaliacaoConfere(ref, token){
   const certo = stmtGetReviewToken.get(ref)?.review_token;
   if(!certo || typeof token !== "string") return false;
+  if(linkDeAvaliacaoVenceu(ref)) return false;
   const recebido = Buffer.from(token);
   const esperado = Buffer.from(certo);
   if(recebido.length !== esperado.length) return false;
@@ -2132,6 +2214,12 @@ const stmtApagaFotosVencidas = db.prepare(`
       OR (pedido IS NOT NULL AND apagar_em IS NULL AND created_at < ?
           AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.external_reference = personalizacao_fotos.pedido AND o.status = 'pago'))
 `);
+const stmtBytesDeFotosSoltas = db.prepare(
+  `SELECT COALESCE(SUM(length(data) + COALESCE(length(miniatura), 0)), 0) AS bytes FROM personalizacao_fotos WHERE pedido IS NULL`
+);
+function bytesDeFotosSoltas(){
+  return Number(stmtBytesDeFotosSoltas.get().bytes || 0);
+}
 function inserirFotoPersonalizacao({ id, chaveHash, mimeType, data, miniatura, largura, altura }){
   stmtInsereFotoPersonalizacao.run(id, chaveHash, mimeType, data, miniatura, largura, altura, Date.now());
 }
@@ -2378,6 +2466,11 @@ module.exports = {
   soltarEtiqueta,
   arquivarPedido,
   pedidoJaFoiPago,
+  linkDeAvaliacaoVenceu,
+  bytesDeFotosSoltas,
+  reservarCupom,
+  liberarCupomDoPedido,
+  cupomJaUsadoEmOutroPedidoPago,
   inserirEventoDeSeguranca,
   listarEventosDeSeguranca,
   contarEventosDeSeguranca,

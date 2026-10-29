@@ -159,6 +159,8 @@
     perfil.nome.value = dados.name || "";
     perfil.telefone.value = mascaraTelefone(dados.telefone);
     perfil.nascimento.value = dados.nascimento || "";
+    perfil.nascimento.readOnly = Boolean(dados.nascimentoTravado);
+    perfil.nascimento.title = dados.nascimentoTravado ? "Já cadastrada. Para corrigir, fale com a gente pelo WhatsApp." : "";
     perfil.cpf.textContent = dados.cpfMascarado || "Não cadastrado";
     perfil.emailAtual.textContent = dados.email || "—";
     perfil.avatar.textContent = iniciais(dados.name);

@@ -149,11 +149,11 @@ const CSP_ESPERADA = {
   "frame-ancestors": "'none'",
   "img-src": "'self' https: data: blob:",
   "object-src": "'none'",
-  "script-src": "'self' https://accounts.google.com",
+  "script-src": "'self' https://accounts.google.com https://challenges.cloudflare.com",
   "script-src-attr": "'none'",
   "style-src": "'self' 'unsafe-inline' https://accounts.google.com",
   "connect-src": "'self' https://viacep.com.br https://accounts.google.com",
-  "frame-src": "https://accounts.google.com",
+  "frame-src": "https://accounts.google.com https://challenges.cloudflare.com",
 };
 
 function lerCsp(texto){
@@ -221,10 +221,10 @@ const DIVERGENCIAS_ACEITAS = {
   "admin.html": { "img-src": "'self' https: data: blob:" },
   "avaliar.html": { "connect-src": "'self'" },
   "conta.html": {
-    "script-src": "'self' https://accounts.google.com",
+    "script-src": "'self' https://accounts.google.com https://challenges.cloudflare.com",
     "style-src": "'self' 'unsafe-inline' https://accounts.google.com",
     "connect-src": "'self' https://viacep.com.br https://accounts.google.com",
-    "frame-src": "https://accounts.google.com",
+    "frame-src": "https://accounts.google.com https://challenges.cloudflare.com",
   },
 };
 

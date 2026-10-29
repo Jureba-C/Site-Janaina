@@ -18,6 +18,9 @@ const estampasExemplo = require("./lib/estampas-exemplo.js");
 const compression = require("compression");
 const multer = require("multer");
 const sharp = require("sharp");
+const filaDeImagens = require("./lib/fila-de-imagens.js");
+sharp.concurrency(2);
+sharp.cache({ memory: 64, files: 0, items: 50 });
 const crypto = require("crypto");
 const { randomUUID } = crypto;
 const rateLimit = require("express-rate-limit");
@@ -52,6 +55,8 @@ const eventos = require("./lib/eventos-seguranca.js");
 const registro = require("./lib/registro.js");
 const backupRemoto = require("./lib/backup-remoto.js");
 const senhas = require("./lib/senhas.js");
+const enderecoLib = require("./lib/endereco.js");
+const turnstile = require("./lib/turnstile.js");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -151,11 +156,16 @@ function inicioDoAniversario(birthDate, ano){
   const ultimoDia = new Date(Date.UTC(ano, mes, 0)).getUTCDate();
   return Date.UTC(ano, mes - 1, Math.min(dia, ultimoDia), 3);
 }
+const ANTECEDENCIA_DO_ANIVERSARIO_MS = 30 * 24 * 60 * 60 * 1000;
+
 function regraDoCupomDeAniversario(coupon, userId, agora = Date.now()){
   if(coupon?.code !== db.CUPOM_ANIVERSARIO) return null;
   const recusa = "Esse cupom é de aniversário: vale só na conta da aniversariante, até 30 dias depois da data cadastrada em Minha conta.";
   const user = userId ? db.getUserById(userId) : null;
   if(!user?.birth_date) return recusa;
+  if(!user.nascimento_definido_em || agora - user.nascimento_definido_em < ANTECEDENCIA_DO_ANIVERSARIO_MS){
+    return "O cupom de aniversário vale a partir do aniversário seguinte ao cadastro da data (ela precisa estar em Minha conta há pelo menos 30 dias).";
+  }
   const ano = new Date(agora).getUTCFullYear();
   const inicio = [ano, ano - 1]
     .map(a => inicioDoAniversario(user.birth_date, a))
@@ -208,12 +218,12 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       baseUri: ["'self'"],
-      scriptSrc: ["'self'", "https://accounts.google.com"],
+      scriptSrc: ["'self'", "https://accounts.google.com", "https://challenges.cloudflare.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
       fontSrc: ["'self'"],
       imgSrc: ["'self'", "https:", "data:", "blob:"],
       connectSrc: ["'self'", "https://viacep.com.br", "https://accounts.google.com"],
-      frameSrc: ["https://accounts.google.com"],
+      frameSrc: ["https://accounts.google.com", "https://challenges.cloudflare.com"],
       objectSrc: ["'none'"],
       formAction: ["'self'"],
       frameAncestors: ["'none'"],
@@ -987,13 +997,14 @@ app.post("/api/validate-coupon", strictLimiter, (req, res) => {
 async function buildCheckoutDraft(req){
   const { cep: rawCep, shipping_service_id } = req.body || {};
   const ehRetirada = String(shipping_service_id) === "retirada";
-  const address = ehRetirada && req.body?.address
+  const enderecoLimpo = enderecoLib.normalizarEndereco(req.body?.address);
+  const address = ehRetirada && enderecoLimpo
     ? {
-        ...req.body.address,
+        ...enderecoLimpo,
         rua: "Retirada na loja", numero: "-", complemento: "",
         bairro: "Asa Norte", cidade: "Brasília", uf: "DF",
       }
-    : req.body?.address;
+    : enderecoLimpo;
   const cep = String(rawCep || "").replace(/\D/g, "");
   if(!/^\d{8}$/.test(cep)){
     throw { status: 400, message: "CEP inválido." };
@@ -1007,6 +1018,10 @@ async function buildCheckoutDraft(req){
   }
   if(!auth.isValidAddress(address)){
     throw { status: 400, message: "Endereço de entrega incompleto." };
+  }
+  const problemaDoEndereco = enderecoLib.problemaNoEndereco(address);
+  if(problemaDoEndereco){
+    throw { status: 400, message: problemaDoEndereco };
   }
 
   if(req.body?.saveAddress !== false && !ehRetirada){
@@ -1025,7 +1040,7 @@ async function buildCheckoutDraft(req){
   }
 
   const customerPhone = phoneDigits(address.telefone);
-  if(coupon?.oncePerCustomer){
+  if(coupon?.oncePerCustomer && !req.pedidoAtual){
     const alreadyUsed = db.hasUsedCoupon({
       code: coupon.code,
       userId: req.user ? req.user.id : null,
@@ -1091,6 +1106,12 @@ async function buildCheckoutDraft(req){
   };
 }
 
+function reservarCupomDoRascunho(draft, user, orderRef){
+  if(!draft.coupon?.oncePerCustomer) return;
+  const ok = db.reservarCupom({ code: draft.coupon.code, userId: user?.id ?? null, phone: draft.customerPhone, pedido: orderRef });
+  if(!ok) throw { status: 409, message: COUPON_ALREADY_USED_MESSAGE };
+}
+
 function orderRowFrom(draft, orderRef, user){
   return {
     externalReference: orderRef,
@@ -1119,11 +1140,14 @@ function vincularFotosDoRascunho(draft, orderRef){
 }
 
 app.post("/api/create-preference", strictLimiter, auth.requireAuth, async (req, res) => {
+  let cupomReservadoPara = null;
   try {
     const draft = await buildCheckoutDraft(req);
     const { address, paymentMethod, preferenceItems } = draft;
 
     const orderRef = randomUUID();
+    reservarCupomDoRascunho(draft, req.user, orderRef);
+    cupomReservadoPara = orderRef;
 
     const payer = {
       name: address.nome,
@@ -1152,10 +1176,12 @@ app.post("/api/create-preference", strictLimiter, auth.requireAuth, async (req, 
     });
 
     db.createOrder(orderRowFrom(draft, orderRef, req.user));
+    cupomReservadoPara = null;
     vincularFotosDoRascunho(draft, orderRef);
 
     res.json({ id: result.id, init_point: result.init_point });
   } catch (err) {
+    if(cupomReservadoPara) db.liberarCupomDoPedido(cupomReservadoPara);
     if(!(err instanceof Error) && err.status && err.message){
       return res.status(err.status).json({ error: err.message });
     }
@@ -1171,6 +1197,7 @@ function validadeDoPix(agora = Date.now()){
 }
 
 app.post("/api/create-pix-payment", strictLimiter, auth.requireAuth, async (req, res) => {
+  let cupomReservadoPara = null;
   try {
     const draft = await buildCheckoutDraft(req);
     if(draft.paymentMethod !== "pix"){
@@ -1178,6 +1205,8 @@ app.post("/api/create-pix-payment", strictLimiter, auth.requireAuth, async (req,
     }
 
     const orderRef = randomUUID();
+    reservarCupomDoRascunho(draft, req.user, orderRef);
+    cupomReservadoPara = orderRef;
     const payment = new Payment(mpClient);
     const result = await payment.create({
       body: {
@@ -1202,6 +1231,7 @@ app.post("/api/create-pix-payment", strictLimiter, auth.requireAuth, async (req,
     }
 
     db.createOrder(orderRowFrom(draft, orderRef, req.user));
+    cupomReservadoPara = null;
     vincularFotosDoRascunho(draft, orderRef);
     db.updateOrderStatus(orderRef, "pendente", String(result.id));
 
@@ -1213,6 +1243,7 @@ app.post("/api/create-pix-payment", strictLimiter, auth.requireAuth, async (req,
       expiresAt: result.date_of_expiration || null,
     });
   } catch (err) {
+    if(cupomReservadoPara) db.liberarCupomDoPedido(cupomReservadoPara);
     if(!(err instanceof Error) && err.status && err.message){
       return res.status(err.status).json({ error: err.message });
     }
@@ -1249,6 +1280,7 @@ app.post("/api/orders/:reference/resume-payment", strictLimiter, auth.requireAut
       },
     });
     const orderRef = order.external_reference;
+    reservarCupomDoRascunho(draft, req.user, orderRef);
 
     if(draft.paymentMethod === "pix"){
       if(order.payment_id && mercadoPagoApi.idValido(order.payment_id)){
@@ -1493,7 +1525,7 @@ const reviewPhotoUpload = multer({
 });
 
 async function processarFotoDeAvaliacao(buffer){
-  return sharp(buffer)
+  return sharp(buffer, filaDeImagens.OPCOES_DE_ENTRADA)
     .rotate()
     .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
     .jpeg({ quality: 80, mozjpeg: true })
@@ -1969,6 +2001,12 @@ async function processarPagamentoDoMercadoPago(paymentId, req){
       },
     });
   }
+  if(decisao.acao === "aplicar" && (decisao.novoStatus === "cancelado" || decisao.novoStatus === "recusado")){
+    db.liberarCupomDoPedido(ref);
+  }
+  if(decisao.virouPago && db.cupomJaUsadoEmOutroPedidoPago(db.getOrderByExternalReference(ref))){
+    eventos.registrar("cupom_repetido", { req, pedido: ref, detalhes: { cupom: pedido.coupon_code } });
+  }
   if(decisao.virouPago && db.reservarEfeitosDoPagamento(ref)){
     db.markOrderInProduction(ref);
     const atualizado = db.getOrderByExternalReference(ref);
@@ -2089,7 +2127,12 @@ app.post("/api/contact", strictLimiter, async (req, res) => {
   res.json({ ok: true });
 });
 
-app.post("/api/auth/register", cadastroLimiter, async (req, res) => {
+app.get("/api/auth/protecao", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ turnstile: turnstile.chavePublica() });
+});
+
+app.post("/api/auth/register", cadastroLimiter, turnstile.exigir(), async (req, res) => {
   try {
     const name = String(req.body?.name || "").trim();
     const email = auth.normalizeEmail(req.body?.email);
@@ -2414,7 +2457,7 @@ app.delete("/api/auth/account", authLimiter, auth.requireAuth, async (req, res) 
   }
 });
 
-app.post("/api/auth/forgot-password", esqueciLimiter, async (req, res) => {
+app.post("/api/auth/forgot-password", esqueciLimiter, turnstile.exigir(), async (req, res) => {
   const genericOk = () => res.json({
     ok: true,
     message: "Se existir uma conta com esse e-mail, enviamos o link de redefinição.",
@@ -2521,6 +2564,7 @@ function perfilDaConta(userId){
     email: user.email,
     telefone: user.phone || phoneDigits(endereco?.telefone) || "",
     nascimento: user.birth_date || "",
+    nascimentoTravado: Boolean(user.birth_date),
     cpfMascarado: mascararCpf(user.cpf),
     criadoEm: user.created_at,
     semSenha: Boolean(user.sem_senha),
@@ -2562,6 +2606,10 @@ app.put("/api/auth/perfil", strictLimiter, auth.requireAuth, (req, res) => {
   }
   if(!nascimentoValido(nascimento)){
     return res.status(400).json({ error: "Confira a data de nascimento." });
+  }
+  const atual = db.getUserById(req.user.id);
+  if(atual?.birth_date && nascimento !== atual.birth_date){
+    return res.status(409).json({ error: "A data de nascimento só pode ser cadastrada uma vez. Se precisar corrigir, fale com a gente pelo WhatsApp." });
   }
   db.updatePerfil(req.user.id, { name, phone: telefone, birthDate: nascimento || null });
   res.json(perfilDaConta(req.user.id));
@@ -2708,10 +2756,12 @@ app.get("/api/auth/address", strictLimiter, auth.requireAuth, (req, res) => {
 });
 
 app.put("/api/auth/address", strictLimiter, auth.requireAuth, (req, res) => {
-  const address = req.body?.address;
+  const address = enderecoLib.normalizarEndereco(req.body?.address);
   if(!auth.isValidAddress(address)){
     return res.status(400).json({ error: "Endereço incompleto." });
   }
+  const problemaDoEndereco = enderecoLib.problemaNoEndereco(address);
+  if(problemaDoEndereco) return res.status(400).json({ error: problemaDoEndereco });
   const cep = auth.normalizeCep(address.cep);
   if(!auth.isValidCep(cep)){
     return res.status(400).json({ error: "CEP inválido — informe os 8 dígitos." });
@@ -3751,7 +3801,7 @@ app.post("/api/admin/products/:id/photo", auth.requireAdmin, auth.requireAdminTw
       return res.status(400).json({ error: "Envie um arquivo de imagem (JPEG, PNG, WEBP ou GIF)." });
     }
     try{
-      const compressed = await sharp(req.file.buffer)
+      const compressed = await sharp(req.file.buffer, filaDeImagens.OPCOES_DE_ENTRADA)
         .rotate()
         .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
         .jpeg({ quality: 80, mozjpeg: true })
@@ -3766,16 +3816,32 @@ app.post("/api/admin/products/:id/photo", auth.requireAdmin, auth.requireAdminTw
   });
 });
 
-const FORMATOS_DE_FOTO_ACEITOS = new Set(["jpeg", "png", "webp", "gif", "avif", "tiff", "heif"]);
+const FORMATOS_DE_FOTO_ACEITOS = new Set(["jpeg", "png", "webp", "heif"]);
 const LIMITE_FOTO_PERSONALIZACAO = 15 * 1024 * 1024;
+const COTA_DE_FOTOS_SOLTAS = Number(process.env.COTA_FOTOS_SOLTAS_MB || 300) * 1024 * 1024;
+let ultimaLimpezaDeFotos = 0;
+function limparFotosVencidasDeVezEmQuando(){
+  if(Date.now() - ultimaLimpezaDeFotos < 10 * 60 * 1000) return;
+  ultimaLimpezaDeFotos = Date.now();
+  try { db.apagarFotosPersonalizacaoVencidas(); } catch (err) { console.error("Não deu para limpar fotos vencidas:", registro.resumoDeErro(err)); }
+}
 const uploadPersonalizacao = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: LIMITE_FOTO_PERSONALIZACAO, files: 1 },
 });
-const uploadPersonalizacaoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 40, handler: sendTooManyRequests });
+const uploadPersonalizacaoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, handler: sendTooManyRequests });
+const uploadPersonalizacaoDiaLimiter = rateLimit({ windowMs: 24 * 60 * 60 * 1000, max: 40, handler: sendTooManyRequests });
 const ID_FOTO_PERSONALIZACAO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-app.post("/api/personalizacao/fotos", uploadPersonalizacaoLimiter, (req, res) => {
+app.post("/api/personalizacao/fotos", uploadPersonalizacaoLimiter, uploadPersonalizacaoDiaLimiter, (req, res, next) => {
+  limparFotosVencidasDeVezEmQuando();
+  if(db.bytesDeFotosSoltas() > COTA_DE_FOTOS_SOLTAS){
+    eventos.registrar("upload_quota", { req });
+    res.setHeader("Retry-After", "600");
+    return res.status(503).json({ error: "Muita gente enviando fotos agora. Tente de novo em alguns minutos." });
+  }
+  next();
+}, (req, res) => {
   uploadPersonalizacao.single("foto")(req, res, async (err) => {
     if(err instanceof multer.MulterError){
       if(err.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: "Foto muito grande. O limite é 15 MB por foto." });
@@ -3788,26 +3854,29 @@ app.post("/api/personalizacao/fotos", uploadPersonalizacaoLimiter, (req, res) =>
     if(!req.file) return res.status(400).json({ error: "Escolha uma foto para enviar." });
     let meta;
     try {
-      meta = await sharp(req.file.buffer, { failOn: "error" }).metadata();
+      meta = await sharp(req.file.buffer, filaDeImagens.OPCOES_DE_ENTRADA).metadata();
     } catch {
       return res.status(415).json({ error: "Esse arquivo não é uma foto que a gente consiga abrir. Envie JPG ou PNG." });
     }
     if(!FORMATOS_DE_FOTO_ACEITOS.has(meta.format)){
-      return res.status(415).json({ error: "Formato não aceito. Envie JPG, PNG ou WEBP." });
+      return res.status(415).json({ error: "Formato não aceito. Envie JPG, PNG, WEBP ou HEIC." });
     }
-    if(!meta.width || !meta.height || meta.width * meta.height > 60000000){
+    if(!meta.width || !meta.height || meta.width * meta.height > filaDeImagens.LIMITE_DE_PIXELS){
       return res.status(415).json({ error: "Foto com tamanho fora do comum. Envie outra." });
     }
     try {
-      const original = await sharp(req.file.buffer, { failOn: "error" })
-        .rotate()
-        .resize({ width: 3000, height: 3000, fit: "inside", withoutEnlargement: true })
-        .jpeg({ quality: 90, mozjpeg: true })
-        .toBuffer({ resolveWithObject: true });
-      const miniatura = await sharp(original.data)
-        .resize({ width: 600, height: 600, fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 80 })
-        .toBuffer();
+      const { original, miniatura } = await filaDeImagens.comVaga(async () => {
+        const original = await sharp(req.file.buffer, filaDeImagens.OPCOES_DE_ENTRADA)
+          .rotate()
+          .resize({ width: 3000, height: 3000, fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 90, mozjpeg: true })
+          .toBuffer({ resolveWithObject: true });
+        const miniatura = await sharp(original.data)
+          .resize({ width: 600, height: 600, fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+        return { original, miniatura };
+      });
       const id = randomUUID();
       const chave = crypto.randomBytes(16).toString("hex");
       db.inserirFotoPersonalizacao({
@@ -3816,6 +3885,10 @@ app.post("/api/personalizacao/fotos", uploadPersonalizacaoLimiter, (req, res) =>
       });
       res.status(201).json({ id, chave, largura: original.info.width, altura: original.info.height });
     } catch (procErr) {
+      if(procErr?.codigo === "fila_cheia"){
+        res.setHeader("Retry-After", "20");
+        return res.status(503).json({ error: "Muitas fotos sendo preparadas agora. Tente de novo em alguns segundos." });
+      }
       console.error("Erro ao processar foto de personalização:", registro.resumoDeErro(procErr));
       res.status(500).json({ error: "Não foi possível preparar a foto. Tente outra." });
     }
@@ -4408,7 +4481,7 @@ app.post("/api/admin/hero/fotos", auth.requireAdmin, auth.requireAdminTwoFactor,
     const focus = ENQUADRAMENTOS.has(req.body.focus) ? req.body.focus : "center";
 
     try{
-      const original = await sharp(req.file.buffer)
+      const original = await sharp(req.file.buffer, filaDeImagens.OPCOES_DE_ENTRADA)
         .rotate()
         .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
         .jpeg({ quality: 85, mozjpeg: true })
@@ -4599,6 +4672,7 @@ app.delete("/api/admin/orders/:reference", auth.requireAdmin, auth.requireAdminT
       return res.status(409).json({ error: "Pedidos que já receberam pagamento não podem ser apagados — é o histórico financeiro do pedido." });
     }
     db.arquivarPedido(reference);
+    db.liberarCupomDoPedido(reference);
     eventos.registrar("pedido_arquivado", { req, pedido: reference, detalhes: { status: order.status } });
     res.json({ ok: true });
   } catch (err) {

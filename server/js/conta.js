@@ -19,6 +19,47 @@
     el.classList.toggle("text-success", type === "success");
   }
 
+  const widgetsTurnstile = {};
+
+  async function prepararTurnstile(){
+    const caixas = [...document.querySelectorAll("[data-turnstile]")];
+    if(!caixas.length) return;
+    let chave = null;
+    try{
+      chave = (await (await fetch("/api/auth/protecao")).json()).turnstile;
+    }catch{
+      return;
+    }
+    if(!chave) return;
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    }).catch(() => null);
+    if(!window.turnstile) return;
+    caixas.forEach(caixa => {
+      widgetsTurnstile[caixa.dataset.turnstile] = window.turnstile.render(caixa, {
+        sitekey: chave, language: "pt-br", appearance: "interaction-only", theme: "light",
+      });
+    });
+  }
+
+  function tokenTurnstile(nome){
+    const id = widgetsTurnstile[nome];
+    if(id === undefined || !window.turnstile) return undefined;
+    return window.turnstile.getResponse(id) || undefined;
+  }
+
+  function reiniciarTurnstile(nome){
+    const id = widgetsTurnstile[nome];
+    if(id !== undefined && window.turnstile) window.turnstile.reset(id);
+  }
+
+  prepararTurnstile();
+
   async function postJSON(url, body){
     const res = await fetch(url, {
       method: "POST",
@@ -388,11 +429,13 @@
         email: document.getElementById("registerEmail").value.trim(),
         cpf,
         password,
+        "cf-turnstile-response": tokenTurnstile("cadastro"),
       });
       window.location.href = destinationFor(user);
     }catch(err){
       showMessage(registerMsg, err.message, "error");
       setLoading(btn, false);
+      reiniciarTurnstile("cadastro");
     }
   });
 
@@ -411,10 +454,11 @@
 
     setLoading(btn, true, "Enviando...");
     try{
-      const data = await postJSON("/api/auth/forgot-password", { email: emailValue });
+      const data = await postJSON("/api/auth/forgot-password", { email: emailValue, "cf-turnstile-response": tokenTurnstile("esqueci") });
       showMessage(forgotMsg, data.message || "Se existir uma conta com esse e-mail, enviamos o link de redefinição.", "success");
       forgotForm.reset();
     }catch(err){
+      reiniciarTurnstile("esqueci");
       showMessage(forgotMsg, err.message, "error");
     }finally{
       setLoading(btn, false);
