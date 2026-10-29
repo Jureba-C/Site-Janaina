@@ -2784,6 +2784,34 @@
     }
   });
 
+  const backupCifradoBtn = document.getElementById("backupCifradoBtn");
+  backupCifradoBtn?.addEventListener("click", async () => {
+    const original = backupCifradoBtn.innerHTML;
+    backupCifradoBtn.disabled = true;
+    backupCifradoBtn.innerHTML = `<i class="bi bi-hourglass-split me-1"></i>Preparando...`;
+    try{
+      const res = await fetchWithTimeout("/api/admin/backup", {}, 60000);
+      if(!res.ok){
+        let msg = "Não foi possível gerar o backup agora.";
+        try{ msg = (await res.json()).error || msg; }catch{}
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const match = (res.headers.get("Content-Disposition") || "").match(/filename="([^"]+)"/);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = match ? match[1] : "arte-canecas.db.enc";
+      link.click();
+      URL.revokeObjectURL(url);
+    }catch(err){
+      alert(err.message || "Não foi possível gerar o backup agora.");
+    }finally{
+      backupCifradoBtn.disabled = false;
+      backupCifradoBtn.innerHTML = original;
+    }
+  });
+
   const instagramReconnectBtn = document.getElementById("instagramReconnectBtn");
   const instagramReconnectResult = document.getElementById("instagramReconnectResult");
   instagramReconnectBtn?.addEventListener("click", async () => {

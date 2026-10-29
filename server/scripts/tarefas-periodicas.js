@@ -3,6 +3,8 @@ require("dotenv").config({ path: path.join(__dirname, "..", ".env"), quiet: true
 
 const db = require("../lib/db.js");
 const registro = require("../lib/registro.js");
+const eventos = require("../lib/eventos-seguranca.js");
+const backupRemoto = require("../lib/backup-remoto.js");
 const emailPhotos = require("../lib/emailPhotos.js");
 const rastreio = require("../lib/rastreio.js");
 const melhorEnvio = require("../lib/melhorEnvio.js");
@@ -261,7 +263,27 @@ async function main(){
   enfileirarCuponsDeAniversario();
   await enfileirarLotesDeCampanha();
   await reenviarFilaDeEmail();
+  await fazerBackupDiario();
+  podarRegistrosAntigos();
   db.gravarEstado("tarefas_periodicas_em", new Date().toISOString());
+}
+
+async function fazerBackupDiario(){
+  const resultado = await backupRemoto.fazerBackupRemoto({ db, eventos });
+  if(resultado.feito) console.log(`Backup fora do servidor: ${resultado.nome} (${Math.round(resultado.bytes / 1024)} KB).`);
+  else if(resultado.motivo === "falhou") console.error("Backup fora do servidor falhou:", resultado.erro);
+  else if(resultado.motivo === "nao_configurado") console.log("Backup fora do servidor: não configurado (BACKUP_S3_*).");
+  backupRemoto.conferirAtraso({ db, eventos });
+  return resultado;
+}
+
+const DIAS_DE_REGISTRO = 180;
+
+function podarRegistrosAntigos(){
+  const corte = Date.now() - DIAS_DE_REGISTRO * 24 * 60 * 60 * 1000;
+  const eventosApagados = db.podarEventosDeSeguranca(corte);
+  db.pruneLoginAttempts(DIAS_DE_REGISTRO * 24 * 60 * 60 * 1000);
+  if(eventosApagados) console.log(`Registro de segurança: ${eventosApagados} evento(s) com mais de ${DIAS_DE_REGISTRO} dias apagado(s).`);
 }
 
 if(require.main === module){
@@ -271,4 +293,4 @@ if(require.main === module){
   });
 }
 
-module.exports = { main, apagarFotosDePersonalizacaoVencidas, reenviarFilaDeEmail, fecharEntregasConfirmadas, enfileirarConfirmacoesDeRecebimento, enfileirarPedidosDeAvaliacao, enfileirarLembretesDeCarrinho, enfileirarCuponsDeAniversario, enfileirarLotesDeCampanha };
+module.exports = { main, fazerBackupDiario, podarRegistrosAntigos, apagarFotosDePersonalizacaoVencidas, reenviarFilaDeEmail, fecharEntregasConfirmadas, enfileirarConfirmacoesDeRecebimento, enfileirarPedidosDeAvaliacao, enfileirarLembretesDeCarrinho, enfileirarCuponsDeAniversario, enfileirarLotesDeCampanha };

@@ -50,6 +50,7 @@ const estadoDoPedido = require("./lib/estado-do-pedido.js");
 const mercadoPagoApi = require("./lib/mercado-pago-api.js");
 const eventos = require("./lib/eventos-seguranca.js");
 const registro = require("./lib/registro.js");
+const backupRemoto = require("./lib/backup-remoto.js");
 
 const app = express();
 const PORT = process.env.PORT || 3333;
@@ -2667,6 +2668,7 @@ const ROTAS_SENSIVEIS = [
   "DELETE /api/admin/estampas/:id",
   "DELETE /api/admin/categories/:slug",
   "DELETE /api/admin/orders/:reference",
+  "GET /api/admin/backup",
 ];
 
 const VALIDADE_TOTP_PENDENTE_MS = 10 * 60 * 1000;
@@ -3011,6 +3013,23 @@ app.get("/api/admin/leads", auth.requireAdmin, auth.requireAdminTwoFactor, (req,
   } catch (err) {
     console.error("Erro ao listar contatos (admin):", registro.resumoDeErro(err));
     res.status(500).json({ error: "Não foi possível carregar os contatos agora." });
+  }
+});
+
+app.get("/api/admin/backup", auth.requireAdmin, auth.requireAdminTwoFactor, confirmado, (req, res) => {
+  if(!backupRemoto.chaveDoBackup()){
+    return res.status(409).json({ error: "Falta a chave do backup (BACKUP_ENCRYPTION_KEY) na hospedagem. Peça ao Caio para configurar." });
+  }
+  try {
+    const conteudo = backupRemoto.copiaCifradaDoBanco();
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${backupRemoto.nomeDoArquivo()}"`);
+    res.setHeader("Cache-Control", "no-store");
+    eventos.registrar("backup_baixado", { req, detalhes: { bytes: conteudo.length } });
+    res.send(conteudo);
+  } catch (err) {
+    console.error("Erro ao gerar backup criptografado:", registro.resumoDeErro(err));
+    res.status(500).json({ error: "Não foi possível gerar o backup agora." });
   }
 });
 
