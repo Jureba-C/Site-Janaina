@@ -591,6 +591,115 @@ function Sombra({ molde, formato, centro, raio }: { molde: Molde; formato: strin
   return <ellipse cx={centro ?? 180} cy={cy} rx={rx} ry={raio ? 9 : 10} fill="rgba(80, 40, 20, 0.16)" />;
 }
 
+const PIXELS_POR_UNIDADE = 3;
+const curvasProntas = new Map<string, string | null>();
+const imagensDasCurvas = new Map<string, Promise<HTMLImageElement>>();
+
+function imagemDaCurva(url: string): Promise<HTMLImageElement> {
+  let pedido = imagensDasCurvas.get(url);
+  if (!pedido) {
+    pedido = new Promise((resolver, rejeitar) => {
+      const imagem = new Image();
+      imagem.onload = () => resolver(imagem);
+      imagem.onerror = () => rejeitar(new Error("estampa"));
+      imagem.src = url;
+    });
+    if (imagensDasCurvas.size > 30) imagensDasCurvas.clear();
+    imagensDasCurvas.set(url, pedido);
+  }
+  return pedido;
+}
+
+interface MedidasDaCurva {
+  raio: number;
+  larguraDaImagem: number;
+  alturaDaImagem: number;
+  inicio: number;
+}
+
+async function entortarEstampa(textura: string, m: MedidasDaCurva): Promise<string | null> {
+  const imagem = await imagemDaCurva(textura);
+  const largura = Math.round(2 * m.raio * PIXELS_POR_UNIDADE);
+  const altura = Math.max(1, Math.round(m.alturaDaImagem * PIXELS_POR_UNIDADE));
+  const canvas = document.createElement("canvas");
+  canvas.width = largura;
+  canvas.height = altura;
+  const contexto = canvas.getContext("2d");
+  if (!contexto) return null;
+  const iw = imagem.naturalWidth || imagem.width;
+  const ih = imagem.naturalHeight || imagem.height;
+  if (!iw || !ih) return null;
+  const escala = Math.max(m.larguraDaImagem / iw, m.alturaDaImagem / ih);
+  const visivelW = m.larguraDaImagem / escala;
+  const visivelH = m.alturaDaImagem / escala;
+  const origemX = (iw - visivelW) / 2;
+  const origemY = (ih - visivelH) / 2;
+  const volta = 2 * Math.PI * m.raio;
+  const arco = (coluna: number) => {
+    const u = Math.max(-1, Math.min(1, (coluna / PIXELS_POR_UNIDADE - m.raio) / m.raio));
+    return Math.asin(u) * m.raio;
+  };
+  for (let coluna = 0; coluna < largura; coluna++) {
+    const a = arco(coluna);
+    const b = arco(coluna + 1);
+    const x = (((a - m.inicio) % volta) + volta) % volta;
+    if (x >= m.larguraDaImagem) continue;
+    const passo = Math.max(b - a, 0.0001);
+    const sx = origemX + (x / m.larguraDaImagem) * visivelW;
+    const sw = Math.max(0.5, (passo / m.larguraDaImagem) * visivelW);
+    contexto.drawImage(imagem, Math.min(sx, iw - sw), origemY, sw, visivelH, coluna, 0, 1, altura);
+  }
+  try {
+    return canvas.toDataURL("image/png");
+  } catch {
+    return null;
+  }
+}
+
+function useEstampaCurva(textura: string, m: MedidasDaCurva): string | null {
+  const chave = `${textura}|${m.raio}|${m.larguraDaImagem.toFixed(2)}|${m.alturaDaImagem.toFixed(2)}|${m.inicio.toFixed(2)}`;
+  const [pronta, setPronta] = useState<string | null>(() => curvasProntas.get(chave) ?? null);
+  useEffect(() => {
+    const guardada = curvasProntas.get(chave);
+    if (guardada !== undefined) { setPronta(guardada); return; }
+    let viva = true;
+    entortarEstampa(textura, m)
+      .catch(() => null)
+      .then(url => {
+        if (curvasProntas.size > 40) curvasProntas.clear();
+        curvasProntas.set(chave, url);
+        if (viva) setPronta(url);
+      });
+    return () => { viva = false; };
+  }, [chave]);
+  return pronta;
+}
+
+function EstampaCurva({ superficie, estampa, medidas, idBase, fatias }: { superficie: Superficie; estampa: EstampaPublica; medidas: MedidasDaCurva; idBase: string; fatias: number }) {
+  const curva = useEstampaCurva(estampa.textura, medidas);
+  const { raio: r, larguraDaImagem, alturaDaImagem, inicio } = medidas;
+  return (
+    <g>
+      <defs><clipPath id={`${idBase}-corpo`}><path d={superficie.forma} /></clipPath></defs>
+      <g clipPath={`url(#${idBase}-corpo)`}>
+        {curva ? (
+          <image href={curva} x={superficie.cx - r} y={superficie.cy - alturaDaImagem / 2} width={2 * r} height={alturaDaImagem} preserveAspectRatio="none" />
+        ) : (
+          <g transform={`translate(${superficie.cx} ${superficie.cy})`}>
+            <ArteCurva id={`${idBase}-estampa`} raio={r} largura={Math.PI * r} fatias={fatias}>
+              <g>
+                <image href={estampa.textura} x={inicio} y={-alturaDaImagem / 2} width={larguraDaImagem} height={alturaDaImagem} preserveAspectRatio="xMidYMid slice" />
+                <image href={estampa.textura} x={inicio + 2 * Math.PI * r} y={-alturaDaImagem / 2} width={larguraDaImagem} height={alturaDaImagem} preserveAspectRatio="xMidYMid slice" />
+              </g>
+            </ArteCurva>
+          </g>
+        )}
+        {superficie.luz ? <path d={superficie.forma} fill={`url(#${superficie.luz})`} /> : null}
+      </g>
+    </g>
+  );
+}
+
 function EstampaNaPeca({ superficie, estampa, molde, lado, idBase, fatias }: { superficie: Superficie; estampa: EstampaPublica; molde: Molde; lado: Lado; idBase: string; fatias: number }) {
   if (superficie.plana) {
     const p = superficie.plana;
@@ -606,26 +715,8 @@ function EstampaNaPeca({ superficie, estampa, molde, lado, idBase, fatias }: { s
   const larguraDaImagem = volta.cobertura * 2 * Math.PI * r;
   const alturaDaImagem = Math.min(larguraDaImagem / (estampa.proporcao || 2.105), superficie.altura);
   const anguloInicial = lado === "frente" ? Math.PI / 2 + (volta.vao * Math.PI) - 2 * Math.PI : -Math.PI / 2 + volta.vao * Math.PI;
-  const inicio = anguloInicial * r;
-  const imagem = (
-    <g>
-      <image href={estampa.textura} x={inicio} y={-alturaDaImagem / 2} width={larguraDaImagem} height={alturaDaImagem} preserveAspectRatio="xMidYMid slice" />
-      <image href={estampa.textura} x={inicio + 2 * Math.PI * r} y={-alturaDaImagem / 2} width={larguraDaImagem} height={alturaDaImagem} preserveAspectRatio="xMidYMid slice" />
-    </g>
-  );
-  return (
-    <g>
-      <defs><clipPath id={`${idBase}-corpo`}><path d={superficie.forma} /></clipPath></defs>
-      <g clipPath={`url(#${idBase}-corpo)`}>
-        <g transform={`translate(${superficie.cx} ${superficie.cy})`}>
-          <ArteCurva id={`${idBase}-estampa`} raio={r} largura={Math.PI * r} fatias={fatias}>{imagem}</ArteCurva>
-        </g>
-        {superficie.luz ? <path d={superficie.forma} fill={`url(#${superficie.luz})`} /> : null}
-      </g>
-    </g>
-  );
+  return <EstampaCurva superficie={superficie} estampa={estampa} medidas={{ raio: r, larguraDaImagem, alturaDaImagem, inicio: anguloInicial * r }} idBase={idBase} fatias={fatias} />;
 }
-
 export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fotoSelecionada, aoTocarFoto, urlDaFotoDoMolde = null, comArte = true, exemplos = true, fatias = 28, estampa = null, noEstudio = false }: PropsPeca) {
   const idBase = useId().replace(/[^a-zA-Z0-9]/g, "");
   const cores = coresDaPeca(config, escolhas, aquecida);
