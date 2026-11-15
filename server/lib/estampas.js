@@ -62,7 +62,7 @@ function estampaPublica(e) {
   const versao = e.updated_at || 0;
   return {
     id: e.id,
-    nome: e.nome,
+    nome: String(e.nome).replace(/\s*\(exemplo\)\s*$/i, ""),
     colecao: e.colecao,
     preco: Number(e.preco) || 0,
     proporcao: e.largura && e.altura ? Math.round((e.largura / e.altura) * 1000) / 1000 : 2.105,

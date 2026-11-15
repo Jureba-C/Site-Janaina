@@ -53,7 +53,7 @@ export function Rodape({ loja }: { loja: Loja }) {
             <span>Boleto</span>
             <span className="rodape-seguro"><Icone nome="cadeado" tamanho={16} />Compra segura · Mercado Pago</span>
           </div>
-          <span>{loja.nome} · CNPJ {loja.cnpj} · © {new Date().getFullYear()}</span>
+          <span>{loja.nome}{loja.cnpj ? ` · CNPJ ${loja.cnpj}` : ""} · © {new Date().getFullYear()}</span>
         </div>
       </div>
     </footer>

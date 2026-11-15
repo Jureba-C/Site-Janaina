@@ -91,7 +91,7 @@ function dadosDaLoja(visiveis){
     whatsappFormatado: marca.whatsappFormatado,
     instagram: marca.instagram,
     email: marca.email,
-    cnpj: /^0{2}\.0{3}/.test(marca.cnpj) ? "[a confirmar]" : marca.cnpj,
+    cnpj: /^0{2}\.0{3}/.test(marca.cnpj) ? null : marca.cnpj,
     cidade: "Asa Norte · Brasília — DF",
     prazoProducao: db.prazoDeProducao(),
     freteGratisAcima: db.freteGratisAcima(),
@@ -224,8 +224,12 @@ function textoDeBusca(p, rotulos){
   return normalizar([p.name, p.config.medida, p.config.codigo, ...p.config.categorias.map(s => rotulos.get(s) || s)].join(" "));
 }
 
+function raizDaPalavra(palavra){
+  return palavra.length > 4 ? palavra.replace(/(as|os|es|a|o|e|s)$/, "") : palavra.replace(/s$/, "");
+}
+
 function buscar(visiveis, termo){
-  const palavras = normalizar(termo).split(/\s+/).filter(Boolean).map(p => p.replace(/s$/, ""));
+  const palavras = normalizar(termo).split(/\s+/).filter(Boolean).map(raizDaPalavra);
   if(!palavras.length) return visiveis;
   const rotulos = new Map(catalogo.getAllCategories().map(c => [c.slug, c.label]));
   return visiveis

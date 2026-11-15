@@ -64,3 +64,13 @@ test("a página de categoria traz a foto do tipo quando existe", () => {
   assert.equal(dados.paginaCategoria("botons", {}).pagina.categoria.foto, null);
   assert.equal(dados.paginaCategoria("botons", {}).pagina.total, 5);
 });
+
+test("a busca acha masculino, feminino, singular e plural da mesma palavra", () => {
+  const total = (q) => dados.paginaBusca(q).pagina.produtos.length;
+  assert.ok(total("professora") > 0, "professora acha os produtos de Professores");
+  assert.equal(total("professora"), total("professores"));
+  assert.equal(total("caneca"), total("canecas"));
+  assert.equal(total("xicaras"), total("xícara"));
+  assert.ok(total("caneca preta") >= 1);
+  assert.equal(total("palavrasemsentido"), 0);
+});

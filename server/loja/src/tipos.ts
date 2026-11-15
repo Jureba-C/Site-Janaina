@@ -125,7 +125,7 @@ export interface Loja {
   whatsappFormatado: string;
   instagram: string;
   email: string;
-  cnpj: string;
+  cnpj: string | null;
   cidade: string;
   prazoProducao: number | null;
   freteGratisAcima: number | null;

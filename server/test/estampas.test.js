@@ -86,7 +86,7 @@ test("a volta da caneca: emenda atrás da alça e frente no mesmo lugar da prév
 test("estampas de exemplo aparecem sozinhas e só uma vez", async () => {
   const lista = await (await fetch(`${ORIGIN}/api/estampas`)).json();
   assert.equal(lista.estampas.length, 3);
-  assert.ok(lista.estampas.every(e => e.nome.includes("exemplo")));
+  assert.deepEqual(lista.estampas.map(e => e.nome).sort(), ["Brasília em traço", "Florzinhas", "Ipês amarelos"], "a cliente não vê \"(exemplo)\" no nome");
   const miniatura = await fetch(ORIGIN + lista.estampas[0].miniatura);
   assert.equal(miniatura.status, 200);
   assert.equal(miniatura.headers.get("content-type"), "image/webp");

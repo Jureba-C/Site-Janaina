@@ -29,6 +29,7 @@
     return;
   }
 
+  showOnly(statePagar);
   document.getElementById("pixAmount").textContent = brl(dados.total);
   document.getElementById("pixCode").value = dados.qrCode;
 
