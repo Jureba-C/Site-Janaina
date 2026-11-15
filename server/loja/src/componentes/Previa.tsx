@@ -308,13 +308,17 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
 
 function ArteCurva({ id, raio, largura, fatias, children }: { id: string; raio: number; largura: number; fatias: number; children: ReactNode }) {
   const passo = largura / fatias;
+  const sobra = (i: number) => {
+    const escala = Math.max(0.2, Math.cos((-largura / 2 + (i + 0.5) * passo) / raio));
+    return Math.min(passo * 1.5, Math.max(0.6, (passo * 0.5) / escala));
+  };
   return (
     <g>
       <defs>
         <g id={id}>{children}</g>
         {Array.from({ length: fatias }, (_, i) => (
           <clipPath key={i} id={`${id}-f${i}`}>
-            <rect x={-largura / 2 + i * passo - 0.6} y={-2000} width={passo + 1.2} height={4000} />
+            <rect x={-largura / 2 + i * passo - sobra(i)} y={-2000} width={passo + 2 * sobra(i)} height={4000} />
           </clipPath>
         ))}
       </defs>
