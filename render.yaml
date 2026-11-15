@@ -7,7 +7,7 @@ services:
     buildCommand: npm ci --omit=dev
     startCommand: npm start
     healthCheckPath: /
-    autoDeploy: false
+    autoDeployTrigger: commit
     envVars:
       - key: NODE_VERSION
         value: "24"
