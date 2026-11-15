@@ -30,6 +30,15 @@ idas e vindas.
   proporção). Confirmar se a prensa dela imprime 24 cm; se for o papel de
   20 cm, ajustar `COBERTURA_DA_VOLTA` em `js/regras-produto.js` e os gabaritos.
   Ela sobe pelo painel (aba Estampas) e apaga as 3 de exemplo.
+- [ ] **Cores de verdade de cada produto.** Coloquei uma paleta inicial para
+  a cliente escolher: garrafas de alumínio (prata, branca, preta, rosa, azul,
+  verde, lilás), térmicas e copo térmico (branca, preta, rosa claro, azul
+  bebê, verde sálvia), cor do fundo de botons, ímã, espelho e chaveiros
+  (branco, rosa claro, amarelo, azul, verde, lilás) e Kit xícara (branca,
+  preta, rosa, verde sálvia). Ela confere e tira ou acrescenta no painel
+  (Produtos → produto → Variações, "Muda a cor da peça"). As listas ficam em
+  `CORES_ALUMINIO`, `CORES_TERMICA`, `CORES_DO_FUNDO` e `CORES_DA_XICARA` no
+  `lib/catalogo.js`.
 - [ ] **Área de impressão real de cada produto** (largura × altura em mm;
   diâmetro nos botons): cada garrafa (300 a 900 ml), xícara, copo, caneca
   mini, azulejo e boton. Entra no painel em Produtos → produto → Prévia da

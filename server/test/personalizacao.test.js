@@ -20,6 +20,7 @@ const catalogo = require("../lib/catalogo.js");
 const idDe = (nome) => Number(Object.keys(catalogo.PRODUCTS).find(id => catalogo.PRODUCTS[id].name === nome));
 const TORRE = idDe("Torre de xícaras Ipês");
 const BOTTON = idDe("Botton broche pequeno");
+const COR_DO_BOTTON = catalogo.PRODUCTS[BOTTON].config.variacoes.find(g => g.id === "cor").opcoes[0].id;
 const SILICONE = idDe("Caneca com tampa e base de silicone");
 
 let child;
@@ -90,7 +91,7 @@ test("foto enviada: o tipo real é conferido e só quem tem a chave enxerga", as
 test("o preço vem do servidor: variação, adicional e faixa de quantidade", async () => {
   const caneca = { id: 2, qty: 2, escolhas: { variacoes: { cor: "rosa" }, adicionais: ["tampa-bambu"], personalizacao: { nome: "Ana", letra: "cursiva", arte: "nome" } }, price: 1 };
   const torre = { id: TORRE, qty: 1, escolhas: { variacoes: { modelo: "com-4-xicaras" }, adicionais: [], personalizacao: { arte: "nome" } } };
-  const botton = { id: BOTTON, qty: 12, escolhas: { variacoes: {}, adicionais: [], personalizacao: {} } };
+  const botton = { id: BOTTON, qty: 12, escolhas: { variacoes: { cor: COR_DO_BOTTON }, adicionais: [], personalizacao: {} } };
   const res = await postar("/api/carrinho/conferir", { items: [caneca, torre, botton] });
   const { itens } = await res.json();
   assert.equal(itens[0].preco, 63, "45 + tampa de bambu 18; o preço mandado pelo navegador é ignorado");
@@ -103,7 +104,7 @@ test("personalização inválida é recusada pelo servidor", async () => {
   const esgotada = { id: SILICONE, qty: 1, escolhas: { variacoes: { modelo: "coracao" }, adicionais: [], personalizacao: {} } };
   const corInventada = { id: 2, qty: 1, escolhas: { variacoes: { cor: "dourado-neon" }, adicionais: [], personalizacao: {} } };
   const fotoForjada = { id: 2, qty: 1, escolhas: { variacoes: { cor: "rosa" }, adicionais: [], personalizacao: { arte: "fotos", fotos: [{ id: crypto.randomUUID(), chave: "a".repeat(32), x: 0, y: 0, zoom: 1 }] } } };
-  const quantidade = { id: BOTTON, qty: 1, escolhas: { variacoes: {}, adicionais: [], personalizacao: {} } };
+  const quantidade = { id: BOTTON, qty: 1, escolhas: { variacoes: { cor: COR_DO_BOTTON }, adicionais: [], personalizacao: {} } };
   const { itens } = await (await postar("/api/carrinho/conferir", { items: [longo, esgotada, corInventada, fotoForjada, quantidade] })).json();
   assert.match(itens[0].erro, /até 20 caracteres/);
   assert.match(itens[1].erro, /esgotado/);

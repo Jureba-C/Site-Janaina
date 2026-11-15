@@ -76,6 +76,22 @@ function grupoCor(nome, lista, previa){
   return { id: "cor", nome, previa: previa || "alca", opcoes: cores(lista) };
 }
 
+const CORES_ALUMINIO = [
+  { nome: "Prata", hex: "#C9CDD2" }, { nome: "Branca", hex: "#F4F4F2" }, { nome: "Preta", hex: "#2E2E30" },
+  { nome: "Rosa", hex: "#E9A9B6" }, { nome: "Azul", hex: "#6F9FCF" }, { nome: "Verde", hex: "#8DB48E" }, { nome: "Lilás", hex: "#B8A5D6" },
+];
+const CORES_TERMICA = [
+  { nome: "Branca", hex: "#F4F4F2" }, { nome: "Preta", hex: "#2E2E30" }, { nome: "Rosa claro", hex: "#F0CFCF" },
+  { nome: "Azul bebê", hex: "#BFD8EE" }, { nome: "Verde sálvia", hex: "#A9C3A5" },
+];
+const CORES_DO_FUNDO = [
+  { nome: "Branco", hex: "#FFFFFF" }, { nome: "Rosa claro", hex: "#F6E1DE" }, { nome: "Amarelo", hex: "#F7E3A1" },
+  { nome: "Azul", hex: "#CFE3F4" }, { nome: "Verde", hex: "#D7E8CF" }, { nome: "Lilás", hex: "#E3D9F1" },
+];
+const CORES_DA_XICARA = [
+  { nome: "Branca", hex: "#FFFFFF" }, { nome: "Preta", hex: "#2E2E30" }, { nome: "Rosa", hex: "#E9C3C9" }, { nome: "Verde sálvia", hex: "#B9CDB4" },
+];
+
 function grupoModelo(nome, lista, previa){
   return { id: "modelo", nome: nome || "Modelo", previa: previa || null, opcoes: opcoes(lista) };
 }
@@ -227,25 +243,25 @@ const LISTA = [
   xicara("Xícara Ipês Brasília", "150 ml", 42, { codigo: "XIC-IPE-150", categorias: ["xicaras-e-kits", "ipes-brasilia", "brasilia", "casamento", "padrinhos"], fotos: ["/img/provisorias/xicara-ipes.jpg", "/img/provisorias/xicara-catedral.jpg"], badges: ["Coleção Brasília"] }),
   xicara("Torre de xícaras Ipês", "150 ml cada", 95, { codigo: "XIC-TOR", categorias: ["xicaras-e-kits", "ipes-brasilia", "brasilia", "padrinhos", "casamento"], badges: ["Preferida dos padrinhos"], variacoes: [grupoModelo("Quantidade", ["Com 2 xícaras", { nome: "Com 4 xícaras", preco: 65 }])], peso: 0.8, caixa: { largura: 14, altura: 30, comprimento: 14 } }),
   xicara("Xícara off white empilhável", "200 ml", 35, { codigo: "XIC-OFF-200", corPeca: "#F3EEE4", fotos: ["/img/provisorias/xicaras-casamento.jpg"] }),
-  xicara("Kit xícara com pires", "75 a 180 ml", 55, { codigo: "XIC-KIT", variacoes: [grupoModelo("Kit", ["Mini 75 ml", "Expresso 88 ml", "Duplo 180 ml", { nome: "Completo 177 ml com colher", preco: 5 }])] }),
+  xicara("Kit xícara com pires", "75 a 180 ml", 55, { codigo: "XIC-KIT", variacoes: [grupoCor("Cor", CORES_DA_XICARA, "peca"), grupoModelo("Kit", ["Mini 75 ml", "Expresso 88 ml", "Duplo 180 ml", { nome: "Completo 177 ml com colher", preco: 5 }])] }),
   xicara("Xícara mágica com pires", "90 ml", 55, { codigo: "XIC-MAG-90", magica: true, corPeca: "#2A2827", cuidados: CUIDADOS_MAGICA }),
   xicara("Xícara Petit fosca com pires", "90 ml", 60, { codigo: "XIC-PET-90", variacoes: [grupoCor("Cor", [{ nome: "Marrom", hex: "#8A6A55" }, { nome: "Verde claro", hex: "#B9D3B4" }, { nome: "Rosa claro", hex: "#F0CFCF" }], "peca")] }),
 
-  garrafa("Garrafa de alumínio 2 bicos", 600, 50, { codigo: "GAR-AL2-600" }),
-  garrafa("Garrafa de alumínio básica", 500, 55, { codigo: "GAR-ALB-500", fotos: ["/img/provisorias/garrafa-professores.jpg"], badges: ["Volta às aulas"] }),
-  garrafa("Garrafa de alumínio esportiva", 600, 60, { codigo: "GAR-ALE-600" }),
-  garrafa("Garrafa de alumínio com mosquetão", 500, 40, { codigo: "GAR-ALM-500" }),
+  garrafa("Garrafa de alumínio 2 bicos", 600, 50, { variacoes: [grupoCor("Cor", CORES_ALUMINIO, "peca")], codigo: "GAR-AL2-600" }),
+  garrafa("Garrafa de alumínio básica", 500, 55, { variacoes: [grupoCor("Cor", CORES_ALUMINIO, "peca")], codigo: "GAR-ALB-500", fotos: ["/img/provisorias/garrafa-professores.jpg"], badges: ["Volta às aulas"] }),
+  garrafa("Garrafa de alumínio esportiva", 600, 60, { variacoes: [grupoCor("Cor", CORES_ALUMINIO, "peca")], codigo: "GAR-ALE-600" }),
+  garrafa("Garrafa de alumínio com mosquetão", 500, 40, { variacoes: [grupoCor("Cor", CORES_ALUMINIO, "peca")], codigo: "GAR-ALM-500" }),
   garrafa("Garrafa inox prata", 500, 60, { codigo: "GAR-INX-500", fotos: ["/img/provisorias/garrafa-inox-brasilia.jpg"] }),
   garrafa("Garrafa inox prata compacta", 400, 68, { codigo: "GAR-INX-400", aviso: "ultimas" }),
   garrafa("Garrafa térmica", 500, 120, { codigo: "GAR-TER-500", variacoes: [grupoCor("Cor", [{ nome: "Prata", hex: "#C9CDD2" }, { nome: "Branca", hex: "#F4F4F2" }], "peca")] }),
   garrafa("Garrafa térmica com glitter", 500, 130, { codigo: "GAR-GLI-500", variacoes: [grupoCor("Cor", [{ nome: "Dourada", hex: "#D8B868" }, { nome: "Rosa", hex: "#EDB3C3" }, { nome: "Prata", hex: "#C9CDD2" }], "peca")] }),
-  garrafa("Garrafa infantil de alumínio com bico automático", 500, 60, { codigo: "GAR-INF-500", categorias: ["garrafas-e-termicos", "professores", "aniversario"] }),
-  garrafa("Garrafa térmica com tampa de bambu", 600, 140, { codigo: "GAR-BAM-600" }),
-  garrafa("Garrafa térmica com porta-celular", 600, 95, { codigo: "GAR-CEL-600" }),
+  garrafa("Garrafa infantil de alumínio com bico automático", 500, 60, { variacoes: [grupoCor("Cor", CORES_ALUMINIO, "peca")], codigo: "GAR-INF-500", categorias: ["garrafas-e-termicos", "professores", "aniversario"] }),
+  garrafa("Garrafa térmica com tampa de bambu", 600, 140, { variacoes: [grupoCor("Cor", CORES_TERMICA, "peca")], codigo: "GAR-BAM-600" }),
+  garrafa("Garrafa térmica com porta-celular", 600, 95, { variacoes: [grupoCor("Cor", CORES_TERMICA, "peca")], codigo: "GAR-CEL-600" }),
   garrafa("Garrafa térmica rosa fosco", 500, 120, { codigo: "GAR-ROS-500", corPeca: "#E7B9C1" }),
   garrafa("Garrafa térmica 900 ml com porta-celular", 900, 139, { codigo: "GAR-900", variacoes: [grupoCor("Cor", [{ nome: "Rosa claro", hex: "#F0CFCF" }, { nome: "Branca", hex: "#F4F4F2" }], "peca")], peso: 0.55 }),
   garrafa("Garrafa de vidro com difusor para chá", 300, 110, { codigo: "GAR-CHA-300", medida: "300 ml · parede dupla", variacoes: [grupoCor("Cor", [{ nome: "Azul", hex: "#7FA9D6" }, { nome: "Dourado", hex: "#D8B868" }, { nome: "Verde", hex: "#8FBF9A" }], "peca")] }),
-  garrafa("Copo térmico com encaixe para carro", 750, 110, { codigo: "GAR-CAR-750", formato: "copo-termico" }),
+  garrafa("Copo térmico com encaixe para carro", 750, 110, { variacoes: [grupoCor("Cor", CORES_TERMICA, "peca")], codigo: "GAR-CAR-750", formato: "copo-termico" }),
   garrafa("Caneca inox com tampa", 250, 60, { codigo: "GAR-CIN-250", molde: "caneca", corPeca: "#C9CDD2", caixa: CAIXA_CANECA, peso: 0.35 }),
 
   {
@@ -265,20 +281,20 @@ const LISTA = [
 
   lembranca("Azulejo personalizado com suporte", 30, "azulejo", { codigo: "AZU", medida: "10×10, 15×15 ou 20×20 cm", variacoes: [grupoModelo("Tamanho", ["10×10 cm", { nome: "15×15 cm", preco: 8 }, { nome: "20×20 cm", preco: 12 }], "tamanho")], cuidados: "Limpe com pano úmido. O suporte acompanha.", peso: 0.4, caixa: { largura: 22, altura: 6, comprimento: 22 } }),
   lembranca("Base de madeira com mini buquê", 17, "flor", { codigo: "AZU-BAS", categorias: ["lembrancas", "acessorios-e-embalagens"], medida: "para azulejo 15×15", personalizacao: SEM_PERSONALIZACAO }),
-  lembranca("Chaveiro de acrílico", 10, "botton", { codigo: "CHA-ACR", formato: "quadrado", variacoes: [grupoModelo("Modelo", ["Quadrado", { nome: "Com tessel", preco: 5 }])], peso: 0.03 }),
+  lembranca("Chaveiro de acrílico", 10, "botton", { codigo: "CHA-ACR", formato: "quadrado", variacoes: [grupoCor("Cor do fundo", CORES_DO_FUNDO, "peca"), grupoModelo("Modelo", ["Quadrado", { nome: "Com tessel", preco: 5 }])], peso: 0.03 }),
   lembranca("Potinho do amor", 30, "caixa", { codigo: "POT-AMO", medida: "3 fotos, flores secas e sacola", categorias: ["lembrancas", "namorados", "dia-das-maes"], personalizacao: { ...PERSONALIZACAO_PLANA, artes: [], fotos: { min: 3, max: 3, formato: "quadrado" } } }),
-  lembranca("Espelho de bolsa", 29, "botton", { codigo: "ESP-BOL", medida: "7×7 cm", peso: 0.05 }),
+  lembranca("Espelho de bolsa", 29, "botton", { variacoes: [grupoCor("Cor do fundo", CORES_DO_FUNDO, "peca")], codigo: "ESP-BOL", medida: "7×7 cm", peso: 0.05 }),
   lembranca("Quebra-cabeça personalizado", 20, "plano", { codigo: "QUE", variacoes: [grupoModelo("Peças", ["24 peças", { nome: "48 peças", preco: 10 }, { nome: "60 peças", preco: 20 }])] }),
   lembranca("Mousepad personalizado", 25, "plano", { codigo: "MOU", categorias: ["lembrancas", "empresas", "professores", "dia-dos-pais"], variacoes: [grupoModelo("Modelo", ["Retangular", { nome: "Com apoio", preco: 10 }, { nome: "Ergonômico", preco: 12 }])] }),
   lembranca("Toalhinha de lavabo", 18, "plano", { codigo: "TOA", medida: "bordado com nome", personalizacao: { ...PERSONALIZACAO_SO_NOME, fotos: { min: 0, max: 0 } } }),
   lembranca("Máscara de neoprene", 25, "plano", { codigo: "MAS" }),
   lembranca("Mini polaroid de mesa", 40, "plano", { codigo: "POL", medida: "8×10 cm", personalizacao: { ...PERSONALIZACAO_PLANA, artes: ["fotos"], fotos: { min: 1, max: 1, formato: "quadrado" } } }),
 
-  botton("Botton broche pequeno", "3,2 cm", 4, 3.5, { codigo: "BOT-P" }),
-  botton("Botton broche médio", "4,4 cm", 5, 4.5, { codigo: "BOT-M" }),
-  botton("Botton broche grande", "5,5 cm", 6.5, 5.5, { codigo: "BOT-G" }),
-  botton("Ímã de botton", "5,5 cm", 5.5, 4.5, { codigo: "BOT-IMA" }),
-  botton("Chaveiro abridor de garrafa", "4,4 cm", 12, 10, { codigo: "BOT-ABR", categorias: ["botons", "lembrancas", "empresas", "dia-dos-pais"] }),
+  botton("Botton broche pequeno", "3,2 cm", 4, 3.5, { variacoes: [grupoCor("Cor do fundo", CORES_DO_FUNDO, "peca")], codigo: "BOT-P" }),
+  botton("Botton broche médio", "4,4 cm", 5, 4.5, { variacoes: [grupoCor("Cor do fundo", CORES_DO_FUNDO, "peca")], codigo: "BOT-M" }),
+  botton("Botton broche grande", "5,5 cm", 6.5, 5.5, { variacoes: [grupoCor("Cor do fundo", CORES_DO_FUNDO, "peca")], codigo: "BOT-G" }),
+  botton("Ímã de botton", "5,5 cm", 5.5, 4.5, { variacoes: [grupoCor("Cor do fundo", CORES_DO_FUNDO, "peca")], codigo: "BOT-IMA" }),
+  botton("Chaveiro abridor de garrafa", "4,4 cm", 12, 10, { variacoes: [grupoCor("Cor do fundo", CORES_DO_FUNDO, "peca")], codigo: "BOT-ABR", categorias: ["botons", "lembrancas", "empresas", "dia-dos-pais"] }),
 
   acessorio("Tampa de bambu para caneca", 18, "caixa", { codigo: "ACE-TAM" }),
   acessorio("Pires de madeira", 17, "caixa", { codigo: "ACE-PIR" }),
