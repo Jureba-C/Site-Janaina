@@ -418,6 +418,27 @@ function corpoCilindrico(idBase: string, x: number, y: number, w: number, h: num
   );
 }
 
+function TopoDaGarrafa({ x, topoDoCorpo, w, cor, idBase }: { x: number; topoDoCorpo: number; w: number; cor: string; idBase: string }) {
+  const cx = x + w / 2;
+  const gargalo = w * 0.22;
+  const pescoco = topoDoCorpo - 32;
+  const ombro = `M${x} ${topoDoCorpo + 6}V${topoDoCorpo}C${x} ${topoDoCorpo - 18} ${cx - gargalo - 2} ${pescoco + 8} ${cx - gargalo} ${pescoco}H${cx + gargalo}C${cx + gargalo + 2} ${pescoco + 8} ${x + w} ${topoDoCorpo - 18} ${x + w} ${topoDoCorpo}V${topoDoCorpo + 6}Z`;
+  const tampa = escurecer(cor, 0.45);
+  const larguraDaTampa = w * 0.5;
+  const topoDaTampa = pescoco - 36;
+  return (
+    <g>
+      <circle cx={cx} cy={topoDaTampa - 6} r={8} fill="none" stroke={tampa} strokeWidth={4} />
+      <rect x={cx - gargalo + 2} y={pescoco - 8} width={2 * gargalo - 4} height={12} fill={escurecer(cor, 0.12)} />
+      <rect x={cx - larguraDaTampa / 2} y={topoDaTampa} width={larguraDaTampa} height={30} rx={7} fill={tampa} />
+      {[8, 15, 22].map(d => <path key={d} d={`M${cx - larguraDaTampa / 2 + 3} ${topoDaTampa + d}h${larguraDaTampa - 6}`} stroke="#fff" strokeOpacity={0.16} strokeWidth={1.5} />)}
+      <path d={`M${cx - larguraDaTampa / 2 + 7} ${topoDaTampa + 5}v20`} stroke="#fff" strokeOpacity={0.22} strokeWidth={3} strokeLinecap="round" />
+      <path d={ombro} fill={cor} />
+      <path d={ombro} fill={`url(#${idBase}-luz)`} />
+    </g>
+  );
+}
+
 function superficiePlana(forma: string, x: number, y: number, largura: number, altura: number): Superficie {
   return { forma, cx: x + largura / 2, cy: y + altura / 2, raio: 0, altura, luz: null, plana: { x, y, largura, altura } };
 }
@@ -467,8 +488,17 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
     return {
       corpo: (
         <g>
-          {termico ? null : <rect x={x + 30} y={y - 38} width={w - 60} height={30} rx={8} fill={escurecer(cores.peca, 0.25)} />}
-          {termico ? <rect x={x - 4} y={y - 22} width={w + 8} height={26} rx={10} fill={escurecer(cores.peca, 0.3)} /> : <path d={`M${x + 22} ${y - 8}h${w - 44}l20 30h${-(w + 4)}z`} fill={cores.peca} />}
+          {termico ? (
+            <g>
+              <rect x={x + 6} y={y - 30} width={w - 12} height={22} rx={10} fill={escurecer(cores.peca, 0.38)} />
+              <rect x={x + w / 2 + 8} y={y - 26} width={30} height={5} rx={2.5} fill={escurecer(cores.peca, 0.7)} />
+              <rect x={x - 4} y={y - 12} width={w + 8} height={32} rx={8} fill={escurecer(cores.peca, 0.3)} />
+              <path d={`M${x + 2} ${y - 4}h${w - 4}`} stroke="#fff" strokeOpacity={0.18} strokeWidth={2} />
+              <path d={`M${x + 2} ${y + 12}h${w - 4}`} stroke="#000" strokeOpacity={0.12} strokeWidth={2} />
+            </g>
+          ) : (
+            <TopoDaGarrafa x={x} topoDoCorpo={y + 20} w={w} cor={cores.peca} idBase={idBase} />
+          )}
           {corpoCilindrico(idBase, x, y + 20, w, h - 20, cores.peca, 22)}
         </g>
       ),
@@ -496,17 +526,44 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
       };
     }
     const w = formato === "chopp" ? 180 : 160, h = formato === "cerveja" ? 290 : 260, x = formato === "chopp" ? 80 : 100, y = 80;
+    const afina = formato === "cerveja" ? 24 : formato === "chopp" ? 6 : 12;
+    const forma = `M${x} ${y}h${w}l${-afina} ${h}h${-(w - 2 * afina)}z`;
+    const comTampa = formato === "" || formato === "jateado";
+    const cx = x + w / 2;
+    const fundo = 20;
+    const recuoNoFundo = afina * (1 - fundo / h);
     return {
-      sob: formato === "chopp" ? alcaCaneca("frente", x + w - 4, y + 10, h * 0.8, "rgba(210,225,230,.9)", false) : null,
+      sob: formato === "chopp" ? alcaCaneca("frente", x + w - 6, y + 14, h * 0.78, "rgba(226,236,240,.92)", false) : null,
       corpo: (
         <g>
-          <path d={`M${x} ${y}h${w}l-10 ${h}h${-(w - 20)}z`} fill={vidro} stroke="rgba(120,140,150,.45)" strokeWidth={2} />
-          {formato === "" ? <g><rect x={x - 4} y={y - 20} width={w + 8} height={20} rx={6} fill="#C9A26B" /><path d={`M${x + w * 0.6} ${y - 70}l-10 ${h * 0.5}`} stroke="#B9C7C9" strokeWidth={8} strokeLinecap="round" /></g> : null}
-          <path d={`M${x + 16} ${y + 20}v${h - 60}`} stroke="rgba(255,255,255,.7)" strokeWidth={8} strokeLinecap="round" />
+          <defs>
+            <linearGradient id={`${idBase}-vidro`} x1="0" x2="1">
+              <stop offset="0" stopColor="#5E7480" stopOpacity={jateado ? 0.14 : 0.22} />
+              <stop offset="0.12" stopColor="#fff" stopOpacity={jateado ? 0.35 : 0.55} />
+              <stop offset="0.3" stopColor="#fff" stopOpacity="0" />
+              <stop offset="0.78" stopColor="#5E7480" stopOpacity="0.04" />
+              <stop offset="1" stopColor="#5E7480" stopOpacity={jateado ? 0.18 : 0.26} />
+            </linearGradient>
+          </defs>
+          <path d={forma} fill={vidro} />
+          <path d={forma} fill={`url(#${idBase}-vidro)`} stroke="rgba(110,130,140,.5)" strokeWidth={2} strokeLinejoin="round" />
+          <path d={`M${x + recuoNoFundo + 3} ${y + h - fundo}h${w - 2 * recuoNoFundo - 6}l${-(afina - recuoNoFundo)} ${fundo - 3}h${-(w - 2 * afina - 6)}z`} fill="rgba(190,208,214,.5)" />
+          <path d={`M${x + recuoNoFundo + 6} ${y + h - fundo}h${w - 2 * recuoNoFundo - 12}`} stroke="rgba(255,255,255,.7)" strokeWidth={2} strokeLinecap="round" />
+          {comTampa ? null : <ellipse cx={cx} cy={y} rx={w / 2 - 1} ry={9} fill="rgba(255,255,255,.35)" stroke="rgba(110,130,140,.5)" strokeWidth={2} />}
+          <path d={`M${x + 16} ${y + 24}l${afina * 0.5} ${h - 70}`} stroke="rgba(255,255,255,.75)" strokeWidth={7} strokeLinecap="round" />
+          <path d={`M${x + w - 18} ${y + 30}l${-afina * 0.4} ${h * 0.35}`} stroke="rgba(255,255,255,.45)" strokeWidth={3} strokeLinecap="round" />
+          {comTampa ? (
+            <g>
+              <path d={`M${x + w * 0.62} ${y - 72}l-12 ${h * 0.55}`} stroke="#B9C7C9" strokeWidth={8} strokeLinecap="round" />
+              <rect x={x - 5} y={y - 16} width={w + 10} height={18} rx={7} fill="#C9A26B" />
+              <rect x={x - 5} y={y - 16} width={w + 10} height={5} rx={3} fill="#DDBB8A" />
+              <path d={`M${x + 4} ${y - 4}h${w - 8}`} stroke="#A9814F" strokeOpacity={0.5} strokeWidth={1.5} />
+            </g>
+          ) : null}
         </g>
       ),
-      superficie: { forma: `M${x} ${y}h${w}l-10 ${h}h${-(w - 20)}z`, cx: x + w / 2, cy: y + h / 2, raio: w / 2, altura: h * 0.9, luz: null },
-      frenteDaArte: { cx: x + w / 2, cy: y + h * 0.48, largura: w * 0.84, altura: h * 0.56, raio: w / 2 },
+      superficie: { forma, cx, cy: y + h / 2, raio: w / 2, altura: h * 0.9, luz: null },
+      frenteDaArte: { cx, cy: y + h * 0.48, largura: w * 0.84, altura: h * 0.56, raio: w / 2 },
     };
   }
   if (molde === "azulejo") {
@@ -522,6 +579,21 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
       corpo: <g><rect x={40} y={90} width={280} height={210} rx={22} fill={escurecer(cores.peca, 0.08)} /><rect x={46} y={96} width={268} height={198} rx={18} fill={cores.peca} /></g>,
       superficie: superficiePlana("M64 96h232a18 18 0 0 1 18 18v162a18 18 0 0 1 -18 18h-232a18 18 0 0 1 -18 -18v-162a18 18 0 0 1 18 -18z", 46, 96, 268, 198),
       frenteDaArte: { cx: 180, cy: 195, largura: 240, altura: 170, raio: null },
+    };
+  }
+  if (molde === "botton" && formato === "quadrado") {
+    return {
+      corpo: (
+        <g>
+          <circle cx={180} cy={52} r={18} fill="none" stroke="#A7ADB2" strokeWidth={5} />
+          <rect x={64} y={74} width={232} height={232} rx={30} fill="rgba(255,255,255,.55)" stroke="rgba(110,130,140,.45)" strokeWidth={2} />
+          <rect x={74} y={84} width={212} height={212} rx={22} fill={cores.peca} />
+          <circle cx={180} cy={92} r={9} fill="#EFE2D3" stroke="rgba(110,130,140,.45)" strokeWidth={2} />
+        </g>
+      ),
+      sobre: <path d="M84 128c6-20 18-32 40-38" stroke="#fff" strokeOpacity=".75" strokeWidth={7} fill="none" strokeLinecap="round" />,
+      superficie: superficiePlana("M96 106h168a12 12 0 0 1 12 12v156a12 12 0 0 1 -12 12h-168a12 12 0 0 1 -12 -12v-156a12 12 0 0 1 12 -12z", 84, 106, 192, 180),
+      frenteDaArte: { cx: 180, cy: 200, largura: 176, altura: 160, raio: null },
     };
   }
   if (molde === "botton") {
@@ -587,6 +659,12 @@ interface CaixaDaPeca {
   direita: number;
 }
 
+const CAIXA_DO_CHAVEIRO: CaixaDaPeca = { topo: 32, base: 306, esquerda: 64, direita: 296 };
+
+function caixaDaPeca(molde: Molde, formato: string): CaixaDaPeca | undefined {
+  return molde === "botton" && formato === "quadrado" ? CAIXA_DO_CHAVEIRO : CAIXAS_PLANAS[molde];
+}
+
 const CAIXAS_PLANAS: Partial<Record<Molde, CaixaDaPeca>> = {
   azulejo: { topo: 70, base: 356, esquerda: 70, direita: 290 },
   plano: { topo: 90, base: 300, esquerda: 40, direita: 320 },
@@ -599,12 +677,12 @@ function baseDaPeca(molde: Molde, formato: string): number {
   if (molde === "xicara") return 290;
   if (molde === "caneca") return 340;
   if (molde === "copo") return formato === "whisky" ? 320 : formato === "mason" ? 350 : formato === "cerveja" ? 370 : 340;
-  return CAIXAS_PLANAS[molde]?.base ?? 362;
+  return caixaDaPeca(molde, formato)?.base ?? 362;
 }
 
 function Sombra({ molde, formato, centro, raio }: { molde: Molde; formato: string; centro: number | null; raio: number | null }) {
   if (molde === "foto" || molde === "nenhum") return null;
-  const caixa = CAIXAS_PLANAS[molde];
+  const caixa = caixaDaPeca(molde, formato);
   const rx = raio ? raio * 1.18 : molde === "garrafa" ? 90 : caixa ? (caixa.direita - caixa.esquerda) * 0.46 : 140;
   const cy = baseDaPeca(molde, formato);
   return <ellipse cx={centro ?? 180} cy={cy} rx={rx} ry={raio ? 9 : 10} fill="rgba(80, 40, 20, 0.16)" />;
@@ -621,12 +699,12 @@ interface EncaixeNoEstudio {
   frente?: ReactNode;
 }
 
-function encaixeNoEstudio(molde: Molde): EncaixeNoEstudio | null {
-  const caixa = CAIXAS_PLANAS[molde];
+function encaixeNoEstudio(molde: Molde, formato: string): EncaixeNoEstudio | null {
+  const caixa = caixaDaPeca(molde, formato);
   if (!caixa) return null;
   const largura = caixa.direita - caixa.esquerda;
   const centro = (caixa.esquerda + caixa.direita) / 2;
-  if (molde === "botton") {
+  if (molde === "botton" && formato !== "quadrado") {
     const escala = 0.76;
     const base = 314;
     const transformacao = `translate(${(180 - centro * escala).toFixed(2)} ${(base - caixa.base * escala).toFixed(2)}) scale(${escala})`;
@@ -796,7 +874,7 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
   ) : null;
   const emPe = Boolean(area.raio) && ["caneca", "xicara", "garrafa", "copo"].includes(molde);
   const deslocamento = noEstudio && emPe ? 180 - area.cx : 0;
-  const encaixe = noEstudio && !emPe ? encaixeNoEstudio(molde) : null;
+  const encaixe = noEstudio && !emPe ? encaixeNoEstudio(molde, config.formato) : null;
   return (
     <g transform={deslocamento ? `translate(${deslocamento} 0)` : undefined}>
       {noEstudio && emPe ? <BandejaNoSvg cx={area.cx} cy={baseDaPeca(molde, config.formato) + 4} rx={(area.raio ?? 110) * 1.75} /> : null}

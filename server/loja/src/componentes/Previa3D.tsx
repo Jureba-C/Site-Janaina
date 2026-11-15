@@ -34,7 +34,7 @@ const COPOS: Record<string, Forma> = {
   chopp: { raio: 90, base: 0.94, altura: 230, arte: { cy: 0.5, largura: 151, altura: 140 }, vidro: "claro", fundoGrosso: 30, alca: true, alcaDeVidro: true },
   whisky: { raio: 105, base: 0.98, altura: 170, arte: { cy: 0.45, largura: 172, altura: 102 }, vidro: "claro", fundoGrosso: 34 },
   mason: { raio: 85, base: 1, altura: 220, arte: { cy: 0.5, largura: 143, altura: 150 }, vidro: "claro", fundoGrosso: 16, topo: "mason" },
-  jateado: { raio: 80, base: 0.88, altura: 260, arte: { cy: 0.48, largura: 134, altura: 146 }, vidro: "fosco", fundoGrosso: 22 },
+  jateado: { raio: 80, base: 0.88, altura: 260, arte: { cy: 0.48, largura: 134, altura: 146 }, vidro: "fosco", fundoGrosso: 22, topo: "bambu" },
 };
 
 function formaDaPeca(config: ConfigProduto): Forma {

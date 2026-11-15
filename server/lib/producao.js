@@ -45,8 +45,8 @@ function semSvgExterno(svg){
   return svg.slice(inicio, fim).replace(/<style>[\s\S]*?<\/style>/, "");
 }
 
-function camadaDaEstampa(estampa, largura, altura, molde){
-  const redondo = molde === "botton";
+function camadaDaEstampa(estampa, largura, altura, molde, formato){
+  const redondo = molde === "botton" && formato !== "quadrado";
   const recorte = redondo ? `<defs><clipPath id="RecorteDaEstampa"><circle cx="${largura / 2}" cy="${altura / 2}" r="${Math.min(largura, altura) / 2}"/></clipPath></defs>` : "";
   const atributo = redondo ? ` clip-path="url(#RecorteDaEstampa)"` : "";
   const conteudo = estampa.svg
@@ -104,7 +104,7 @@ async function arquivoDeProducao({ config, escolhas, lerFoto, svgDaArte, titulo,
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${largura}mm" height="${altura}mm" viewBox="0 0 ${largura} ${altura}">
 <title>${String(titulo).replace(/[<&>]/g, "")}</title>
-${estampa ? camadaDaEstampa(estampa, largura, altura, config.molde) : ""}<g id="Arte">${grupos.join("")}</g>
+${estampa ? camadaDaEstampa(estampa, largura, altura, config.molde, config.formato) : ""}<g id="Arte">${grupos.join("")}</g>
 <g id="Guias" opacity="0.8">${guias.join("")}</g>
 </svg>
 `;

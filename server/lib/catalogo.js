@@ -265,7 +265,7 @@ const LISTA = [
 
   lembranca("Azulejo personalizado com suporte", 30, "azulejo", { codigo: "AZU", medida: "10×10, 15×15 ou 20×20 cm", variacoes: [grupoModelo("Tamanho", ["10×10 cm", { nome: "15×15 cm", preco: 8 }, { nome: "20×20 cm", preco: 12 }], "tamanho")], cuidados: "Limpe com pano úmido. O suporte acompanha.", peso: 0.4, caixa: { largura: 22, altura: 6, comprimento: 22 } }),
   lembranca("Base de madeira com mini buquê", 17, "flor", { codigo: "AZU-BAS", categorias: ["lembrancas", "acessorios-e-embalagens"], medida: "para azulejo 15×15", personalizacao: SEM_PERSONALIZACAO }),
-  lembranca("Chaveiro de acrílico", 10, "botton", { codigo: "CHA-ACR", variacoes: [grupoModelo("Modelo", ["Quadrado", { nome: "Com tessel", preco: 5 }])], peso: 0.03 }),
+  lembranca("Chaveiro de acrílico", 10, "botton", { codigo: "CHA-ACR", formato: "quadrado", variacoes: [grupoModelo("Modelo", ["Quadrado", { nome: "Com tessel", preco: 5 }])], peso: 0.03 }),
   lembranca("Potinho do amor", 30, "caixa", { codigo: "POT-AMO", medida: "3 fotos, flores secas e sacola", categorias: ["lembrancas", "namorados", "dia-das-maes"], personalizacao: { ...PERSONALIZACAO_PLANA, artes: [], fotos: { min: 3, max: 3, formato: "quadrado" } } }),
   lembranca("Espelho de bolsa", 29, "botton", { codigo: "ESP-BOL", medida: "7×7 cm", peso: 0.05 }),
   lembranca("Quebra-cabeça personalizado", 20, "plano", { codigo: "QUE", variacoes: [grupoModelo("Peças", ["24 peças", { nome: "48 peças", preco: 10 }, { nome: "60 peças", preco: 20 }])] }),
