@@ -29,11 +29,8 @@ const CAMINHOS = {
   tampa: "M4 12h16M6 12a6 3 0 0 0 12 0M5 12a7 2 0 0 1 14 0",
   buque: "M12 21v-9M12 12l-4-5M12 12l4-5M8 7a2 2 0 1 0 0-.1M16 7a2 2 0 1 0 0-.1M12 6a2 2 0 1 0 0-.1M9 21h6",
   caixaMdf: "M4 9h16v11H4zM3 6h18v3H3zM9 13h6",
-  zoomMais: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5M8 11h6M11 8v6",
-  zoomMenos: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5M8 11h6",
   calor: "M12 3c2 3-2 4 0 7s-2 4 0 7M7 6c1.5 2.5-1.5 3.5 0 6M17 6c1.5 2.5-1.5 3.5 0 6M5 21h14",
   filtro: "M4 6h16M7 12h10M10 18h4",
-  topo: "M6 15l6-6 6 6",
   girar: "M4 12a8 8 0 0 1 13.7-5.7L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.7L4 15.5M4 20v-4.5h4.5",
   girarFoto: "M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5",
   espelhar: "M12 3v18M9 7l-5 5 5 5zM15 7l5 5-5 5z",
@@ -49,6 +46,3 @@ export function Icone({ nome, tamanho = 22, traco = 1.7, className }: { nome: No
   );
 }
 
-export function caminhoDoIcone(nome: NomeIcone): string {
-  return CAMINHOS[nome];
-}

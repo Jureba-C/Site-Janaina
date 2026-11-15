@@ -133,12 +133,9 @@ function pecaDoItem(item, overridesMap){
   };
 }
 
-function nomeDoLote(peca){
-  return [peca.produto, peca.variacao, peca.estampa ? `estampa ${peca.estampa}` : ""].filter(Boolean).join(" · ");
-}
 
 module.exports = {
-  pecaDoItem, nomeDoLote,
+  pecaDoItem,
   PRAZO_PADRAO_DIAS_UTEIS, ehDiaUtil, somarDiasUteis, prazoDoPedido, textoDoPrazo,
   precisaAprovarArte, etapaDoPedido, rotuloDaEtapa, ehRetiradaDoPedido, itensDoPedido,
 };

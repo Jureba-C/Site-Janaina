@@ -63,17 +63,6 @@
     return `${plan.count}x de ${formatMoney(plan.value)} ${plan.interestFree ? "sem juros" : "com juros"}`;
   }
 
-  function paymentSummaryFor(amount) {
-    const total = round2(amount);
-    return {
-      price: total,
-      pixPrice: pixPriceFor(total),
-      pixSavings: pixDiscountFor(total),
-      pixDiscountPercent: PAYMENT_RULES.pixDiscountPercent,
-      installment: installmentPlanFor(total),
-      installmentLabel: installmentLabelFor(total),
-    };
-  }
 
   return {
     PAYMENT_RULES,
@@ -85,6 +74,5 @@
     installmentCountFor,
     installmentPlanFor,
     installmentLabelFor,
-    paymentSummaryFor,
   };
 });

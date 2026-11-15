@@ -354,7 +354,6 @@ const PRODUCT_BADGES = ["Mais pedida", "Novidade", "Coleção Brasília", "Prefe
 
 const CUSTOM_PRODUCT_ID_START = 1000;
 
-const CATEGORIAS_APOSENTADAS = [];
 
 function getAllCategories(){
   const lista = [
@@ -368,15 +367,6 @@ function isValidCategorySlug(slug){
   return getAllCategories().some(c => c.slug === slug);
 }
 
-function categoriasEmUso(){
-  const overridesMap = getProductOverridesMap();
-  const usadas = new Set();
-  for (const id of getAllProductIds()) {
-    const p = effectiveProduct(id, overridesMap);
-    for (const cat of p?.config?.categorias || []) usadas.add(cat);
-  }
-  return usadas;
-}
 
 function getProductOverridesMap(){
   const map = new Map();
@@ -465,8 +455,6 @@ module.exports = {
   PRODUCT_CATEGORIES,
   PRODUCT_BADGES,
   CUSTOM_PRODUCT_ID_START,
-  CATEGORIAS_APOSENTADAS,
-  categoriasEmUso,
   getAllCategories,
   isValidCategorySlug,
   getProductOverridesMap,

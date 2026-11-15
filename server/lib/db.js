@@ -794,9 +794,6 @@ const stmtGuardaTotpPendente = db.prepare(`UPDATE users SET totp_pendente = ?, t
 function guardarTotpPendente(userId, segredo){
   stmtGuardaTotpPendente.run(cofre.cifrar(segredo), Date.now(), userId);
 }
-function limparTotpPendente(userId){
-  stmtLimpaTotpPendente.run(userId);
-}
 const stmtPassoTotp = db.prepare(
   `UPDATE users SET totp_ultimo_passo = ? WHERE id = ? AND (totp_ultimo_passo IS NULL OR totp_ultimo_passo < ?)`
 );
@@ -918,7 +915,6 @@ const stmtSetMelhorEnvioShipmentId = db.prepare(
 const stmtOrderStats = db.prepare(
   `SELECT COUNT(*) AS count, COALESCE(SUM(total), 0) AS revenue FROM orders WHERE status = 'pago'`
 );
-const stmtDeleteOrder = db.prepare(`DELETE FROM orders WHERE external_reference = ?`);
 
 function createOrder(order) {
   const now = Date.now();
@@ -1100,9 +1096,6 @@ function setMelhorEnvioShipmentId(ref, shipmentId) {
 function getOrderStats() {
   return stmtOrderStats.get();
 }
-function deleteOrder(ref) {
-  stmtDeleteOrder.run(ref);
-}
 
 db.exec(`
   UPDATE orders SET pagamento_aprovado_id = payment_id, efeitos_pagamento_em = COALESCE(pago_em, updated_at)
@@ -1136,8 +1129,6 @@ function registrarPagamentoMp(info){
     info.currency_id ?? null, info.payment_type_id ?? null, info.payment_method_id ?? null, agora, agora
   );
 }
-const stmtPagamentosDoPedido = db.prepare(`SELECT * FROM pagamentos_mp WHERE pedido = ? ORDER BY criado_em`);
-function listarPagamentosDoPedido(ref){ return stmtPagamentosDoPedido.all(ref); }
 
 const stmtTrocaStatus = db.prepare(`
   UPDATE orders SET
@@ -1333,11 +1324,6 @@ function saveHeroPhotoVariant(photoId, width, format, mimeType, buffer){
   stmtInsertHeroVariant.run(photoId, width, format, mimeType, buffer, Date.now());
 }
 
-function heroVersion(){
-  const linhas = stmtListHeroPhotos.all();
-  if(!linhas.length) return "0";
-  return linhas.map(f => `${f.id}:${f.position}:${f.focus}:${f.alt.length}:${f.legenda.length}`).join("|");
-}
 
 const stmtListDepoimentos = db.prepare(
   `SELECT id, texto, cliente_nome, cliente_cidade, origem, photo_id,
@@ -1376,9 +1362,6 @@ function depoimentosPublicados(limite){
 }
 function contarDepoimentosPublicados(){
   return stmtContarDepoimentos.get().n;
-}
-function getDepoimento(id){
-  return stmtGetDepoimento.get(id) || null;
 }
 function criarDepoimento({ texto, nome, cidade, origem, photoId, consentimentoEm }){
   const agora = Date.now();
@@ -1574,11 +1557,6 @@ const stmtUpdateCustomCategoryLabel = db.prepare(
   `UPDATE custom_categories SET label = ? WHERE slug = ?`
 );
 const stmtDeleteCustomCategory = db.prepare(`DELETE FROM custom_categories WHERE slug = ?`);
-const stmtCountProductsUsingCategory = db.prepare(`
-  SELECT
-    (SELECT COUNT(*) FROM product_overrides WHERE category = ?) +
-    (SELECT COUNT(*) FROM custom_products WHERE category = ?) AS total
-`);
 
 function listCustomCategories() {
   return stmtListCustomCategories.all();
@@ -1593,9 +1571,6 @@ function updateCustomCategoryLabel(slug, label) {
 }
 function deleteCustomCategory(slug) {
   stmtDeleteCustomCategory.run(slug);
-}
-function countProductsUsingCategory(slug) {
-  return stmtCountProductsUsingCategory.get(slug, slug).total;
 }
 
 const stmtListCustomColors = db.prepare(`SELECT * FROM custom_colors ORDER BY created_at`);
@@ -2322,7 +2297,6 @@ const stmtMoveEstampa = db.prepare(`UPDATE estampas SET position = ?, updated_at
 const stmtPedidosComEstampa = db.prepare(
   `SELECT COUNT(*) AS n FROM orders WHERE status = 'pago' AND IFNULL(fulfillment_status, '') <> 'entregue' AND items_json LIKE ?`
 );
-const stmtVersaoEstampas = db.prepare(`SELECT COUNT(*) AS n, IFNULL(MAX(updated_at), 0) AS t FROM estampas`);
 
 function moldesDaEstampa(texto){
   try {
@@ -2354,10 +2328,6 @@ function ordenarEstampas(ids){
   db.exec("BEGIN");
   try { ids.forEach((id, i) => stmtMoveEstampa.run(i, agora, id)); db.exec("COMMIT"); }
   catch (err) { db.exec("ROLLBACK"); throw err; }
-}
-function versaoDasEstampas(){
-  const v = stmtVersaoEstampas.get();
-  return `${v.n}.${v.t}`;
 }
 
 const CAMPOS_CIFRADOS = {
@@ -2444,7 +2414,6 @@ module.exports = {
   apagarEstampa,
   pedidosAbertosComEstampa,
   ordenarEstampas,
-  versaoDasEstampas,
   avaliacoesDoProduto,
   DIAS_FOTOS_APOS_ENTREGA,
   inserirFotoPersonalizacao,
@@ -2525,7 +2494,6 @@ module.exports = {
   apagarSessaoDoUsuario,
   apagarTodasAsSessoes,
   guardarTotpPendente,
-  limparTotpPendente,
   registrarPassoTotp,
   falhasDaConta,
   trocarCodigosDeRecuperacao,
@@ -2571,9 +2539,7 @@ module.exports = {
   markOrderDelivered,
   setMelhorEnvioShipmentId,
   getOrderStats,
-  deleteOrder,
   registrarPagamentoMp,
-  listarPagamentosDoPedido,
   trocarStatusDoPedido,
   reservarEfeitosDoPagamento,
   reservarEtiqueta,
@@ -2604,11 +2570,9 @@ module.exports = {
   setHeroPhotoOrder,
   getHeroPhotoVariant,
   saveHeroPhotoVariant,
-  heroVersion,
   listarDepoimentos,
   depoimentosPublicados,
   contarDepoimentosPublicados,
-  getDepoimento,
   criarDepoimento,
   atualizarDepoimento,
   removerDepoimento,
@@ -2627,7 +2591,6 @@ module.exports = {
   insertCustomCategory,
   updateCustomCategoryLabel,
   deleteCustomCategory,
-  countProductsUsingCategory,
   listCustomColors,
   insertCustomColor,
   deleteCustomColor,

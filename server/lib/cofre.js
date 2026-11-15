@@ -66,9 +66,6 @@ function decifrar(valor){
   return Buffer.concat([decifra.update(Buffer.from(corpo, "base64url")), decifra.final()]).toString("utf8");
 }
 
-function kidDe(valor){
-  return cifrado(valor) ? valor.split(".")[1] : null;
-}
 
 function indiceCego(valor){
   if(valor == null || valor === "") return null;
@@ -103,7 +100,6 @@ module.exports = {
   cifrar,
   decifrar,
   cifrado,
-  kidDe,
   indiceCego,
   abrirLinha,
   envolverDeclaracao,

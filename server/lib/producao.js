@@ -2,8 +2,6 @@ const sharp = require("sharp");
 const { textoEmCurvas } = require("./texto-em-curvas.js");
 const regras = require("../js/regras-produto.js");
 
-const GABARITOS = regras.MEDIDAS_DO_MOLDE;
-
 const ARTE_POR_MOLDE = {
   caneca: { largura: 189, altura: 194 },
   xicara: { largura: 184, altura: 98 },
@@ -121,4 +119,4 @@ ${estampa ? camadaDaEstampa(estampa, largura, altura, config.molde, config.forma
 `;
 }
 
-module.exports = { arquivoDeProducao, gabaritoDoItem, GABARITOS };
+module.exports = { arquivoDeProducao, gabaritoDoItem };

@@ -53,9 +53,6 @@ function alturaAcima(forma: Forma): number {
   return 0;
 }
 
-export function temPrevia3D(config: ConfigProduto): boolean {
-  return ["caneca", "xicara", "garrafa", "copo"].includes(config.molde) && config.personalizacao.ativa;
-}
 
 const ESCALA = 100;
 const FOLGA = 0.16;

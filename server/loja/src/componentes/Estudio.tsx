@@ -52,15 +52,6 @@ function DesenhoDaBandeja({ id }: { id: string }) {
   );
 }
 
-export function BandejaDeMadeira({ className }: { className?: string }) {
-  const id = useId().replace(/[^a-zA-Z0-9]/g, "");
-  return (
-    <svg className={`estudio-bandeja${className ? ` ${className}` : ""}`} viewBox="0 0 600 150" aria-hidden="true" focusable="false">
-      <DesenhoDaBandeja id={id} />
-    </svg>
-  );
-}
-
 export function BandejaNoSvg({ cx, cy, rx }: { cx: number; cy: number; rx: number }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
   const escala = rx / 290;
