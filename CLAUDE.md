@@ -89,6 +89,8 @@ e que nenhum dado da Adriana voltou.
 | Produtos, categorias (tipo e ocasião), selos | `lib/catalogo.js` e painel (Produtos) |
 | Variações, adicionais, faixas de quantidade, personalização por produto | painel → editar produto (`js/admin-loja.js`); regras em `js/regras-produto.js` (servidor e loja) |
 | Moldes da prévia e arte | `loja/src/componentes/Previa.tsx` (SVG) e `Previa3D.tsx` |
+| Lugar de cada peça no estúdio (arco, bandeja, suporte do boton, cavalete do azulejo) | `CAIXAS_PLANAS` e `encaixeNoEstudio` em `Previa.tsx` (caneca, xícara, garrafa e copo usam a bandeja de sempre) |
+| Formato 3D de garrafa, térmico, copos (reto, cerveja, chopp, whisky, mason, jateado) e xícara com pires | `formaDaPeca`, `FORMAS` e `COPOS` em `Previa3D.tsx`; a faixa de impressão continua um cilindro, o resto (ombro, tampa, fundo grosso, alça de vidro, pires) é montado em volta |
 | Arquivo para Corel/Illustrator | `lib/producao.js` (gabaritos em mm) e `lib/texto-em-curvas.js` (fontes em `lib/fontes/`) |
 | Peso e caixa para o frete | painel → produto; cálculo em `lib/empacotamento.js` |
 | Retirada grátis | `OPCAO_RETIRADA` e `LOCAL_DE_RETIRADA` no `server.js` |

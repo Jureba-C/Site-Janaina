@@ -15,17 +15,43 @@ interface Forma {
   altura: number;
   arte: { cy: number; largura: number; altura: number };
   alca?: boolean;
+  alcaDeVidro?: boolean;
   pires?: boolean;
-  tampa?: boolean;
-  vidro?: boolean;
+  vidro?: "claro" | "fosco";
+  fundoGrosso?: number;
+  topo?: "garrafa" | "termico" | "mason" | "bambu";
 }
 
 const FORMAS: Record<string, Forma> = {
   caneca: { raio: 110, base: 1, altura: 262, arte: { cy: 0.52, largura: 189, altura: 194 }, alca: true },
   xicara: { raio: 118, base: 0.72, altura: 158, arte: { cy: 0.42, largura: 184, altura: 98 }, alca: true, pires: true },
-  garrafa: { raio: 66, base: 1, altura: 280, arte: { cy: 0.5, largura: 121, altura: 168 }, tampa: true },
-  copo: { raio: 80, base: 0.88, altura: 260, arte: { cy: 0.48, largura: 134, altura: 146 }, vidro: true },
+  garrafa: { raio: 66, base: 1, altura: 240, arte: { cy: 0.5, largura: 121, altura: 168 }, topo: "garrafa" },
+  copo: { raio: 80, base: 0.88, altura: 260, arte: { cy: 0.48, largura: 134, altura: 146 }, vidro: "claro", fundoGrosso: 22, topo: "bambu" },
 };
+
+const COPOS: Record<string, Forma> = {
+  cerveja: { raio: 82, base: 0.7, altura: 290, arte: { cy: 0.48, largura: 134, altura: 162 }, vidro: "fosco", fundoGrosso: 26 },
+  chopp: { raio: 90, base: 0.94, altura: 230, arte: { cy: 0.5, largura: 151, altura: 140 }, vidro: "claro", fundoGrosso: 30, alca: true, alcaDeVidro: true },
+  whisky: { raio: 105, base: 0.98, altura: 170, arte: { cy: 0.45, largura: 172, altura: 102 }, vidro: "claro", fundoGrosso: 34 },
+  mason: { raio: 85, base: 1, altura: 220, arte: { cy: 0.5, largura: 143, altura: 150 }, vidro: "claro", fundoGrosso: 16, topo: "mason" },
+  jateado: { raio: 80, base: 0.88, altura: 260, arte: { cy: 0.48, largura: 134, altura: 146 }, vidro: "fosco", fundoGrosso: 22 },
+};
+
+function formaDaPeca(config: ConfigProduto): Forma {
+  if (config.molde === "copo") return COPOS[config.formato] || FORMAS.copo;
+  if (config.molde === "garrafa" && config.formato === "copo-termico") {
+    return { raio: 80, base: 1, altura: 200, arte: { cy: 0.5, largura: 121, altura: 150 }, topo: "termico" };
+  }
+  return FORMAS[config.molde] || FORMAS.caneca;
+}
+
+function alturaAcima(forma: Forma): number {
+  if (forma.topo === "garrafa") return forma.altura * 0.36;
+  if (forma.topo === "termico") return forma.altura * 0.12;
+  if (forma.topo === "mason") return forma.altura * 0.16;
+  if (forma.topo === "bambu") return forma.altura * 0.1;
+  return 0;
+}
 
 export function temPrevia3D(config: ConfigProduto): boolean {
   return ["caneca", "xicara", "garrafa", "copo"].includes(config.molde) && config.personalizacao.ativa;
@@ -103,7 +129,7 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const medir = useMedirTexto();
-  const forma = FORMAS[config.molde] || FORMAS.caneca;
+  const forma = formaDaPeca(config);
   const cores = coresDaPeca(config, escolhas, aquecida);
   const tinta = forma.vidro ? "#2E2A28" : cores.tinta;
   const arteVisivel = !(config.magica && !aquecida);
@@ -132,7 +158,8 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 100);
     const raio = forma.raio / ESCALA;
     const altura = forma.altura / ESCALA;
-    camera.position.set(0, altura * 1.05, altura * 3.2);
+    const tamanho = Math.max(altura + alturaAcima(forma) / ESCALA, raio * 2.4);
+    camera.position.set(0, tamanho * 1.05, tamanho * 3.2);
     mundo.add(new THREE.HemisphereLight(0xffffff, 0xe8dccf, 2.4));
     const sol = new THREE.DirectionalLight(0xffffff, 1.9);
     sol.position.set(3, 5, 6);
@@ -144,9 +171,10 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
     const grupo = new THREE.Group();
     mundo.add(grupo);
 
+    const vidroFosco = forma.vidro === "fosco";
     const materialCorpo = forma.vidro
-      ? new THREE.MeshStandardMaterial({ color: 0xeef4f5, transparent: true, opacity: 0.38, roughness: 0.08, metalness: 0 })
-      : new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.peca), roughness: config.molde === "garrafa" ? 0.25 : 0.32, metalness: config.molde === "garrafa" ? 0.35 : 0 });
+      ? new THREE.MeshStandardMaterial({ color: vidroFosco ? 0xf6f8f8 : 0xeef4f5, transparent: true, opacity: vidroFosco ? 0.74 : 0.32, roughness: vidroFosco ? 0.55 : 0.06, metalness: 0, side: THREE.DoubleSide, depthWrite: false })
+      : new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.peca), roughness: forma.topo ? 0.28 : 0.32, metalness: forma.topo === "garrafa" || forma.topo === "termico" ? 0.4 : 0 });
     const raioBase = raio * forma.base;
     const corpo = new THREE.Mesh(new THREE.CylinderGeometry(raio, raioBase, altura, 96, 1, true), materialCorpo);
     grupo.add(corpo);
@@ -154,36 +182,102 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
     fundo.rotation.x = Math.PI / 2;
     fundo.position.y = -altura / 2;
     grupo.add(fundo);
+    if (forma.fundoGrosso) {
+      const espessura = forma.fundoGrosso / ESCALA;
+      const raioNoFundo = raioBase + (raio - raioBase) * (espessura / altura);
+      const vidroDoFundo = new THREE.MeshStandardMaterial({ color: 0xe4eef0, transparent: true, opacity: vidroFosco ? 0.85 : 0.55, roughness: vidroFosco ? 0.5 : 0.1 });
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(raioNoFundo * 0.97, raioBase * 0.97, espessura, 64), vidroDoFundo);
+      base.position.y = -altura / 2 + espessura / 2;
+      grupo.add(base);
+    }
 
     const materialInterior = new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.interior), roughness: 0.4, side: THREE.BackSide });
     const interior = new THREE.Mesh(new THREE.CylinderGeometry(raio * 0.96, raioBase * 0.96, altura * 0.98, 96, 1, true), materialInterior);
     interior.position.y = altura * 0.01;
-    if (!forma.tampa) grupo.add(interior);
-    const borda = new THREE.Mesh(new THREE.TorusGeometry(raio * 0.98, raio * 0.025, 12, 96), materialCorpo);
+    if (!forma.topo && !forma.vidro) grupo.add(interior);
+    const borda = new THREE.Mesh(new THREE.TorusGeometry(raio * 0.98, raio * (forma.vidro ? 0.035 : 0.025), 12, 96), materialCorpo);
     borda.rotation.x = Math.PI / 2;
     borda.position.y = altura / 2;
-    if (!forma.tampa) grupo.add(borda);
+    if (!forma.topo) grupo.add(borda);
 
     let materialAlca: THREE.MeshStandardMaterial | null = null;
     if (forma.alca) {
-      materialAlca = new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.alca), roughness: 0.32 });
-      const alca = new THREE.Mesh(new THREE.TorusGeometry(altura * 0.24, altura * 0.04, 20, 48, Math.PI), materialAlca);
+      materialAlca = forma.alcaDeVidro
+        ? new THREE.MeshStandardMaterial({ color: 0xeef4f5, transparent: true, opacity: 0.5, roughness: 0.06 })
+        : new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.alca), roughness: 0.32 });
+      const raioDaAlca = forma.pires ? altura * 0.2 : forma.alcaDeVidro ? altura * 0.28 : altura * 0.24;
+      const grossura = forma.alcaDeVidro ? altura * 0.06 : forma.pires ? altura * 0.045 : altura * 0.04;
+      const alca = new THREE.Mesh(new THREE.TorusGeometry(raioDaAlca, grossura, 20, 48, Math.PI), materialAlca);
       alca.rotation.z = -Math.PI / 2;
-      alca.position.set(raio * 0.98, forma.pires ? altura * 0.05 : altura * 0.04, 0);
+      alca.position.set(raio * 0.97, forma.pires ? altura * 0.12 : altura * 0.04, 0);
       grupo.add(alca);
     }
+    let fundoDaCena = -altura / 2;
     if (forma.pires) {
-      const pires = new THREE.Mesh(new THREE.CylinderGeometry(raio * 1.55, raio * 1.25, altura * 0.08, 64), new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.peca), roughness: 0.35 }));
-      pires.position.y = -altura / 2 - altura * 0.04;
+      const materialPires = new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.peca), roughness: 0.35, side: THREE.DoubleSide });
+      const pe = new THREE.Mesh(new THREE.TorusGeometry(raioBase * 0.92, raio * 0.03, 10, 64), materialPires);
+      pe.rotation.x = Math.PI / 2;
+      pe.position.y = -altura / 2;
+      grupo.add(pe);
+      const r = raio;
+      const u = 1 / ESCALA;
+      const perfilDoPires = [
+        [0, -6], [0.5 * r * ESCALA, -6], [0.56 * r * ESCALA, -9], [1.2 * r * ESCALA, -3], [1.46 * r * ESCALA, 5], [1.5 * r * ESCALA, 8],
+        [1.46 * r * ESCALA, 9], [1.2 * r * ESCALA, 1], [0.6 * r * ESCALA, -2], [0.56 * r * ESCALA, 1], [0, 1],
+      ].map(([x, y]) => new THREE.Vector2(x * u, y * u));
+      const pires = new THREE.Mesh(new THREE.LatheGeometry(perfilDoPires, 96), materialPires);
+      pires.position.y = -altura / 2 - 2 * u;
       grupo.add(pires);
+      fundoDaCena = -altura / 2 - 11 * u;
     }
-    if (forma.tampa) {
-      const ombro = new THREE.Mesh(new THREE.CylinderGeometry(raio * 0.55, raio, altura * 0.1, 64), materialCorpo);
-      ombro.position.y = altura / 2 + altura * 0.05;
-      grupo.add(ombro);
-      const tampa = new THREE.Mesh(new THREE.CylinderGeometry(raio * 0.5, raio * 0.5, altura * 0.12, 48), new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.peca).multiplyScalar(0.6), roughness: 0.5 }));
-      tampa.position.y = altura / 2 + altura * 0.16;
+    if (forma.topo === "garrafa") {
+      const pontos = [[1, 0], [0.98, 0.04], [0.9, 0.09], [0.7, 0.14], [0.5, 0.17], [0.44, 0.19], [0.44, 0.22]]
+        .map(([x, y]) => new THREE.Vector2(raio * x, altura / 2 + altura * y));
+      grupo.add(new THREE.Mesh(new THREE.LatheGeometry(pontos, 96), materialCorpo));
+      const materialTampa = new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.peca).multiplyScalar(0.45), roughness: 0.45, metalness: 0.3 });
+      const tampa = new THREE.Mesh(new THREE.CylinderGeometry(raio * 0.5, raio * 0.52, altura * 0.14, 48), materialTampa);
+      tampa.position.y = altura / 2 + altura * 0.29;
       grupo.add(tampa);
+      for (const k of [0.25, 0.29, 0.33]) {
+        const friso = new THREE.Mesh(new THREE.TorusGeometry(raio * 0.515, raio * 0.018, 8, 48), materialTampa);
+        friso.rotation.x = Math.PI / 2;
+        friso.position.y = altura / 2 + altura * k;
+        grupo.add(friso);
+      }
+      const argola = new THREE.Mesh(new THREE.TorusGeometry(raio * 0.22, raio * 0.05, 10, 32), materialTampa);
+      argola.position.y = altura / 2 + altura * 0.37;
+      grupo.add(argola);
+    }
+    if (forma.topo === "termico") {
+      const materialTampa = new THREE.MeshStandardMaterial({ color: new THREE.Color(cores.peca).multiplyScalar(0.35), roughness: 0.5 });
+      const tampa = new THREE.Mesh(new THREE.CylinderGeometry(raio * 1.02, raio * 1.03, altura * 0.09, 64), materialTampa);
+      tampa.position.y = altura / 2 + altura * 0.045;
+      grupo.add(tampa);
+      const bico = new THREE.Mesh(new THREE.BoxGeometry(raio * 0.5, altura * 0.03, raio * 0.3), materialTampa);
+      bico.position.set(0, altura / 2 + altura * 0.1, raio * 0.6);
+      grupo.add(bico);
+    }
+    if (forma.topo === "bambu") {
+      const bambu = new THREE.MeshStandardMaterial({ color: 0xc9a26b, roughness: 0.7 });
+      const tampa = new THREE.Mesh(new THREE.CylinderGeometry(raio * 1.03, raio * 1.03, altura * 0.07, 64), bambu);
+      tampa.position.y = altura / 2 + altura * 0.03;
+      grupo.add(tampa);
+      const canudo = new THREE.Mesh(new THREE.CylinderGeometry(raio * 0.07, raio * 0.07, altura * 0.8, 16), new THREE.MeshStandardMaterial({ color: 0xb9c7c9, roughness: 0.4 }));
+      canudo.position.set(raio * 0.25, altura / 2 - altura * 0.05, raio * 0.1);
+      canudo.rotation.z = -0.14;
+      grupo.add(canudo);
+    }
+    if (forma.topo === "mason") {
+      const ombro = [[1, 0], [0.97, 0.05], [0.88, 0.09], [0.86, 0.12]].map(([x, y]) => new THREE.Vector2(raio * x, altura / 2 + altura * y));
+      grupo.add(new THREE.Mesh(new THREE.LatheGeometry(ombro, 96), materialCorpo));
+      const metal = new THREE.MeshStandardMaterial({ color: 0xc9a26b, roughness: 0.35, metalness: 0.6 });
+      const tampa = new THREE.Mesh(new THREE.CylinderGeometry(raio * 0.9, raio * 0.9, altura * 0.07, 64), metal);
+      tampa.position.y = altura / 2 + altura * 0.13;
+      grupo.add(tampa);
+      const canudo = new THREE.Mesh(new THREE.CylinderGeometry(raio * 0.06, raio * 0.06, altura * 0.75, 16), new THREE.MeshStandardMaterial({ color: 0xb9c7c9, roughness: 0.4 }));
+      canudo.position.set(raio * 0.2, altura / 2 + altura * 0.05, raio * 0.1);
+      canudo.rotation.z = -0.12;
+      grupo.add(canudo);
     }
 
     const canvas = document.createElement("canvas");
@@ -209,7 +303,7 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
     }
     const sombra = new THREE.Mesh(new THREE.PlaneGeometry(raio * 4, raio * 4), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sombraCanvas), transparent: true, depthWrite: false }));
     sombra.rotation.x = -Math.PI / 2;
-    const baseDaPeca = -altura / 2 - (forma.pires ? altura * 0.085 : 0);
+    const baseDaPeca = fundoDaCena;
     sombra.position.y = baseDaPeca + 0.006;
     mundo.add(sombra);
     const limparBandeja = montarBandeja3D(mundo, { y: baseDaPeca, raio: raio * 2.7, espessura: altura * 0.06, celular: window.matchMedia("(max-width: 760px)").matches, sombras: false });
@@ -218,9 +312,10 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
 
     const controles = new OrbitControls(camera, renderizador.domElement);
     controles.enablePan = false;
+    controles.target.set(0, alturaAcima(forma) / ESCALA / 2, 0);
     controles.enableDamping = true;
-    controles.minDistance = altura * 2.2;
-    controles.maxDistance = altura * 5;
+    controles.minDistance = tamanho * 2.2;
+    controles.maxDistance = tamanho * 5;
     controles.minPolarAngle = Math.PI * 0.25;
     controles.maxPolarAngle = Math.PI * 0.62;
     controles.autoRotate = !reduzido;
@@ -264,14 +359,14 @@ export default function Previa3D({ config, escolhas, estampa = null, aquecida, r
       renderizador.domElement.remove();
       cena.current = null;
     };
-  }, [config.molde]);
+  }, [config.molde, config.formato]);
 
   useEffect(() => {
     const atual = cena.current;
     if (!atual) return;
-    atual.materialCorpo.color = forma.vidro ? new THREE.Color(0xeef4f5) : new THREE.Color(cores.peca);
+    if (!forma.vidro) atual.materialCorpo.color = new THREE.Color(cores.peca);
     atual.materialInterior.color = new THREE.Color(cores.interior);
-    if (atual.materialAlca) atual.materialAlca.color = new THREE.Color(cores.alca);
+    if (atual.materialAlca && !forma.alcaDeVidro) atual.materialAlca.color = new THREE.Color(cores.alca);
   }, [cores.peca, cores.alca, cores.interior]);
 
   useEffect(() => {
