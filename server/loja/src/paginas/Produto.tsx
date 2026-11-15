@@ -594,7 +594,7 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
     setFotoSelecionada(indice);
     const caixa = (evento.currentTarget as SVGGraphicsElement).getBBox();
     const sobra = caixa.width - caixa.width / foto.zoom;
-    arrasto.current = { indice, x: evento.clientX, y: evento.clientY, fx: foto.x, fy: foto.y, escala: 360 / svg.getBoundingClientRect().width, sobra };
+    arrasto.current = { indice, x: evento.clientX, y: evento.clientY, fx: foto.x, fy: foto.y, escala: 1 / ((evento.currentTarget as SVGGraphicsElement).getScreenCTM()?.a || svg.getBoundingClientRect().width / 360), sobra };
     const mover = (e: PointerEvent) => {
       const a = arrasto.current;
       if (!a || a.sobra <= 0) return;

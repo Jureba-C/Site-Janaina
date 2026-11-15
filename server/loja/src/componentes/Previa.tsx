@@ -511,7 +511,7 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
   }
   if (molde === "azulejo") {
     return {
-      sob: <path d="M110 330h140l18 26H92z" fill="#C9A26B" />,
+      sob: <g><path d="M150 300l-34 56h12l30 -50zM210 300l34 56h-12l-30 -50z" fill={MADEIRA.escura} /><path d="M104 318h152a4 4 0 0 1 4 4v14h-160v-14a4 4 0 0 1 4 -4z" fill={MADEIRA.media} /><path d="M104 318h152a4 4 0 0 1 4 4v1h-160v-1a4 4 0 0 1 4 -4z" fill={MADEIRA.clara} /></g>,
       corpo: <g><rect x={70} y={70} width={220} height={250} rx={6} fill="#D9CBBB" /><rect x={76} y={76} width={208} height={238} rx={3} fill={cores.peca} /></g>,
       superficie: superficiePlana("M79 76h202a3 3 0 0 1 3 3v232a3 3 0 0 1 -3 3h-202a3 3 0 0 1 -3 -3v-232a3 3 0 0 1 3 -3z", 76, 76, 208, 238),
       frenteDaArte: { cx: 180, cy: 195, largura: 186, altura: 214, raio: null },
@@ -580,15 +580,81 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
   };
 }
 
+interface CaixaDaPeca {
+  topo: number;
+  base: number;
+  esquerda: number;
+  direita: number;
+}
+
+const CAIXAS_PLANAS: Partial<Record<Molde, CaixaDaPeca>> = {
+  azulejo: { topo: 70, base: 356, esquerda: 70, direita: 290 },
+  plano: { topo: 90, base: 300, esquerda: 40, direita: 320 },
+  botton: { topo: 62, base: 318, esquerda: 52, direita: 308 },
+  caixa: { topo: 80, base: 320, esquerda: 58, direita: 302 },
+  flor: { topo: 80, base: 354, esquerda: 70, direita: 275 },
+};
+
 function baseDaPeca(molde: Molde, formato: string): number {
-  return molde === "xicara" ? 290 : molde === "caneca" ? 340 : molde === "copo" ? (formato === "cerveja" ? 373 : 343) : 362;
+  if (molde === "xicara") return 290;
+  if (molde === "caneca") return 340;
+  if (molde === "copo") return formato === "whisky" ? 320 : formato === "mason" ? 350 : formato === "cerveja" ? 370 : 340;
+  return CAIXAS_PLANAS[molde]?.base ?? 362;
 }
 
 function Sombra({ molde, formato, centro, raio }: { molde: Molde; formato: string; centro: number | null; raio: number | null }) {
   if (molde === "foto" || molde === "nenhum") return null;
-  const rx = raio ? raio * 1.18 : molde === "garrafa" ? 90 : 140;
+  const caixa = CAIXAS_PLANAS[molde];
+  const rx = raio ? raio * 1.18 : molde === "garrafa" ? 90 : caixa ? (caixa.direita - caixa.esquerda) * 0.46 : 140;
   const cy = baseDaPeca(molde, formato);
   return <ellipse cx={centro ?? 180} cy={cy} rx={rx} ry={raio ? 9 : 10} fill="rgba(80, 40, 20, 0.16)" />;
+}
+
+const BASE_NO_ESTUDIO = 340;
+const MADEIRA = { clara: "#D9B07C", media: "#C49461", escura: "#9C6B3E" };
+
+interface EncaixeNoEstudio {
+  transformacao: string;
+  bandeja: { cx: number; cy: number; rx: number };
+  semSombra?: boolean;
+  atras?: ReactNode;
+  frente?: ReactNode;
+}
+
+function encaixeNoEstudio(molde: Molde): EncaixeNoEstudio | null {
+  const caixa = CAIXAS_PLANAS[molde];
+  if (!caixa) return null;
+  const largura = caixa.direita - caixa.esquerda;
+  const centro = (caixa.esquerda + caixa.direita) / 2;
+  if (molde === "botton") {
+    const escala = 0.76;
+    const base = 314;
+    const transformacao = `translate(${(180 - centro * escala).toFixed(2)} ${(base - caixa.base * escala).toFixed(2)}) scale(${escala})`;
+    return {
+      transformacao,
+      semSombra: true,
+      bandeja: { cx: 180, cy: BASE_NO_ESTUDIO + 4, rx: 150 },
+      atras: (
+        <g>
+          <ellipse cx={180} cy={BASE_NO_ESTUDIO - 1} rx={86} ry={8} fill="rgba(80, 40, 20, 0.2)" />
+          <path d="M196 312l26 26h-14l-24 -24z" fill={MADEIRA.escura} />
+          <rect x={104} y={326} width={152} height={13} rx={4} fill={MADEIRA.media} />
+          <rect x={104} y={326} width={152} height={4} rx={2} fill={MADEIRA.clara} />
+        </g>
+      ),
+      frente: (
+        <g>
+          <rect x={120} y={300} width={120} height={28} rx={6} fill={MADEIRA.media} />
+          <rect x={120} y={300} width={120} height={6} rx={3} fill={MADEIRA.clara} />
+          <path d="M128 316h104" stroke={MADEIRA.escura} strokeOpacity={0.35} strokeWidth={1.2} strokeLinecap="round" />
+        </g>
+      ),
+    };
+  }
+  const altura = caixa.base - caixa.topo;
+  const escala = Math.min(1, 250 / altura, 240 / largura);
+  const transformacao = `translate(${(180 - centro * escala).toFixed(2)} ${(BASE_NO_ESTUDIO - caixa.base * escala).toFixed(2)}) scale(${escala.toFixed(4)})`;
+  return { transformacao, bandeja: { cx: 180, cy: BASE_NO_ESTUDIO + 4, rx: Math.min(200, Math.max(140, largura * escala * 0.82)) } };
 }
 
 const PIXELS_POR_UNIDADE = 3;
@@ -730,10 +796,14 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
   ) : null;
   const emPe = Boolean(area.raio) && ["caneca", "xicara", "garrafa", "copo"].includes(molde);
   const deslocamento = noEstudio && emPe ? 180 - area.cx : 0;
+  const encaixe = noEstudio && !emPe ? encaixeNoEstudio(molde) : null;
   return (
     <g transform={deslocamento ? `translate(${deslocamento} 0)` : undefined}>
       {noEstudio && emPe ? <BandejaNoSvg cx={area.cx} cy={baseDaPeca(molde, config.formato) + 4} rx={(area.raio ?? 110) * 1.75} /> : null}
-      <Sombra molde={molde} formato={config.formato} centro={area.raio ? area.cx : null} raio={area.raio} />
+      {encaixe ? <BandejaNoSvg cx={encaixe.bandeja.cx} cy={encaixe.bandeja.cy} rx={encaixe.bandeja.rx} /> : null}
+      {encaixe?.atras}
+      <g transform={encaixe?.transformacao}>
+      {encaixe?.semSombra ? null : <Sombra molde={molde} formato={config.formato} centro={area.raio ? area.cx : null} raio={area.raio} />}
       {g.sob}
       {g.corpo}
       {estampa && g.superficie && !(config.magica && !aquecida) ? <EstampaNaPeca superficie={g.superficie} estampa={estampa} molde={molde} lado={lado} idBase={`${idBase}-e`} fatias={Math.max(fatias, 24)} /> : null}
@@ -749,6 +819,8 @@ export function PecaSvg({ config, escolhas, lado, aquecida, urlDaFoto, medir, fo
           <tspan x={area.cx} dy={18}>COM O CALOR</tspan>
         </text>
       ) : null}
+      </g>
+      {encaixe?.frente}
     </g>
   );
 }
