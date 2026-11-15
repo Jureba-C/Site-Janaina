@@ -154,6 +154,32 @@ Tudo fica em `server/` (é a pasta que a hospedagem usa como raiz). O
   a mesma conta. Nome e frase sobre estampa ganham uma etiqueta lisa atrás
   para dar para ler. O servidor mede as letras com as fontes reais
   (`larguraDoTexto`), então o texto do arquivo sai do tamanho da prévia.
+  Valem em caneca, xícara, garrafa e copo (dão a volta) e em boton,
+  azulejo, placa e caixa (cobrem a face; prévia plana via `superficiePlana`
+  em `Previa.tsx`, boton recortado em círculo no arquivo). Cada estampa tem
+  "Serve para" (coluna `moldes`, filtro em `estampasDisponiveis`). O painel
+  tem a aba **Estampas** no menu.
+- **Estampa criada pela cliente** (`config.estampas.propria {padrao, imagem,
+  preco}`, escolha em `personalizacao.estampaPropria`): "Montar padrão"
+  (desenho ou foto dela repetidos, cores da `PALETA_DA_ESTAMPA`, tamanho e
+  espaço em mm, xadrez) ou "Enviar imagem". Regras e validação em
+  `js/regras-produto.js` (`validarEstampaPropria`, `MOTIVOS_DA_ESTAMPA`);
+  desenho do padrão em `js/estampa-propria.js` (`svgDoPadrao`,
+  `conteudoDoPadrao`), usado pela loja (`loja/src/estado/estampa-propria.ts`)
+  e pelo arquivo de produção (`estampaPropriaDoItem` no `server.js`). A foto
+  usa o mesmo envio e prazo de guarda das fotos da personalização
+  (`fotosDaPersonalizacao` em `lib/itens-pedido.js`).
+- **Tamanho de cada produto**: `config.tamanho {largura, altura}` em mm
+  (painel → produto → Prévia da arte → Área de impressão). Padrões por molde
+  em `MEDIDAS_DO_MOLDE` e conta final em `medidaDaPeca`
+  (`js/regras-produto.js`): variação com medida no nome > tamanho do produto >
+  texto da medida > padrão do molde. Vale para o arquivo de produção e o
+  tamanho real do padrão da estampa.
+- **Efeitos** (inspirados no React Bits, sem biblioteca):
+  `loja/src/componentes/efeitos/efeitos.ts` (`soltarFaiscas` no botão de
+  comprar, `inclinacao` nos cartões de tipo e na foto do produto); o selo do
+  banner gira (`.selo-giro`) e o cartão de Botons descola (`.adesivo`) só
+  com CSS em `loja.css`. Tudo parado com movimento reduzido.
 - **Tarefas periódicas**: `POST /api/interno/tarefas-periodicas` com
   `Authorization: Bearer CRON_SECRET` a cada 15 min (hospedagem sem cron).
   Inclui o backup diário fora do servidor e a limpeza de registros antigos.

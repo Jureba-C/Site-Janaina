@@ -29,8 +29,13 @@ idas e vindas.
   300 dpi, dando a volta até a alça; o site corta pelo centro se vier em outra
   proporção). Confirmar se a prensa dela imprime 24 cm; se for o papel de
   20 cm, ajustar `COBERTURA_DA_VOLTA` em `js/regras-produto.js` e os gabaritos.
-  Ela sobe pelo painel (Loja e configurações → Estampas) e apaga as 3 de
-  exemplo.
+  Ela sobe pelo painel (aba Estampas) e apaga as 3 de exemplo.
+- [ ] **Área de impressão real de cada produto** (largura × altura em mm;
+  diâmetro nos botons): cada garrafa (300 a 900 ml), xícara, copo, caneca
+  mini, azulejo e boton. Entra no painel em Produtos → produto → Prévia da
+  arte → Área de impressão. Sem isso o site usa a medida padrão do tipo.
+- [ ] Se vai cobrar a mais pela **estampa criada pela cliente** (montar
+  padrão ou enviar imagem) e em quais produtos liga essa opção.
 - [ ] Fotos originais em boa resolução (hoje são as do Instagram/catálogos) — fotos do topo trocam pelo painel
 
 ## Venda

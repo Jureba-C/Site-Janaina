@@ -50,6 +50,12 @@ Selo em cada cartão: **Atrasado X dias** (vermelho), **Vence hoje** /
   na caneca) já traz a estampa cobrindo o gabarito, com o nome/frase em
   curvas por cima, numa etiqueta lisa. A planilha de produção tem a coluna
   "Estampa".
+- **Estampa criada pela cliente**: a peça mostra "Estampa: padrão de flores"
+  (ou "imagem enviada"). No arquivo de produção, o padrão sai em vetor no
+  tamanho real do produto (desenho e espaço em mm), com a foto original da
+  cliente quando ela usou foto; a imagem inteira sai cobrindo o gabarito,
+  cortada pelo centro. A foto também aparece na lista de fotos do pedido.
+  O tamanho do gabarito é o "Área de impressão" do produto.
 - **Backup completo** (a planilha antiga com todas as tabelas) foi para
   "Loja e configurações".
 

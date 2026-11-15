@@ -62,3 +62,10 @@ server/                  ← site + servidor (raiz da aplicação na hospedagem)
 - `DEPLOY-HOSTINGER.md` — como publicar
 - `server/docs/SECURITY-AUDIT.md` — decisões de segurança
 - `server/docs/instagram-setup.md` — feed do Instagram
+
+## Créditos
+
+Os efeitos de selo girando, faísca no clique, cartão inclinando e adesivo
+descolando foram inspirados nos componentes do [React Bits](https://reactbits.dev)
+(licença MIT + Commons Clause, que permite usar em sites de clientes). Foram
+refeitos do zero, sem biblioteca, em `server/loja/src/componentes/efeitos/`.

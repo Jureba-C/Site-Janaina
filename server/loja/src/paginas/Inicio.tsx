@@ -7,6 +7,7 @@ import { Florzinha } from "../componentes/Marca";
 import { Icone } from "../componentes/Icone";
 import { DemoEstudio } from "../componentes/DemoDaCaneca";
 import type { Loja, PaginaInicio } from "../tipos";
+import { inclinacao } from "../componentes/efeitos/efeitos";
 
 const GIROS = [-2, 1.5, -1, 2, -1.5];
 
@@ -41,7 +42,7 @@ function SeloFeitoAMao() {
       <defs><path id={id} d="M60 60m-42 0a42 42 0 1 1 84 0a42 42 0 1 1 -84 0" /></defs>
       <circle cx="60" cy="60" r="58" fill="#FFFCF8" />
       <circle cx="60" cy="60" r="53" fill="none" stroke="#9E4A18" strokeWidth="1.2" strokeDasharray="3 3" />
-      <text fontSize="11" fontWeight="600" letterSpacing="1.5" fill="#9E4A18"><textPath href={`#${id}`} textLength="258">FEITO À MÃO · EM BRASÍLIA ·</textPath></text>
+      <g className="selo-giro"><text fontSize="11" fontWeight="600" letterSpacing="1.5" fill="#9E4A18"><textPath href={`#${id}`} textLength="258">FEITO À MÃO · EM BRASÍLIA ·</textPath></text></g>
       <g transform="translate(44 44)"><Florzinha tamanho={32} cor="#CD7031" traco={1.4} /></g>
     </svg>
   );
@@ -195,8 +196,8 @@ function TiposDaHome({ pagina }: { pagina: PaginaInicio }) {
       <ul className="tipos-grade">
         {pagina.tipos.map((t, i) => (
           <li key={t.slug}>
-            <a className="tipo-cartao" href={`/categoria/${t.slug}`}>
-              <span className={`tipo-imagem tipo-fundo-${i % 3}`}>
+            <a className="tipo-cartao" href={`/categoria/${t.slug}`} {...inclinacao}>
+              <span className={`tipo-imagem tipo-fundo-${i % 3}${t.slug === "botons" ? " adesivo" : ""}`}>
                 {t.foto ? (
                   <Foto src={t.foto.src} alt="" sizes="(max-width: 640px) 45vw, 180px" largura={180} altura={180} className="tipo-foto" />
                 ) : t.exemplo ? (

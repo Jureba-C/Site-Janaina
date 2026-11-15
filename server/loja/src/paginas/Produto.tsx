@@ -11,6 +11,7 @@ import { ParedeDoEstudio } from "../componentes/Estudio";
 import { carrinho } from "../estado/carrinho";
 import { enviarFoto, urlDaFotoEnviada, lembrarFotoLocal } from "../estado/fotos";
 import { estampaPropriaPublica, lembrarFotoDaEstampa } from "../estado/estampa-propria";
+import { inclinacao, soltarFaiscas } from "../componentes/efeitos/efeitos";
 import type { Escolhas, EstampaPropria, EstampaPublica, FotoEnviada, IdCampo, Loja, PaginaProduto, Personalizacao, Produto as TipoProduto } from "../tipos";
 
 type Padrao = Extract<EstampaPropria, { tipo: "padrao" }>;
@@ -310,7 +311,9 @@ function Galeria({ produto, escolhas, lado, setLado, aquecida, setAquecida, foto
             <Previa3D config={config} escolhas={escolhas} estampa={estampaDe(produto, escolhas)} aquecida={aquecida} rotulo={`${descricao}, em 3D`} fechar={() => setModo3d(false)} />
           </Suspense>
         ) : mostrandoFoto && produto.fotos[indiceFoto] ? (
-          <Foto src={produto.fotos[indiceFoto]} alt={`${produto.nome}, foto ${indiceFoto + 1}`} larguras={[600, 900]} sizes="(max-width: 900px) 100vw, 620px" largura={620} altura={620} className="galeria-foto" prioridade />
+          <div className="galeria-inclina" {...inclinacao}>
+            <Foto src={produto.fotos[indiceFoto]} alt={`${produto.nome}, foto ${indiceFoto + 1}`} larguras={[600, 900]} sizes="(max-width: 900px) 100vw, 620px" largura={620} altura={620} className="galeria-foto" prioridade />
+          </div>
         ) : (
           <>
             <ParedeDoEstudio className="estudio-galeria" />
@@ -726,7 +729,7 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
               <span aria-live="polite">{qtd}</span>
               <button type="button" onClick={() => setQtd(q => Math.min(regras.QTD_MAXIMA, q + 1))} aria-label="Aumentar quantidade" disabled={qtd >= regras.QTD_MAXIMA}><Icone nome="mais" tamanho={20} /></button>
             </div>
-            <button type="button" className={`botao botao-cheio botao-comprar${adicionado ? " feito" : ""}`} onClick={adicionar} disabled={produto.esgotado}>
+            <button type="button" className={`botao botao-cheio botao-comprar${adicionado ? " feito" : ""}`} onClick={e => { soltarFaiscas(e); adicionar(); }} disabled={produto.esgotado}>
               <Icone nome={adicionado ? "check" : "sacola"} tamanho={20} traco={1.8} />
               {produto.esgotado ? "Esgotado" : adicionado ? <><span className="so-largo">Adicionado ao carrinho</span><span className="so-curto">Adicionado</span></> : <><span className="so-largo">Adicionar ao carrinho · {dinheiro(total)}</span><span className="so-curto">Adicionar · {dinheiro(total)}</span></>}
             </button>
