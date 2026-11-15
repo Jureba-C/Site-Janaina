@@ -533,6 +533,39 @@ main:focus { outline: none; }
 .estampa-nome { font-size: 13px; font-weight: 600; line-height: 1.25; }
 .estampa-opcao small { font-size: 12px; color: var(--tinta-suave); }
 @media (max-width: 640px) { .estampas-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .estampa-nome { font-size: 12px; } }
+.abas-estampa { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 4px; margin: 10px 0 14px; border-radius: 999px; background: var(--papel-2); }
+.aba-estampa { min-height: 40px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--tinta-media); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color .2s ease, color .2s ease; }
+.aba-estampa.ativo { background: var(--branco); color: var(--terracota-forte); box-shadow: 0 2px 8px -4px rgba(110, 60, 30, 0.4); }
+.aba-estampa:focus-visible { outline: 3px solid var(--terracota-forte); outline-offset: 2px; }
+.montador { display: grid; gap: 16px; }
+.montador-rotulo { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.montador-rotulo span { font-weight: 400; color: var(--tinta-suave); }
+.montador > .montador-rotulo { margin-bottom: -8px; }
+.motivos { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+.motivo { display: grid; justify-items: center; gap: 4px; padding: 8px 4px; border-radius: 14px; border: 1.5px solid var(--borda-forte); background: var(--branco); color: var(--tinta); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color .2s ease; }
+.motivo:hover { border-color: var(--terracota); }
+.motivo.ativo { border: 2px solid var(--terracota-forte); }
+.motivo svg, .motivo img { width: 40px; height: 40px; border-radius: 10px; padding: 4px; }
+.motivo img { padding: 0; object-fit: cover; border-radius: 50%; }
+.motivo-foto { color: var(--terracota-forte); }
+.motivo-foto > svg { padding: 7px; background: var(--rosa-claro); }
+.motivo-foto:focus-within { outline: 3px solid var(--terracota-forte); outline-offset: 2px; }
+.motivo-foto.enviando { opacity: .6; }
+.cores-estampa { margin-top: 0; gap: 4px; }
+.cores-estampa .cor { width: 38px; height: 38px; }
+.montador-faixas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+.faixa { display: grid; gap: 6px; font-size: 14px; }
+.faixa strong { font-weight: 600; color: var(--terracota-forte); margin-left: 4px; }
+.faixa input[type=range] { width: 100%; height: 28px; margin: 0; accent-color: var(--terracota-forte); }
+.montador .marcar { margin-top: 0; align-items: center; }
+.envio-estampa { margin-top: 0; }
+.envio-estampa-amostra { width: 72px; height: 48px; object-fit: cover; border-radius: 10px; flex: none; }
+.tirar-estampa { justify-self: start; margin-top: 12px; padding: 0; border: 0; background: none; color: var(--terracota-forte); font: inherit; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+@media (max-width: 640px) {
+  .montador-faixas { grid-template-columns: 1fr; }
+  .motivos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .aba-estampa { font-size: 13px; padding: 0 6px; }
+}
 .grupo-escolha legend .passo-numero { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 8px; border-radius: 50%; background: var(--terracota-forte); color: var(--branco); font-size: 13px; font-weight: 700; vertical-align: 1px; }
 .grupo-escolha .campos-duplos { margin-top: 10px; }
 .artes-grade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }

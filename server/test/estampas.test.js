@@ -183,3 +183,89 @@ test("Serve para: estampa marcada só para boton não aparece na caneca", async 
   assert.deepEqual(painel.tamanhos.botton.mm, [55, 55]);
   assert.ok(painel.moldes.includes("azulejo"));
 });
+
+const estampaPropria = require("../js/estampa-propria.js");
+const producao = require("../lib/producao.js");
+
+function produtoComPropria(extra = {}){
+  const config = regras.normalizarConfig({ molde: "caneca", estampas: { ativa: true, propria: { padrao: true, imagem: false, preco: 6 }, ...extra } });
+  return { price: 40, config, estampasDisponiveis: [] };
+}
+
+test("estampa própria: padrão válido passa, cobra o extra e aparece no resumo", () => {
+  const produto = produtoComPropria();
+  const padrao = { ...regras.ESTAMPA_PROPRIA_PADRAO, motivo: "coracao" };
+  const r = regras.validarEscolhas(produto, { personalizacao: { estampaPropria: padrao } }, 1);
+  assert.equal(r.ok, true, r.erros.join(" "));
+  assert.equal(r.escolhas.personalizacao.estampaPropria.motivo, "coracao");
+  assert.equal(regras.precoUnitario(produto, r.escolhas, 1), 46);
+  assert.deepEqual(regras.resumoDasEscolhas(produto, r.escolhas), [{ rotulo: "Estampa", valor: "padrão de corações" }]);
+  assert.notEqual(regras.chaveDaLinha(1, r.escolhas), regras.chaveDaLinha(1, { personalizacao: { estampaPropria: { ...padrao, cor: "#2E2A28" } } }));
+});
+
+test("estampa própria: recusa o que o produto não permite e valores fora do lugar", () => {
+  const produto = produtoComPropria();
+  const base = regras.ESTAMPA_PROPRIA_PADRAO;
+  const recusa = (estampaPropria) => regras.validarEscolhas(produto, { personalizacao: { estampaPropria } }, 1).ok;
+  assert.equal(recusa({ tipo: "imagem", foto: { id: crypto.randomUUID(), chave: "a".repeat(32) } }), false, "imagem não liberada");
+  assert.equal(recusa({ ...base, motivo: "caveira" }), false);
+  assert.equal(recusa({ ...base, cor: "red" }), false);
+  assert.equal(recusa({ ...base, fundo: "#12345" }), false);
+  assert.equal(recusa({ ...base, tamanho: 2 }), false);
+  assert.equal(recusa({ ...base, espaco: 99 }), false);
+  assert.equal(recusa({ ...base, motivo: "foto" }), false, "foto como desenho precisa da foto");
+  assert.equal(recusa({ ...base, motivo: "foto", foto: { id: "x", chave: "y" } }), false);
+  const desligada = { price: 40, config: regras.normalizarConfig({ molde: "caneca" }), estampasDisponiveis: [] };
+  assert.equal(regras.validarEscolhas(desligada, { personalizacao: { estampaPropria: base } }, 1).ok, false);
+  const obrigatoria = produtoComPropria({ obrigatoria: true });
+  assert.equal(regras.validarEscolhas(obrigatoria, { personalizacao: {} }, 1).ok, false, "obrigatória cobra a estampa");
+  assert.equal(regras.escolhasPadrao(obrigatoria).personalizacao.estampaPropria.tipo, "padrao");
+});
+
+test("todo desenho da lista tem traço no gerador e o padrão fecha a volta sem emenda", () => {
+  for(const m of regras.MOTIVOS_DA_ESTAMPA.filter(m => m.id !== "foto")){
+    assert.ok(estampaPropria.DESENHOS[m.id], `falta o desenho ${m.id}`);
+  }
+  const svg = estampaPropria.conteudoDoPadrao({ ...regras.ESTAMPA_PROPRIA_PADRAO, tamanho: 17, espaco: 6 }, 240, 95, null, "t");
+  const largura = Number(/<pattern[^>]*width="([\d.]+)"/.exec(svg)[1]);
+  assert.ok(Math.abs(240 / largura - Math.round(240 / largura)) < 1e-6, "a volta é um número inteiro de desenhos");
+  assert.ok(!svg.includes("<script"));
+});
+
+test("arquivo de produção: padrão vetorial no tamanho do produto e boton recortado em círculo", async () => {
+  const config = regras.normalizarConfig({ molde: "garrafa", tamanho: { largura: 210, altura: 180 }, personalizacao: { ativa: true }, estampas: { ativa: true, propria: { padrao: true } } });
+  const p = { ...regras.ESTAMPA_PROPRIA_PADRAO };
+  const svgDaArte = () => `<svg xmlns="http://www.w3.org/2000/svg"><g/></svg>`;
+  const arquivo = await producao.arquivoDeProducao({ config, escolhas: { personalizacao: { estampaPropria: p } }, lerFoto: () => null, svgDaArte, titulo: "t", estampa: { svg: estampaPropria.conteudoDoPadrao(p, 210, 180, null, "EstampaPropria") } });
+  assert.match(arquivo, /width="210mm" height="180mm"/);
+  assert.match(arquivo, /<g id="Estampa"><defs><clipPath id="EstampaPropria-c"/);
+  assert.match(arquivo, /<pattern id="EstampaPropria-p"/);
+  const boton = regras.normalizarConfig({ molde: "botton", tamanho: { largura: 45, altura: 45 }, personalizacao: { ativa: true } });
+  const arquivoBoton = await producao.arquivoDeProducao({ config: boton, escolhas: {}, lerFoto: () => null, svgDaArte, titulo: "b", estampa: { mime: "image/png", data: await estampaDeTeste() } });
+  assert.match(arquivoBoton, /<circle cx="22.5" cy="22.5" r="22.5"\/>/);
+  assert.match(arquivoBoton, /<g id="Estampa" clip-path="url\(#RecorteDaEstampa\)">/);
+});
+
+test("estampa própria no servidor: confere a foto e cobra o valor extra", async () => {
+  const config = regras.normalizarConfig({ ...catalogo.effectiveProduct(CANECA_BRANCA, catalogo.getProductOverridesMap()).config, estampas: { ativa: true, propria: { padrao: true, imagem: true, preco: 5 } } });
+  const salvar = await fetch(`${ORIGIN}/api/admin/products/${CANECA_BRANCA}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json", Origin: ORIGIN, Cookie: adminCookie },
+    body: JSON.stringify({ config }),
+  });
+  assert.equal(salvar.status, 200);
+  const form = new FormData();
+  form.append("foto", new Blob([await sharp({ create: { width: 900, height: 600, channels: 3, background: "#e3b04b" } }).jpeg().toBuffer()], { type: "image/jpeg" }), "f.jpg");
+  const envio = await fetch(`${ORIGIN}/api/personalizacao/fotos`, { method: "POST", headers: { Origin: ORIGIN }, body: form });
+  assert.equal(envio.status, 201);
+  const foto = await envio.json();
+  const conferir = (estampaPropria) => fetch(`${ORIGIN}/api/carrinho/conferir`, {
+    method: "POST", headers: { "Content-Type": "application/json", Origin: ORIGIN },
+    body: JSON.stringify({ items: [{ id: CANECA_BRANCA, qty: 1, escolhas: { variacoes: {}, adicionais: [], personalizacao: { estampaPropria, letra: "cursiva", arte: "nome", aprovarWhatsApp: true } } }] }),
+  }).then(r => r.json()).then(d => d.itens[0]);
+  const base = catalogo.effectiveProduct(CANECA_BRANCA, catalogo.getProductOverridesMap()).price;
+  const ok = await conferir({ tipo: "imagem", foto: { id: foto.id, chave: foto.chave } });
+  assert.equal(ok.preco, Math.round((base + 5) * 100) / 100);
+  assert.ok(ok.resumo.some(l => l.rotulo === "Estampa" && l.valor === "imagem enviada"));
+  const falsa = await conferir({ tipo: "imagem", foto: { id: crypto.randomUUID(), chave: "b".repeat(32) } });
+  assert.match(falsa.erro, /expirou/);
+});

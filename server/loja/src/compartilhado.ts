@@ -1,6 +1,7 @@
 import precosJs from "../../js/pricing.js";
 import regrasJs from "../../js/regras-produto.js";
-import type { ConfigProduto, Escolhas, EstampaPublica, LinhaResumo, Molde, Produto, RegrasPagamento } from "./tipos";
+import estampaPropriaJs from "../../js/estampa-propria.js";
+import type { ConfigProduto, Escolhas, EstampaPropria, EstampaPublica, LinhaResumo, Molde, Produto, RegrasPagamento } from "./tipos";
 
 interface ProdutoDasRegras {
   price: number;
@@ -47,10 +48,24 @@ interface Regras {
   nomeDaLetra(id: string): string;
   nomeDaArte(id: string): string;
   voltaDaPeca(molde: Molde): VoltaDaPeca;
+  MOTIVOS_DA_ESTAMPA: { id: string; nome: string; plural: string }[];
+  PALETA_DA_ESTAMPA: { hex: string; nome: string }[];
+  LIMITES_DA_ESTAMPA: { tamanho: [number, number]; espaco: [number, number] };
+  ESTAMPA_PROPRIA_PADRAO: Extract<EstampaPropria, { tipo: "padrao" }>;
+  estampaPropriaPermitida(config: ConfigProduto): { padrao: boolean; imagem: boolean; preco: number };
+  descreverEstampaPropria(e: EstampaPropria | undefined): string;
+  medidaDaPeca(config: ConfigProduto, escolhas: Escolhas): { largura: number; altura: number; cilindro?: number };
+}
+
+interface GeradorDeEstampa {
+  svgDoPadrao(p: Extract<EstampaPropria, { tipo: "padrao" }>, largura: number, altura: number, hrefDaFoto: string | null): string;
+  comoDataUrl(svg: string): string;
+  desenhoDoMotivo(motivo: string, cor: string, fundo: string): string;
 }
 
 export const precos = precosJs as unknown as Precos;
 export const regras = regrasJs as unknown as Regras;
+export const geradorDeEstampa = estampaPropriaJs as unknown as GeradorDeEstampa;
 
 function paraRegras(produto: Produto): ProdutoDasRegras {
   return { price: produto.preco, config: produto.config, estampasDisponiveis: produto.estampasDisponiveis };

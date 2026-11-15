@@ -77,11 +77,14 @@ export function desenharEstampa(contexto: CanvasRenderingContext2D, imagem: HTML
   const w = volta.cobertura * largura;
   const hDesejada = w / (estampa.proporcao || 2.105);
   const h = Math.min(hDesejada, altura * 0.96);
-  const corteVertical = hDesejada > h ? (1 - h / hDesejada) * imagem.naturalHeight : 0;
+  const alvo = w / h;
+  const iw = imagem.naturalWidth, ih = imagem.naturalHeight;
+  const sw = iw / ih > alvo ? ih * alvo : iw;
+  const sh = iw / ih > alvo ? ih : iw / alvo;
   const x = volta.inicioNaTextura * largura;
   const y = (altura - h) / 2;
   for (const deslocamento of [0, -largura]) {
-    contexto.drawImage(imagem, 0, corteVertical / 2, imagem.naturalWidth, imagem.naturalHeight - corteVertical, x + deslocamento, y, w, h);
+    contexto.drawImage(imagem, (iw - sw) / 2, (ih - sh) / 2, sw, sh, x + deslocamento, y, w, h);
   }
 }
 

@@ -56,6 +56,24 @@
     flor: { largura: 110, altura: 18 },
     foto: { largura: 200, altura: 95 },
   };
+  const MOTIVOS_DA_ESTAMPA = [
+    { id: "flor", nome: "Flor", plural: "flores" },
+    { id: "coracao", nome: "Coração", plural: "corações" },
+    { id: "ipe", nome: "Ipê", plural: "ipês" },
+    { id: "estrela", nome: "Estrela", plural: "estrelas" },
+    { id: "folha", nome: "Folha", plural: "folhas" },
+    { id: "bolinha", nome: "Bolinha", plural: "bolinhas" },
+    { id: "foto", nome: "Sua foto", plural: "fotos" },
+  ];
+  const PALETA_DA_ESTAMPA = [
+    { hex: "#FBF3EC", nome: "Creme" }, { hex: "#FFFFFF", nome: "Branco" }, { hex: "#F6E1DE", nome: "Rosa claro" },
+    { hex: "#DFA1AC", nome: "Rosa" }, { hex: "#CD7031", nome: "Terracota" }, { hex: "#9E4A18", nome: "Caramelo" },
+    { hex: "#F2C94C", nome: "Amarelo" }, { hex: "#E9B824", nome: "Mostarda" }, { hex: "#8DB48E", nome: "Verde sálvia" },
+    { hex: "#3F6B4F", nome: "Verde mata" }, { hex: "#9CC3E4", nome: "Azul céu" }, { hex: "#2F4E7A", nome: "Azul marinho" },
+    { hex: "#2E2A28", nome: "Preto" },
+  ];
+  const LIMITES_DA_ESTAMPA = { tamanho: [8, 40], espaco: [0, 30] };
+  const ESTAMPA_PROPRIA_PADRAO = { tipo: "padrao", motivo: "flor", cor: "#CD7031", fundo: "#FBF3EC", tamanho: 16, espaco: 8, xadrez: true };
   const TAMANHO_MINIMO = 10;
   const TAMANHO_MAXIMO = 400;
 
@@ -200,11 +218,53 @@
   function normalizarEstampas(bruta, molde) {
     const e = bruta && typeof bruta === "object" ? bruta : {};
     const ids = [...new Set((Array.isArray(e.ids) ? e.ids : []).map(String).filter(id => ID_ESTAMPA.test(id)))].slice(0, 200);
+    const p = e.propria && typeof e.propria === "object" ? e.propria : {};
     return {
       ativa: Boolean(e.ativa) && MOLDES_COM_ESTAMPA.includes(molde),
       ids,
       obrigatoria: Boolean(e.obrigatoria),
+      propria: { padrao: Boolean(p.padrao), imagem: Boolean(p.imagem), preco: round2(numero(p.preco, 0, 500, 0)) },
     };
+  }
+
+  function estampaPropriaPermitida(config) {
+    const e = (config && config.estampas) || {};
+    if (!e.ativa || !e.propria) return { padrao: false, imagem: false, preco: 0 };
+    return e.propria;
+  }
+
+  function fotoDaEstampa(f) {
+    return f && ID_FOTO.test(String(f.id)) && CHAVE_FOTO.test(String(f.chave)) ? { id: String(f.id), chave: String(f.chave) } : null;
+  }
+
+  function validarEstampaPropria(bruta, permitida) {
+    const e = bruta && typeof bruta === "object" ? bruta : {};
+    if (e.tipo === "imagem") {
+      if (!permitida.imagem) return { erro: "Este produto não aceita imagem própria como estampa." };
+      const foto = fotoDaEstampa(e.foto);
+      if (!foto) return { erro: "Envie a imagem da estampa de novo." };
+      return { valor: { tipo: "imagem", foto } };
+    }
+    if (e.tipo !== "padrao" || !permitida.padrao) return { erro: "Este produto não aceita estampa montada." };
+    if (!MOTIVOS_DA_ESTAMPA.some(m => m.id === e.motivo)) return { erro: "Escolha o desenho da estampa." };
+    if (!HEX_VALIDO.test(String(e.cor || "")) || !HEX_VALIDO.test(String(e.fundo || ""))) return { erro: "Escolha as cores da estampa." };
+    const tamanho = Number(e.tamanho), espaco = Number(e.espaco);
+    const [tMin, tMax] = LIMITES_DA_ESTAMPA.tamanho, [eMin, eMax] = LIMITES_DA_ESTAMPA.espaco;
+    if (!Number.isFinite(tamanho) || tamanho < tMin || tamanho > tMax || !Number.isFinite(espaco) || espaco < eMin || espaco > eMax) return { erro: "Tamanho ou espaço da estampa fora do limite." };
+    const valor = { tipo: "padrao", motivo: e.motivo, cor: String(e.cor).toUpperCase(), fundo: String(e.fundo).toUpperCase(), tamanho: round2(tamanho), espaco: round2(espaco), xadrez: Boolean(e.xadrez) };
+    if (e.motivo === "foto") {
+      const foto = fotoDaEstampa(e.foto);
+      if (!foto) return { erro: "Envie a foto que vai virar estampa." };
+      valor.foto = foto;
+    }
+    return { valor };
+  }
+
+  function descreverEstampaPropria(e) {
+    if (!e) return "";
+    if (e.tipo === "imagem") return "imagem enviada";
+    const motivo = MOTIVOS_DA_ESTAMPA.find(m => m.id === e.motivo);
+    return `padrão de ${motivo ? motivo.plural : "desenhos"}`;
   }
 
   function estampasDoProduto(produto) {
@@ -274,6 +334,9 @@
     for (const adicional of config.adicionais || []) if (marcados.has(adicional.id)) preco += adicional.preco;
     const estampa = estampaEscolhida(produto, escolhas);
     if (estampa && estampa.preco > 0) preco += estampa.preco;
+    const propria = escolhas && escolhas.personalizacao ? escolhas.personalizacao.estampaPropria : null;
+    const permitida = estampaPropriaPermitida(config);
+    if (propria && !estampa && permitida[propria.tipo] && permitida.preco > 0) preco += permitida.preco;
     return round2(Math.max(0.01, preco));
   }
 
@@ -294,6 +357,7 @@
     }
     const estampas = estampasDoProduto(produto);
     if (estampas.length && config.estampas.obrigatoria) personalizacao.estampa = estampas[0].id;
+    else if (config.estampas && config.estampas.ativa && config.estampas.obrigatoria && estampaPropriaPermitida(config).padrao) personalizacao.estampaPropria = { ...ESTAMPA_PROPRIA_PADRAO };
     return { variacoes, adicionais: [], personalizacao };
   }
 
@@ -354,11 +418,18 @@
     }
 
     const estampas = estampasDoProduto(produto);
-    if (estampas.length) {
+    const permitida = estampaPropriaPermitida(config);
+    let comPropria = false;
+    if (bruta.estampaPropria) {
+      const r = validarEstampaPropria(bruta.estampaPropria, permitida);
+      if (r.erro) erros.push(r.erro);
+      else { escolhas.personalizacao.estampaPropria = r.valor; comPropria = true; }
+    }
+    if (!comPropria && (estampas.length || permitida.padrao || permitida.imagem)) {
       const pedida = bruta.estampa ? String(bruta.estampa) : "";
       if (pedida && estampas.some(e => e.id === pedida)) escolhas.personalizacao.estampa = pedida;
       else if (pedida) erros.push("Essa estampa não está mais disponível. Escolha outra.");
-      else if (config.estampas.obrigatoria) erros.push("Escolha a estampa.");
+      else if (config.estampas.obrigatoria && !bruta.estampaPropria) erros.push("Escolha a estampa.");
     }
 
     const quantidade = Number(qtd);
@@ -396,6 +467,7 @@
     }
     const estampa = estampaEscolhida(produto, escolhas);
     if (estampa) linhas.push({ rotulo: "Estampa", valor: estampa.nome });
+    else if (pers.estampaPropria) linhas.push({ rotulo: "Estampa", valor: descreverEstampaPropria(pers.estampaPropria) });
     if (pers.arte) linhas.push({ rotulo: "Arte", valor: nomeDaArte(pers.arte) });
     if (pers.letra) linhas.push({ rotulo: "Letra", valor: nomeDaLetra(pers.letra) });
     if (pers.fotos && pers.fotos.length) linhas.push({ rotulo: "Fotos", valor: String(pers.fotos.length) });
@@ -412,12 +484,15 @@
     const pers = e.personalizacao || {};
     const fotos = (pers.fotos || []).map(f => `${f.id}:${f.x}:${f.y}:${f.zoom}`).join(",");
     const campos = ["nome", "frase", "data", "observacoes", "letra", "arte", "estampa"].map(k => `${k}=${pers[k] || ""}`).join("|");
-    return `${id}#${variacoes}#${adicionais}#${campos}#${fotos}#${pers.aprovarWhatsApp === false ? 0 : 1}`;
+    const propria = pers.estampaPropria ? JSON.stringify(pers.estampaPropria) : "";
+    return `${id}#${variacoes}#${adicionais}#${campos}#${fotos}#${pers.aprovarWhatsApp === false ? 0 : 1}#${propria}`;
   }
 
   return {
     MOLDES, LETRAS, ARTES, CAMPOS_TEXTO, MAX_FOTOS, QTD_MAXIMA, QTD_CONDICAO_ESPECIAL, ID_ESTAMPA, MOLDES_COM_ESTAMPA,
     estampasDoProduto, estampaEscolhida, COBERTURA_DA_VOLTA, voltaDaPeca,
+    MOTIVOS_DA_ESTAMPA, PALETA_DA_ESTAMPA, LIMITES_DA_ESTAMPA, ESTAMPA_PROPRIA_PADRAO,
+    estampaPropriaPermitida, validarEstampaPropria, descreverEstampaPropria,
     MEDIDAS_DO_MOLDE, TAMANHO_MINIMO, TAMANHO_MAXIMO, medidaDoNome, normalizarTamanho, medidaDaPeca,
     round2, normalizarConfig, normalizarVariacoes, normalizarPersonalizacao,
     precoBase, precoUnitario, escolhasPadrao, validarEscolhas, resumoDasEscolhas, chaveDaLinha,

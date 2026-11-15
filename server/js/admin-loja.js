@@ -55,6 +55,7 @@
 
   function blocoDeEstampas(){
     const e = config.estampas || { ativa: false, ids: [], obrigatoria: false };
+    const propria = e.propria || { padrao: false, imagem: false, preco: 0 };
     const todas = window.ArteAdminEstampas ? window.ArteAdminEstampas.lista() : [];
     const marcadas = new Set(e.ids || []);
     const lista = todas.length
@@ -66,10 +67,16 @@
           </label>`).join("")}</div>`
       : `<p class="form-text">Nenhuma estampa cadastrada. Suba na aba Estampas do painel.</p>`;
     return `
-        <label class="al-check"><input type="checkbox" data-campo="estampas-ativa"${e.ativa ? " checked" : ""}> a cliente escolhe uma estampa</label>
+        <label class="al-check"><input type="checkbox" data-campo="estampas-ativa"${e.ativa ? " checked" : ""}> esta peça aceita estampa (da loja ou criada pela cliente)</label>
         <label class="al-check"><input type="checkbox" data-campo="estampas-obrigatoria"${e.obrigatoria ? " checked" : ""}> toda peça sai com estampa (sem a opção "sem estampa")</label>
         <p class="form-text">Marque quais estampas este produto oferece. Nenhuma marcada = todas as estampas que aparecem na loja.</p>
-        ${lista}`;
+        ${lista}
+        <p class="al-subtitulo mt-2">Estampa criada pela cliente</p>
+        <div class="al-linha">
+          <label class="al-check"><input type="checkbox" data-campo="propria-padrao"${propria.padrao ? " checked" : ""}> pode montar um padrão (desenho ou foto dela repetidos, cores e tamanho)</label>
+          <label class="al-check"><input type="checkbox" data-campo="propria-imagem"${propria.imagem ? " checked" : ""}> pode enviar uma imagem inteira</label>
+          <label class="al-campo al-numero">Valor extra (R$) <input type="number" class="form-control form-control-sm" data-campo="propria-preco" min="0" max="500" step="0.01" value="${esc(propria.preco || 0)}"></label>
+        </div>`;
   }
 
   function renderEstampas(){
@@ -296,6 +303,11 @@
         ativa: valor("[data-campo=estampas-ativa]").checked && MOLDES_COM_ESTAMPA.includes(molde),
         obrigatoria: valor("[data-campo=estampas-obrigatoria]").checked,
         ids: [...raiz.querySelectorAll("[data-estampa]")].filter(c => c.checked).map(c => c.dataset.estampa),
+        propria: {
+          padrao: valor("[data-campo=propria-padrao]").checked,
+          imagem: valor("[data-campo=propria-imagem]").checked,
+          preco: num(valor("[data-campo=propria-preco]"), 0),
+        },
       },
       peso: num(valor("[data-campo=peso]"), 0.45),
       caixa: {

@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as EventoPonteiro } from "react";
-import { dinheiro, escolhasPadrao, linkWhatsApp, parcelas, precoNoPix, precoUnitario, regras, resumoDasEscolhas, validarEscolhas } from "../compartilhado";
+import { dinheiro, escolhasPadrao, geradorDeEstampa, linkWhatsApp, parcelas, precoNoPix, precoUnitario, regras, resumoDasEscolhas, validarEscolhas } from "../compartilhado";
 import { CartaoProduto } from "../componentes/CartaoProduto";
 import { Foto, urlDaFoto as urlDaFotoDoProduto } from "../componentes/Foto";
 import { Icone, type NomeIcone } from "../componentes/Icone";
@@ -10,7 +10,12 @@ import { CalculoDeFrete } from "../componentes/CalculoDeFrete";
 import { ParedeDoEstudio } from "../componentes/Estudio";
 import { carrinho } from "../estado/carrinho";
 import { enviarFoto, urlDaFotoEnviada, lembrarFotoLocal } from "../estado/fotos";
-import type { Escolhas, EstampaPublica, FotoEnviada, IdCampo, Loja, PaginaProduto, Personalizacao, Produto as TipoProduto } from "../tipos";
+import { estampaPropriaPublica, lembrarFotoDaEstampa } from "../estado/estampa-propria";
+import type { Escolhas, EstampaPropria, EstampaPublica, FotoEnviada, IdCampo, Loja, PaginaProduto, Personalizacao, Produto as TipoProduto } from "../tipos";
+
+type Padrao = Extract<EstampaPropria, { tipo: "padrao" }>;
+type AbaDaEstampa = "loja" | "padrao" | "imagem";
+const LIMITE_DA_FOTO = 15 * 1024 * 1024;
 
 const Previa3D = lazy(() => import("../componentes/Previa3D"));
 const MOLDES_3D = ["caneca", "xicara", "garrafa", "copo"];
@@ -29,51 +34,204 @@ function usaFotos(produto: TipoProduto, escolhas: Escolhas): boolean {
   return escolhas.personalizacao.arte === "fotos";
 }
 
-function estampaDe(produto: TipoProduto, escolhas: Escolhas): EstampaPublica | null {
+function estampaDe(produto: TipoProduto, escolhas: Escolhas, paraGuardar = false): EstampaPublica | null {
   const id = escolhas.personalizacao.estampa;
-  return id ? (produto.estampasDisponiveis || []).find(e => e.id === id) ?? null : null;
+  const daLoja = id ? (produto.estampasDisponiveis || []).find(e => e.id === id) ?? null : null;
+  return daLoja ?? estampaPropriaPublica(produto.config, escolhas, paraGuardar);
 }
 
 function temEstampas(produto: TipoProduto): boolean {
-  return Boolean(produto.config.estampas?.ativa && produto.estampasDisponiveis?.length);
+  const permitida = regras.estampaPropriaPermitida(produto.config);
+  return Boolean(produto.config.estampas?.ativa && (produto.estampasDisponiveis?.length || permitida.padrao || permitida.imagem));
 }
 
 function Passo({ numero }: { numero?: number }) {
   return numero ? <span className="passo-numero" aria-hidden="true">{numero}</span> : null;
 }
 
-function SeletorDeEstampa({ produto, escolhas, aoEscolher, numero }: { produto: TipoProduto; escolhas: Escolhas; aoEscolher: (id: string | undefined) => void; numero?: number }) {
-  const [colecao, setColecao] = useState("");
+async function prepararFoto(arquivo: File | undefined): Promise<{ id: string; chave: string; arquivo: File }> {
+  if (!arquivo) throw new Error("");
+  if (!arquivo.type.startsWith("image/")) throw new Error(`"${arquivo.name}" não é uma imagem.`);
+  if (arquivo.size > LIMITE_DA_FOTO) throw new Error(`"${arquivo.name}" passa de 15 MB.`);
+  const enviada = await enviarFoto(arquivo);
+  lembrarFotoLocal(enviada.id, arquivo);
+  return { ...enviada, arquivo };
+}
+
+function Paleta({ rotulo, valor, mudar }: { rotulo: string; valor: string; mudar: (hex: string) => void }) {
+  const nome = regras.PALETA_DA_ESTAMPA.find(c => c.hex === valor)?.nome ?? valor;
+  return (
+    <div className="montador-linha">
+      <p className="montador-rotulo">{rotulo}: <span>{nome}</span></p>
+      <div className="cores cores-estampa" role="group" aria-label={rotulo}>
+        {regras.PALETA_DA_ESTAMPA.map(c => (
+          <button key={c.hex} type="button" className={`cor${valor === c.hex ? " ativo" : ""}`} aria-pressed={valor === c.hex} aria-label={c.nome} title={c.nome} onClick={() => mudar(c.hex)}>
+            <span style={{ background: c.hex }} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MontadorDePadrao({ valor, mudar }: { valor: Padrao; mudar: (p: Partial<Padrao>) => void }) {
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [tMin, tMax] = regras.LIMITES_DA_ESTAMPA.tamanho;
+  const [eMin, eMax] = regras.LIMITES_DA_ESTAMPA.espaco;
+  async function aoEscolherFoto(evento: ChangeEvent<HTMLInputElement>) {
+    const arquivo = evento.target.files?.[0];
+    evento.target.value = "";
+    setErro("");
+    setEnviando(true);
+    try {
+      const enviada = await prepararFoto(arquivo);
+      await lembrarFotoDaEstampa(enviada.id, enviada.arquivo);
+      mudar({ motivo: "foto", foto: { id: enviada.id, chave: enviada.chave } });
+    } catch (e) {
+      if (e instanceof Error && e.message) setErro(e.message);
+    } finally {
+      setEnviando(false);
+    }
+  }
+  return (
+    <div className="montador">
+      <p className="montador-rotulo">Desenho: <span>{regras.MOTIVOS_DA_ESTAMPA.find(m => m.id === valor.motivo)?.nome}</span></p>
+      <div className="motivos" role="group" aria-label="Desenho da estampa">
+        {regras.MOTIVOS_DA_ESTAMPA.filter(m => m.id !== "foto").map(m => (
+          <button key={m.id} type="button" className={`motivo${valor.motivo === m.id ? " ativo" : ""}`} aria-pressed={valor.motivo === m.id} onClick={() => mudar({ motivo: m.id, foto: undefined })}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" style={{ background: valor.fundo }} dangerouslySetInnerHTML={{ __html: geradorDeEstampa.desenhoDoMotivo(m.id, valor.cor, valor.fundo) }} />
+            <span>{m.nome}</span>
+          </button>
+        ))}
+        <label className={`motivo motivo-foto${valor.motivo === "foto" ? " ativo" : ""}${enviando ? " enviando" : ""}`}>
+          {valor.motivo === "foto" && valor.foto ? <img src={urlDaFotoEnviada(valor.foto) ?? ""} alt="" width={40} height={40} /> : <Icone nome="envio" tamanho={26} traco={1.5} />}
+          <span>{enviando ? "Enviando…" : valor.motivo === "foto" ? "Trocar foto" : "Sua foto"}</span>
+          <input type="file" accept="image/*" className="visualmente-oculto" onChange={aoEscolherFoto} disabled={enviando} aria-label="Usar uma foto sua como desenho da estampa" />
+        </label>
+      </div>
+      {erro ? <p className="mensagem-erro" role="alert">{erro}</p> : null}
+      {valor.motivo === "foto" ? null : <Paleta rotulo="Cor do desenho" valor={valor.cor} mudar={cor => mudar({ cor })} />}
+      <Paleta rotulo="Fundo" valor={valor.fundo} mudar={fundo => mudar({ fundo })} />
+      <div className="montador-faixas">
+        <label className="faixa">
+          <span>Tamanho do desenho <strong>{valor.tamanho} mm</strong></span>
+          <input type="range" min={tMin} max={tMax} step={1} value={valor.tamanho} onChange={e => mudar({ tamanho: Number(e.target.value) })} />
+        </label>
+        <label className="faixa">
+          <span>Espaço entre eles <strong>{valor.espaco} mm</strong></span>
+          <input type="range" min={eMin} max={eMax} step={1} value={valor.espaco} onChange={e => mudar({ espaco: Number(e.target.value) })} />
+        </label>
+      </div>
+      <label className="marcar">
+        <input type="checkbox" checked={valor.xadrez} onChange={e => mudar({ xadrez: e.target.checked })} />
+        <span>Alternar as fileiras</span>
+      </label>
+    </div>
+  );
+}
+
+function EnvioDaImagem({ produto, escolhas, aoEscolher }: { produto: TipoProduto; escolhas: Escolhas; aoEscolher: (e: EstampaPropria | undefined) => void }) {
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  const atual = escolhas.personalizacao.estampaPropria;
+  const foto = atual?.tipo === "imagem" ? atual.foto : null;
+  const medida = regras.medidaDaPeca(produto.config, escolhas);
+  const px = (mm: number) => Math.round((mm / 25.4) * 300);
+  async function aoEscolherArquivo(evento: ChangeEvent<HTMLInputElement>) {
+    const arquivo = evento.target.files?.[0];
+    evento.target.value = "";
+    setErro("");
+    setEnviando(true);
+    try {
+      const enviada = await prepararFoto(arquivo);
+      aoEscolher({ tipo: "imagem", foto: { id: enviada.id, chave: enviada.chave } });
+    } catch (e) {
+      if (e instanceof Error && e.message) setErro(e.message);
+    } finally {
+      setEnviando(false);
+    }
+  }
+  return (
+    <div className="envio-fotos envio-estampa">
+      <div className="envio-fotos-topo">
+        {foto ? <img className="envio-estampa-amostra" src={urlDaFotoEnviada(foto) ?? ""} alt="Imagem enviada para a estampa" width={72} height={48} /> : <Icone nome="envio" tamanho={32} traco={1.5} />}
+        <div>
+          <strong>{foto ? "Imagem enviada" : "Envie a imagem da estampa"}</strong>
+          <span>Ela cobre a peça toda ({medida.largura} × {medida.altura} mm). O ideal é {px(medida.largura)} × {px(medida.altura)} px; o que sobrar é cortado pelo centro.</span>
+        </div>
+        <label className="botao botao-cheio">
+          {enviando ? "Enviando…" : foto ? "Trocar" : "Escolher"}
+          <input type="file" accept="image/*" className="visualmente-oculto" onChange={aoEscolherArquivo} disabled={enviando} aria-label="Escolher a imagem da estampa" />
+        </label>
+      </div>
+      {erro ? <p className="mensagem-erro" role="alert">{erro}</p> : null}
+    </div>
+  );
+}
+
+function SeletorDeEstampa({ produto, escolhas, aoEscolher, aoEscolherPropria, numero }: { produto: TipoProduto; escolhas: Escolhas; aoEscolher: (id: string | undefined) => void; aoEscolherPropria: (e: EstampaPropria | undefined) => void; numero?: number }) {
   const lista = produto.estampasDisponiveis || [];
+  const permitida = regras.estampaPropriaPermitida(produto.config);
+  const propria = escolhas.personalizacao.estampaPropria;
+  const abas: AbaDaEstampa[] = [];
+  if (lista.length) abas.push("loja");
+  if (permitida.padrao) abas.push("padrao");
+  if (permitida.imagem) abas.push("imagem");
+  const [aba, setAba] = useState<AbaDaEstampa>(propria?.tipo ?? abas[0] ?? "loja");
+  const [colecao, setColecao] = useState("");
   if (!temEstampas(produto)) return null;
+  const atual = abas.includes(aba) ? aba : abas[0];
   const obrigatoria = Boolean(produto.config.estampas?.obrigatoria);
   const colecoes = [...new Set(lista.map(e => e.colecao))];
   const visiveis = colecao ? lista.filter(e => e.colecao === colecao) : lista;
   const escolhida = estampaDe(produto, escolhas);
+  const daLoja = escolhas.personalizacao.estampa;
+  const padrao: Padrao = propria?.tipo === "padrao" ? propria : regras.ESTAMPA_PROPRIA_PADRAO;
+  const NOMES: Record<AbaDaEstampa, string> = { loja: "Da loja", padrao: "Montar padrão", imagem: "Enviar imagem" };
+  function trocarAba(nova: AbaDaEstampa) {
+    setAba(nova);
+    if (nova === "padrao" && propria?.tipo !== "padrao") aoEscolherPropria({ ...regras.ESTAMPA_PROPRIA_PADRAO });
+  }
   return (
     <fieldset className="grupo-escolha seletor-estampa">
       <legend><Passo numero={numero} />Estampa: <span>{escolhida ? escolhida.nome : "sem estampa"}</span></legend>
-      {colecoes.length > 1 ? (
-        <div className="chips chips-colecao" role="group" aria-label="Coleções de estampa">
-          <button type="button" className={`chip${colecao ? "" : " ativo"}`} aria-pressed={!colecao} onClick={() => setColecao("")}>Todas</button>
-          {colecoes.map(c => <button key={c} type="button" className={`chip${colecao === c ? " ativo" : ""}`} aria-pressed={colecao === c} onClick={() => setColecao(c)}>{c}</button>)}
+      {abas.length > 1 ? (
+        <div className="abas-estampa" role="group" aria-label="Como escolher a estampa">
+          {abas.map(a => <button key={a} type="button" className={`aba-estampa${atual === a ? " ativo" : ""}`} aria-pressed={atual === a} onClick={() => trocarAba(a)}>{NOMES[a]}</button>)}
         </div>
       ) : null}
-      <div className="estampas-grade">
-        {obrigatoria ? null : (
-          <button type="button" className={`estampa-opcao estampa-nenhuma${escolhida ? "" : " ativo"}`} aria-pressed={!escolhida} onClick={() => aoEscolher(undefined)}>
-            <span className="estampa-amostra" aria-hidden="true" />
-            <span className="estampa-nome">Sem estampa</span>
-          </button>
-        )}
-        {visiveis.map(e => (
-          <button key={e.id} type="button" className={`estampa-opcao${escolhida?.id === e.id ? " ativo" : ""}`} aria-pressed={escolhida?.id === e.id} onClick={() => aoEscolher(e.id)}>
-            <img className="estampa-amostra" src={e.miniatura} alt="" width={120} height={80} loading="lazy" decoding="async" />
-            <span className="estampa-nome">{e.nome}</span>
-            {e.preco > 0 ? <small>+ {dinheiro(e.preco)}</small> : null}
-          </button>
-        ))}
-      </div>
+      {(atual === "padrao" || atual === "imagem") && permitida.preco > 0 ? <p className="dica">Estampa criada por você: + {dinheiro(permitida.preco)}</p> : null}
+      {atual === "loja" ? (
+        <>
+          {colecoes.length > 1 ? (
+            <div className="chips chips-colecao" role="group" aria-label="Coleções de estampa">
+              <button type="button" className={`chip${colecao ? "" : " ativo"}`} aria-pressed={!colecao} onClick={() => setColecao("")}>Todas</button>
+              {colecoes.map(c => <button key={c} type="button" className={`chip${colecao === c ? " ativo" : ""}`} aria-pressed={colecao === c} onClick={() => setColecao(c)}>{c}</button>)}
+            </div>
+          ) : null}
+          <div className="estampas-grade">
+            {obrigatoria ? null : (
+              <button type="button" className={`estampa-opcao estampa-nenhuma${escolhida ? "" : " ativo"}`} aria-pressed={!escolhida} onClick={() => aoEscolher(undefined)}>
+                <span className="estampa-amostra" aria-hidden="true" />
+                <span className="estampa-nome">Sem estampa</span>
+              </button>
+            )}
+            {visiveis.map(e => (
+              <button key={e.id} type="button" className={`estampa-opcao${daLoja === e.id ? " ativo" : ""}`} aria-pressed={daLoja === e.id} onClick={() => aoEscolher(e.id)}>
+                <img className="estampa-amostra" src={e.miniatura} alt="" width={120} height={80} loading="lazy" decoding="async" />
+                <span className="estampa-nome">{e.nome}</span>
+                {e.preco > 0 ? <small>+ {dinheiro(e.preco)}</small> : null}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
+      {atual === "padrao" ? <MontadorDePadrao valor={padrao} mudar={p => aoEscolherPropria({ ...padrao, ...p })} /> : null}
+      {atual === "imagem" ? <EnvioDaImagem produto={produto} escolhas={escolhas} aoEscolher={aoEscolherPropria} /> : null}
+      {atual !== "loja" && propria && !obrigatoria ? (
+        <button type="button" className="botao-link tirar-estampa" onClick={() => aoEscolherPropria(undefined)}>Tirar a estampa</button>
+      ) : null}
     </fieldset>
   );
 }
@@ -297,7 +455,7 @@ function EnvioDeFotos({ produto, fotos, setFotos, selecionada, setSelecionada }:
   );
 }
 
-function Personalizar({ produto, escolhas, mudar, fotoSelecionada, setFotoSelecionada, setLado, aoEscolherEstampa }: {
+function Personalizar({ produto, escolhas, mudar, fotoSelecionada, setFotoSelecionada, setLado, aoEscolherEstampa, aoEscolherPropria }: {
   produto: TipoProduto;
   escolhas: Escolhas;
   mudar: (p: Partial<Personalizacao>) => void;
@@ -305,6 +463,7 @@ function Personalizar({ produto, escolhas, mudar, fotoSelecionada, setFotoSeleci
   setFotoSelecionada: (i: number) => void;
   setLado: (l: Lado) => void;
   aoEscolherEstampa: (id: string | undefined) => void;
+  aoEscolherPropria: (e: EstampaPropria | undefined) => void;
 }) {
   const pers = produto.config.personalizacao;
   const p = escolhas.personalizacao;
@@ -321,7 +480,7 @@ function Personalizar({ produto, escolhas, mudar, fotoSelecionada, setFotoSeleci
   return (
     <div className="caixa-personalizar">
       <h2>Personalize {produto.config.molde === "caneca" ? "a sua" : "do seu jeito"}</h2>
-      <SeletorDeEstampa produto={produto} escolhas={escolhas} aoEscolher={aoEscolherEstampa} numero={numerar ? numeroEstampa : undefined} />
+      <SeletorDeEstampa produto={produto} escolhas={escolhas} aoEscolher={aoEscolherEstampa} aoEscolherPropria={aoEscolherPropria} numero={numerar ? numeroEstampa : undefined} />
       {pers.artes.length > 1 ? (
         <fieldset className="grupo-escolha">
           <legend><Passo numero={numerar ? numeroArte : undefined} />Arte: <span>{regras.nomeDaArte(p.arte || pers.artes[0])}</span></legend>
@@ -412,8 +571,12 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
   const total = Math.round(unitario * qtd * 100) / 100;
 
   function escolherEstampa(id: string | undefined) {
-    setEscolhas(es => ({ ...es, personalizacao: { ...es.personalizacao, estampa: id } }));
+    setEscolhas(es => ({ ...es, personalizacao: { ...es.personalizacao, estampa: id, estampaPropria: undefined } }));
     setLado("frente");
+  }
+
+  function escolherPropria(e: EstampaPropria | undefined) {
+    setEscolhas(es => ({ ...es, personalizacao: { ...es.personalizacao, estampaPropria: e, estampa: undefined } }));
   }
 
   function mudarPers(p: Partial<Personalizacao>) {
@@ -461,7 +624,7 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
       preco: precoUnitario(produto, resultado.escolhas, qtd), foto: produto.fotos[0] ?? null, molde: config.molde,
       corPeca: cores.peca, corAlca: cores.alca, resumo: resumoDasEscolhas(produto, resultado.escolhas), qtdMinima: config.qtdMinima || 1,
       config,
-      estampa: estampaDe(produto, resultado.escolhas),
+      estampa: estampaDe(produto, resultado.escolhas, true),
     });
     setAdicionado(true);
     setTimeout(() => setAdicionado(false), 2500);
@@ -538,9 +701,9 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
           })}
 
           {config.personalizacao.ativa ? (
-            <Personalizar produto={produto} escolhas={escolhas} mudar={mudarPers} fotoSelecionada={fotoSelecionada} setFotoSelecionada={setFotoSelecionada} setLado={setLado} aoEscolherEstampa={escolherEstampa} />
+            <Personalizar produto={produto} escolhas={escolhas} mudar={mudarPers} fotoSelecionada={fotoSelecionada} setFotoSelecionada={setFotoSelecionada} setLado={setLado} aoEscolherEstampa={escolherEstampa} aoEscolherPropria={escolherPropria} />
           ) : (
-            <SeletorDeEstampa produto={produto} escolhas={escolhas} aoEscolher={escolherEstampa} />
+            <SeletorDeEstampa produto={produto} escolhas={escolhas} aoEscolher={escolherEstampa} aoEscolherPropria={escolherPropria} />
           )}
 
           {config.adicionais.map(a => (

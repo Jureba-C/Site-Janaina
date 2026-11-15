@@ -2,7 +2,10 @@ const { effectiveProduct } = require("./catalogo.js");
 
 function fotosDaPersonalizacao(escolhas){
   const fotos = escolhas?.personalizacao?.fotos;
-  return Array.isArray(fotos) ? fotos.map(f => f.id).filter(Boolean) : [];
+  const ids = Array.isArray(fotos) ? fotos.map(f => f.id).filter(Boolean) : [];
+  const daEstampa = escolhas?.personalizacao?.estampaPropria?.foto?.id;
+  if(daEstampa && !ids.includes(daEstampa)) ids.push(daEstampa);
+  return ids;
 }
 
 function itemParaExibir(item, overridesMap){

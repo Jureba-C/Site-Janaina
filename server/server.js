@@ -39,6 +39,7 @@ const googleAuth = require("./lib/googleAuth.js");
 const tarefasPeriodicas = require("./scripts/tarefas-periodicas.js");
 const rastreio = require("./lib/rastreio.js");
 const regras = require("./js/regras-produto.js");
+const estampaPropria = require("./js/estampa-propria.js");
 const { itemParaExibir, textoDoResumo, fotosDaPersonalizacao } = require("./lib/itens-pedido.js");
 const { prazoDaCotacao } = require("./lib/prazoFrete.js");
 const { meFetch, rastreioDoPedido } = require("./lib/melhorEnvio.js");
@@ -818,7 +819,8 @@ function hashDaChave(chave){
 }
 
 function conferirFotosDaPersonalizacao(escolhas, nomeDoProduto, pedidoAtual){
-  for(const foto of escolhas?.personalizacao?.fotos || []){
+  const daEstampa = escolhas?.personalizacao?.estampaPropria?.foto;
+  for(const foto of [...(escolhas?.personalizacao?.fotos || []), ...(daEstampa ? [daEstampa] : [])]){
     const linha = db.lerFotoPersonalizacao(foto.id);
     const confere = linha && linha.chave_hash === hashDaChave(foto.chave)
       && (!linha.pedido || linha.pedido === pedidoAtual);
@@ -3999,6 +4001,24 @@ app.get("/api/personalizacao/fotos/:id", (req, res) => {
   res.send(Buffer.from(original ? linha.data : linha.miniatura));
 });
 
+function estampaPropriaDoItem(config, escolhas, pedido, paraProducao){
+  const propria = escolhas?.personalizacao?.estampaPropria;
+  if(!propria) return null;
+  const foto = propria.foto ? db.lerFotoPersonalizacao(propria.foto.id) : null;
+  const fotoValida = foto && foto.pedido === pedido ? foto : null;
+  const medida = regras.medidaDaPeca(config, escolhas);
+  if(propria.tipo === "imagem"){
+    if(!fotoValida) return null;
+    const dados = paraProducao ? fotoValida.data : fotoValida.miniatura;
+    const mime = paraProducao ? fotoValida.mime_type : "image/webp";
+    if(paraProducao) return { mime, data: dados };
+    return { id: "propria", nome: "Imagem enviada", colecao: "", preco: 0, proporcao: medida.largura / medida.altura, miniatura: "", textura: `data:${mime};base64,${Buffer.from(dados).toString("base64")}` };
+  }
+  const href = fotoValida ? `data:${paraProducao ? fotoValida.mime_type : "image/webp"};base64,${Buffer.from(paraProducao ? fotoValida.data : fotoValida.miniatura).toString("base64")}` : null;
+  if(paraProducao) return { svg: estampaPropria.conteudoDoPadrao(propria, medida.largura, medida.altura, href, "EstampaPropria") };
+  return { id: "propria", nome: "Estampa própria", colecao: "", preco: 0, proporcao: medida.largura / medida.altura, miniatura: "", textura: estampaPropria.comoDataUrl(estampaPropria.svgDoPadrao(propria, medida.largura, medida.altura, href)) };
+}
+
 function estampaDoItem(escolhas, tamanho, bruta = false){
   const id = escolhas?.personalizacao?.estampa;
   if(!id || !ID_DA_ESTAMPA.test(String(id))) return null;
@@ -4028,7 +4048,7 @@ app.get("/api/admin/pedidos/:reference/itens/:indice/:tipo.svg", auth.requireAdm
       : `data:image/webp;base64,${Buffer.from(linha.miniatura).toString("base64")}`;
   }
   try {
-    const svg = lojaSsr.svgDoItem({ tipo, config: item.config, escolhas: item.escolhas, lado: req.query.lado, fotos, estampa: tipo === "previa" ? estampaDoItem(item.escolhas, "textura") : null });
+    const svg = lojaSsr.svgDoItem({ tipo, config: item.config, escolhas: item.escolhas, lado: req.query.lado, fotos, estampa: tipo === "previa" ? (estampaDoItem(item.escolhas, "textura") || estampaPropriaDoItem(item.config, item.escolhas, pedido.external_reference, false)) : null });
     res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("Content-Security-Policy", "default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'");
@@ -4056,7 +4076,7 @@ app.get("/api/admin/pedidos/:reference/itens/:indice/producao.svg", auth.require
         return linha && linha.pedido === pedido.external_reference ? Buffer.from(linha.data) : null;
       },
       svgDaArte: lojaSsr.svgDaArteSemFontes,
-      estampa: estampaDoItem(item.escolhas, "original", true),
+      estampa: estampaDoItem(item.escolhas, "original", true) || estampaPropriaDoItem(item.config, item.escolhas, pedido.external_reference, true),
       titulo: `${item.name} — pedido ${pedido.external_reference.slice(0, 8)}`,
     });
     const apelido = produtoUrl.apelido(item.name);

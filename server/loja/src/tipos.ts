@@ -57,7 +57,8 @@ export interface ConfigProduto {
   faixas: { min: number; preco: number }[];
   qtdMinima: number;
   personalizacao: ConfigPersonalizacao;
-  estampas?: { ativa: boolean; ids: string[]; obrigatoria: boolean };
+  estampas?: { ativa: boolean; ids: string[]; obrigatoria: boolean; propria?: { padrao: boolean; imagem: boolean; preco: number } };
+  tamanho?: { largura: number; altura: number } | null;
 }
 
 export interface EstampaPublica {
@@ -228,6 +229,15 @@ export interface FotoEnviada {
   zoom: number;
 }
 
+export interface FotoDaEstampa {
+  id: string;
+  chave: string;
+}
+
+export type EstampaPropria =
+  | { tipo: "padrao"; motivo: string; cor: string; fundo: string; tamanho: number; espaco: number; xadrez: boolean; foto?: FotoDaEstampa }
+  | { tipo: "imagem"; foto: FotoDaEstampa };
+
 export interface Personalizacao {
   nome?: string;
   frase?: string;
@@ -236,6 +246,7 @@ export interface Personalizacao {
   letra?: string;
   arte?: string;
   estampa?: string;
+  estampaPropria?: EstampaPropria;
   fotos?: FotoEnviada[];
   aprovarWhatsApp?: boolean;
 }
