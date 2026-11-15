@@ -17,6 +17,7 @@
     { id: "flor", nome: "Florzinha" },
     { id: "brasilia", nome: "Brasília" },
     { id: "fotos", nome: "Com fotos" },
+    { id: "foto", nome: "Só foto" },
   ];
 
   const CAMPOS_TEXTO = [
@@ -27,6 +28,8 @@
   ];
 
   const MAX_FOTOS = 8;
+  const ARTES_COM_FOTO = ["fotos", "foto"];
+  const GIROS = [0, 90, 180, 270];
   const QTD_MAXIMA = 50;
   const QTD_CONDICAO_ESPECIAL = 10;
   const ID_VALIDO = /^[a-z0-9][a-z0-9-]{0,39}$/;
@@ -386,7 +389,9 @@
     const pers = config.personalizacao || {};
     const bruta = entrada.personalizacao && typeof entrada.personalizacao === "object" ? entrada.personalizacao : {};
     if (pers.ativa) {
+      const arteDaPeca = pers.artes && pers.artes.length ? (pers.artes.includes(bruta.arte) ? bruta.arte : pers.artes[0]) : null;
       for (const [id, campo] of Object.entries(pers.campos || {})) {
+        if (arteDaPeca === "foto" && (id === "nome" || id === "data")) continue;
         const original = String(bruta[id] == null ? "" : bruta[id]);
         const valor = texto(original, 2000);
         if (valor.length > campo.limite) erros.push(`${campo.rotulo}: até ${campo.limite} caracteres.`);
@@ -399,10 +404,10 @@
       if (pers.artes && pers.artes.length) {
         escolhas.personalizacao.arte = pers.artes.includes(bruta.arte) ? bruta.arte : pers.artes[0];
       }
-      const usaFotos = pers.fotos && pers.fotos.max > 0 && (!pers.artes || !pers.artes.length || !pers.artes.includes("fotos") || escolhas.personalizacao.arte === "fotos");
+      const usaFotos = pers.fotos && pers.fotos.max > 0 && (!pers.artes || !pers.artes.some(a => ARTES_COM_FOTO.includes(a)) || ARTES_COM_FOTO.includes(escolhas.personalizacao.arte));
       const fotos = Array.isArray(bruta.fotos) ? bruta.fotos : [];
       if (usaFotos) {
-        const minimo = Math.max(pers.fotos.min, escolhas.personalizacao.arte === "fotos" ? 1 : 0);
+        const minimo = Math.max(pers.fotos.min, ARTES_COM_FOTO.includes(escolhas.personalizacao.arte) ? 1 : 0);
         if (fotos.length > pers.fotos.max) erros.push(`Envie no máximo ${pers.fotos.max} ${pers.fotos.max === 1 ? "foto" : "fotos"}.`);
         else if (fotos.length < minimo) erros.push(`Envie pelo menos ${minimo} ${minimo === 1 ? "foto" : "fotos"}.`);
         const vistas = new Set();
@@ -410,7 +415,7 @@
         for (const f of fotos.slice(0, pers.fotos.max)) {
           if (!f || !ID_FOTO.test(String(f.id)) || !CHAVE_FOTO.test(String(f.chave)) || vistas.has(f.id)) { erros.push("Foto inválida. Envie de novo."); break; }
           vistas.add(f.id);
-          limpas.push({ id: f.id, chave: f.chave, x: round2(numero(f.x, -1, 1, 0)), y: round2(numero(f.y, -1, 1, 0)), zoom: round2(numero(f.zoom, 1, 3, 1)) });
+          limpas.push({ id: f.id, chave: f.chave, x: round2(numero(f.x, -1, 1, 0)), y: round2(numero(f.y, -1, 1, 0)), zoom: round2(numero(f.zoom, 1, 3, 1)), giro: GIROS.includes(Number(f.giro)) ? Number(f.giro) : 0, espelho: f.espelho === true });
         }
         escolhas.personalizacao.fotos = limpas;
       }
@@ -482,14 +487,14 @@
     const variacoes = Object.keys(e.variacoes || {}).sort().map(k => `${k}=${e.variacoes[k]}`).join(",");
     const adicionais = [...(e.adicionais || [])].sort().join(",");
     const pers = e.personalizacao || {};
-    const fotos = (pers.fotos || []).map(f => `${f.id}:${f.x}:${f.y}:${f.zoom}`).join(",");
+    const fotos = (pers.fotos || []).map(f => `${f.id}:${f.x}:${f.y}:${f.zoom}:${f.giro || 0}:${f.espelho ? 1 : 0}`).join(",");
     const campos = ["nome", "frase", "data", "observacoes", "letra", "arte", "estampa"].map(k => `${k}=${pers[k] || ""}`).join("|");
     const propria = pers.estampaPropria ? JSON.stringify(pers.estampaPropria) : "";
     return `${id}#${variacoes}#${adicionais}#${campos}#${fotos}#${pers.aprovarWhatsApp === false ? 0 : 1}#${propria}`;
   }
 
   return {
-    MOLDES, LETRAS, ARTES, CAMPOS_TEXTO, MAX_FOTOS, QTD_MAXIMA, QTD_CONDICAO_ESPECIAL, ID_ESTAMPA, MOLDES_COM_ESTAMPA,
+    MOLDES, LETRAS, ARTES, CAMPOS_TEXTO, MAX_FOTOS, ARTES_COM_FOTO, GIROS, QTD_MAXIMA, QTD_CONDICAO_ESPECIAL, ID_ESTAMPA, MOLDES_COM_ESTAMPA,
     estampasDoProduto, estampaEscolhida, COBERTURA_DA_VOLTA, voltaDaPeca,
     MOTIVOS_DA_ESTAMPA, PALETA_DA_ESTAMPA, LIMITES_DA_ESTAMPA, ESTAMPA_PROPRIA_PADRAO,
     estampaPropriaPermitida, validarEstampaPropria, descreverEstampaPropria,

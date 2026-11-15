@@ -192,13 +192,15 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
         <g transform={`translate(${-w / 2} ${y}) scale(${w / 150})`} fill="none" stroke={halo ?? tinta} strokeWidth={halo ? 6 : 1.4} strokeLinecap="round" strokeLinejoin="round"><path d={BRASILIA} /></g>
       ) });
     }
-    const usaFotos = config.personalizacao.fotos.max > 0 && (arte === "fotos" || !config.personalizacao.artes.includes("fotos"));
-    if (usaFotos && (arte === "fotos" || fotos.length > 0) && (exemplos || fotos.length > 0)) {
+    const soFoto = arte === "foto";
+    const arteDeFoto = arte === "fotos" || soFoto;
+    const usaFotos = config.personalizacao.fotos.max > 0 && (arteDeFoto || !config.personalizacao.artes.some(a => a === "fotos" || a === "foto"));
+    if (usaFotos && (arteDeFoto || fotos.length > 0) && (exemplos || fotos.length > 0)) {
       const quantidade = Math.max(1, fotos.length || (arte === "fotos" ? Math.min(4, config.personalizacao.fotos.max) : 1));
       const { colunas, linhas } = gradeDeFotos(quantidade);
       const vao = largura * 0.03;
-      const alturaMax = (pers.nome || campos.nome) ? altura * 0.62 : altura * 0.9;
-      const lado2 = Math.min((largura * 0.92 - vao * (colunas - 1)) / colunas, (alturaMax - vao * (linhas - 1)) / linhas);
+      const alturaMax = soFoto ? altura * 0.98 : (pers.nome || campos.nome) ? altura * 0.62 : altura * 0.9;
+      const lado2 = Math.min((largura * (soFoto ? 0.98 : 0.92) - vao * (colunas - 1)) / colunas, (alturaMax - vao * (linhas - 1)) / linhas);
       const larguraGrade = colunas * lado2 + (colunas - 1) * vao;
       const alturaGrade = linhas * lado2 + (linhas - 1) * vao;
       const circulo = config.personalizacao.fotos.formato !== "quadrado";
@@ -233,14 +235,18 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
               const sobra = caixa - lado2;
               const ix = cx - sobra / 2 + (foto ? foto.x * sobra / 2 : 0);
               const iy = cy - sobra / 2 + (foto ? foto.y * sobra / 2 : 0);
+              const centroX = ix + caixa / 2;
+              const centroY = iy + caixa / 2;
+              const giro = foto?.giro || 0;
+              const virar = giro || foto?.espelho ? `translate(${centroX} ${centroY}) rotate(${giro}) scale(${foto?.espelho ? -1 : 1} 1) translate(${-centroX} ${-centroY})` : undefined;
               return (
                 <g key={i}>
                   <clipPath id={idClip}>
                     {circulo ? <circle cx={cx + lado2 / 2} cy={cy + lado2 / 2} r={lado2 / 2} /> : <rect x={cx} y={cy} width={lado2} height={lado2} rx={lado2 * 0.08} />}
                   </clipPath>
                   {url ? (
-                    <image href={url} x={ix} y={iy} width={caixa} height={caixa} preserveAspectRatio="xMidYMid slice" clipPath={`url(#${idClip})`}
-                      onPointerDown={aoTocarFoto ? e => aoTocarFoto(i, e) : undefined} style={aoTocarFoto ? { cursor: "grab", touchAction: "none" } : undefined} />
+                    <g clipPath={`url(#${idClip})`}><image href={url} x={ix} y={iy} width={caixa} height={caixa} preserveAspectRatio="xMidYMid slice" transform={virar}
+                      onPointerDown={aoTocarFoto ? e => aoTocarFoto(i, e) : undefined} style={aoTocarFoto ? { cursor: "grab", touchAction: "none" } : undefined} /></g>
                   ) : (
                     <g opacity={0.7}>
                       {circulo ? <circle cx={cx + lado2 / 2} cy={cy + lado2 / 2} r={lado2 / 2 - 1} fill="rgba(255,255,255,.55)" stroke={tinta} strokeDasharray="4 4" /> : <rect x={cx + 1} y={cy + 1} width={lado2 - 2} height={lado2 - 2} rx={lado2 * 0.08} fill="rgba(255,255,255,.55)" stroke={tinta} strokeDasharray="4 4" />}
@@ -259,7 +265,7 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
         ),
       });
     }
-    const nome = (pers.nome || "").trim() || (campos.nome && exemplos ? "Seu nome" : "");
+    const nome = arte === "foto" ? "" : (pers.nome || "").trim() || (campos.nome && exemplos ? "Seu nome" : "");
     if (nome) {
       const comOutros = partes.length > 0;
       const base = altura * (comOutros ? 0.24 : 0.3) * fonte.escala;
@@ -283,7 +289,7 @@ export function Arte({ config, escolhas, lado, largura, altura, tinta, urlDaFoto
         ),
       });
     }
-    const data = (pers.data || "").trim();
+    const data = arte === "foto" ? "" : (pers.data || "").trim();
     if (data) {
       const delicada = FONTES.delicada;
       const tamanho = tamanhoQueCabe(data, delicada, altura * 0.06, largura * 0.8, medir);

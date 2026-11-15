@@ -227,6 +227,8 @@ export interface FotoEnviada {
   x: number;
   y: number;
   zoom: number;
+  giro?: number;
+  espelho?: boolean;
 }
 
 export interface FotoDaEstampa {

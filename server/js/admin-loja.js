@@ -18,7 +18,7 @@
   const PREVIAS = [["", "Não muda a prévia"], ["alca", "Muda a cor da alça e do interior"], ["peca", "Muda a cor da peça"], ["tamanho", "Tamanho"]];
   const CAMPOS = [["nome", "Nome", 20, 40], ["frase", "Frase", 60, 120], ["data", "Data", 20, 30], ["observacoes", "Observações", 300, 500]];
   const LETRAS = [["cursiva", "Cursiva"], ["classica", "Clássica"], ["delicada", "Delicada"]];
-  const ARTES = [["nome", "Só o nome"], ["flor", "Florzinha"], ["brasilia", "Brasília"], ["fotos", "Com fotos"]];
+  const ARTES = [["nome", "Só o nome"], ["flor", "Florzinha"], ["brasilia", "Brasília"], ["fotos", "Com fotos"], ["foto", "Só foto"]];
 
   let raiz = null;
   let config = null;

@@ -35,6 +35,8 @@ const CAMINHOS = {
   filtro: "M4 6h16M7 12h10M10 18h4",
   topo: "M6 15l6-6 6 6",
   girar: "M4 12a8 8 0 0 1 13.7-5.7L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.7L4 15.5M4 20v-4.5h4.5",
+  girarFoto: "M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5",
+  espelhar: "M12 3v18M9 7l-5 5 5 5zM15 7l5 5-5 5z",
 } as const;
 
 export type NomeIcone = keyof typeof CAMINHOS;

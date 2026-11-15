@@ -31,8 +31,15 @@ const ICONES_DOS_EXTRAS: Record<string, NomeIcone> = {
 function usaFotos(produto: TipoProduto, escolhas: Escolhas): boolean {
   const pers = produto.config.personalizacao;
   if (!pers.ativa || pers.fotos.max === 0) return false;
-  if (!pers.artes.includes("fotos")) return true;
-  return escolhas.personalizacao.arte === "fotos";
+  if (!pers.artes.some(a => a === "fotos" || a === "foto")) return true;
+  const arte = escolhas.personalizacao.arte || pers.artes[0];
+  return arte === "fotos" || arte === "foto";
+}
+
+function escalaNaTela(elemento: SVGGraphicsElement, svg: SVGSVGElement): number {
+  const m = elemento.getScreenCTM();
+  const escala = m ? Math.hypot(m.a, m.b) : 0;
+  return escala || svg.getBoundingClientRect().width / 360;
 }
 
 function estampaDe(produto: TipoProduto, escolhas: Escolhas, paraGuardar = false): EstampaPublica | null {
@@ -442,18 +449,27 @@ function EnvioDeFotos({ produto, fotos, setFotos, selecionada, setSelecionada }:
           {fotos.map((f, i) => (
             <li key={f.id} className={i === selecionada ? "selecionada" : undefined}>
               <button type="button" className="foto-enviada" onClick={() => setSelecionada(i)} aria-pressed={i === selecionada} aria-label={`Ajustar a foto ${i + 1}`}>
-                <img src={urlDaFotoEnviada(f) ?? ""} alt="" width={56} height={56} />
+                <img src={urlDaFotoEnviada(f) ?? ""} alt="" width={56} height={56} style={f.giro || f.espelho ? { transform: `rotate(${f.giro || 0}deg) scaleX(${f.espelho ? -1 : 1})` } : undefined} />
               </button>
               <div className="foto-controles" role="group" aria-label={`Foto ${i + 1}`}>
-                <button type="button" className="botao-icone" onClick={() => ajustar(i, { zoom: Math.max(1, Math.round((f.zoom - 0.25) * 100) / 100) })} aria-label={`Afastar a foto ${i + 1}`} disabled={f.zoom <= 1}><Icone nome="zoomMenos" tamanho={20} /></button>
-                <button type="button" className="botao-icone" onClick={() => ajustar(i, { zoom: Math.min(3, Math.round((f.zoom + 0.25) * 100) / 100) })} aria-label={`Aproximar a foto ${i + 1}`} disabled={f.zoom >= 3}><Icone nome="zoomMais" tamanho={20} /></button>
+                <button type="button" className="botao-icone" onClick={() => { ajustar(i, { giro: ((f.giro || 0) + 90) % 360 }); setSelecionada(i); }} aria-label={`Girar a foto ${i + 1}`} title="Girar"><Icone nome="girarFoto" tamanho={20} /></button>
+                <button type="button" className="botao-icone" onClick={() => { ajustar(i, { espelho: !f.espelho }); setSelecionada(i); }} aria-label={`Espelhar a foto ${i + 1}`} aria-pressed={Boolean(f.espelho)} title="Espelhar"><Icone nome="espelhar" tamanho={20} /></button>
                 <button type="button" className="botao-icone" onClick={() => { setFotos(fotos.filter((_, j) => j !== i)); setSelecionada(Math.max(0, i - 1)); }} aria-label={`Tirar a foto ${i + 1}`}><Icone nome="lixeira" tamanho={20} /></button>
               </div>
             </li>
           ))}
         </ul>
       ) : null}
-      {fotos.length ? <p className="dica">Aproxime com a lupa e arraste a foto na prévia para escolher o enquadramento.</p> : null}
+      {fotos[selecionada] ? (
+        <div className="foto-ajuste">
+          <label className="faixa">
+            <span>Zoom da foto {selecionada + 1} <strong>{Math.round(fotos[selecionada].zoom * 100)}%</strong></span>
+            <input type="range" min={1} max={3} step={0.05} value={fotos[selecionada].zoom} onChange={e => ajustar(selecionada, { zoom: Number(e.target.value) })} />
+          </label>
+          <button type="button" className="botao-link" onClick={() => ajustar(selecionada, { x: 0, y: 0, zoom: 1, giro: 0, espelho: false })}>Centralizar</button>
+        </div>
+      ) : null}
+      {fotos.length ? <p className="dica">Arraste a foto na prévia para escolher o enquadramento. Use os botões para girar ou espelhar.</p> : null}
     </div>
   );
 }
@@ -473,7 +489,8 @@ function Personalizar({ produto, escolhas, mudar, fotoSelecionada, setFotoSeleci
   const campos = pers.campos;
   const medir = useMedirTexto();
   const estampa = estampaDe(produto, escolhas);
-  const temTexto = Boolean(campos.nome || campos.frase || campos.data);
+  const soFoto = (p.arte || pers.artes[0]) === "foto";
+  const temTexto = Boolean(campos.frase || (!soFoto && (campos.nome || campos.data)));
   let passo = 0;
   const numeroEstampa = temEstampas(produto) ? ++passo : undefined;
   const numeroArte = pers.artes.length > 1 ? ++passo : undefined;
@@ -487,7 +504,7 @@ function Personalizar({ produto, escolhas, mudar, fotoSelecionada, setFotoSeleci
       {pers.artes.length > 1 ? (
         <fieldset className="grupo-escolha">
           <legend><Passo numero={numerar ? numeroArte : undefined} />Arte: <span>{regras.nomeDaArte(p.arte || pers.artes[0])}</span></legend>
-          <div className="artes-grade">
+          <div className={`artes-grade artes-${pers.artes.length}`}>
             {pers.artes.map(id => {
               const ativo = (p.arte || pers.artes[0]) === id;
               return (
@@ -506,9 +523,9 @@ function Personalizar({ produto, escolhas, mudar, fotoSelecionada, setFotoSeleci
         <fieldset className="grupo-escolha">
           {numerar ? <legend><Passo numero={numeroTexto} />Escreva</legend> : null}
           <div className="campos-duplos">
-            {campos.nome ? <CampoDeTexto id="nome" campo={campos.nome} valor={p.nome || ""} aoMudar={v => { mudar({ nome: v }); setLado("frente"); }} /> : null}
+            {campos.nome && !soFoto ? <CampoDeTexto id="nome" campo={campos.nome} valor={p.nome || ""} aoMudar={v => { mudar({ nome: v }); setLado("frente"); }} /> : null}
             {campos.frase ? <CampoDeTexto id="frase" campo={campos.frase} valor={p.frase || ""} aoMudar={v => { mudar({ frase: v }); if (pers.verso) setLado("verso"); }} /> : null}
-            {campos.data ? <CampoDeTexto id="data" campo={campos.data} valor={p.data || ""} aoMudar={v => { mudar({ data: v }); setLado("frente"); }} /> : null}
+            {campos.data && !soFoto ? <CampoDeTexto id="data" campo={campos.data} valor={p.data || ""} aoMudar={v => { mudar({ data: v }); setLado("frente"); }} /> : null}
           </div>
         </fieldset>
       ) : null}
@@ -594,7 +611,7 @@ export function Produto({ pagina, loja }: { pagina: PaginaProduto; loja: Loja })
     setFotoSelecionada(indice);
     const caixa = (evento.currentTarget as SVGGraphicsElement).getBBox();
     const sobra = caixa.width - caixa.width / foto.zoom;
-    arrasto.current = { indice, x: evento.clientX, y: evento.clientY, fx: foto.x, fy: foto.y, escala: 1 / ((evento.currentTarget as SVGGraphicsElement).getScreenCTM()?.a || svg.getBoundingClientRect().width / 360), sobra };
+    arrasto.current = { indice, x: evento.clientX, y: evento.clientY, fx: foto.x, fy: foto.y, escala: 1 / escalaNaTela(evento.currentTarget as SVGGraphicsElement, svg), sobra };
     const mover = (e: PointerEvent) => {
       const a = arrasto.current;
       if (!a || a.sobra <= 0) return;

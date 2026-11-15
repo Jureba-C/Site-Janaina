@@ -21,7 +21,16 @@ function gabaritoDoItem(config, escolhas){
   return regras.medidaDaPeca(config, escolhas);
 }
 
-async function recortarFoto(dados, foto){
+async function girarFoto(dados, foto){
+  let base = dados;
+  if(foto.espelho === true) base = await sharp(base).flop().toBuffer();
+  const giro = Number(foto.giro) || 0;
+  if([90, 180, 270].includes(giro)) base = await sharp(base).rotate(giro).toBuffer();
+  return base;
+}
+
+async function recortarFoto(original, foto){
+  const dados = await girarFoto(original, foto);
   const meta = await sharp(dados).metadata();
   const w = meta.width, h = meta.height;
   const lado = Math.min(w, h);
@@ -66,6 +75,8 @@ async function arquivoDeProducao({ config, escolhas, lerFoto, svgDaArte, titulo,
     foto.zoom = 1;
     foto.x = 0;
     foto.y = 0;
+    foto.giro = 0;
+    foto.espelho = false;
   }
   const area = config.molde === "foto" && config.moldeFoto?.area
     ? { largura: config.moldeFoto.area.w * 360, altura: config.moldeFoto.area.h * 380 }

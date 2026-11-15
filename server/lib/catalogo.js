@@ -30,7 +30,7 @@ const PERSONALIZACAO_PECA = {
     observacoes: { ativo: true, obrigatorio: false, limite: 300, rotulo: "Observações para a Janaina" },
   },
   letras: ["cursiva", "classica", "delicada"],
-  artes: ["nome", "flor", "brasilia", "fotos"],
+  artes: ["nome", "flor", "brasilia", "fotos", "foto"],
   fotos: { min: 0, max: 8, formato: "circulo" },
   verso: true,
 };
@@ -272,7 +272,7 @@ const LISTA = [
   lembranca("Mousepad personalizado", 25, "plano", { codigo: "MOU", categorias: ["lembrancas", "empresas", "professores", "dia-dos-pais"], variacoes: [grupoModelo("Modelo", ["Retangular", { nome: "Com apoio", preco: 10 }, { nome: "Ergonômico", preco: 12 }])] }),
   lembranca("Toalhinha de lavabo", 18, "plano", { codigo: "TOA", medida: "bordado com nome", personalizacao: { ...PERSONALIZACAO_SO_NOME, fotos: { min: 0, max: 0 } } }),
   lembranca("Máscara de neoprene", 25, "plano", { codigo: "MAS" }),
-  lembranca("Mini polaroid de mesa", 40, "plano", { codigo: "POL", medida: "8×10 cm", personalizacao: { ...PERSONALIZACAO_PLANA, artes: ["fotos"], fotos: { min: 1, max: 1, formato: "quadrado" } } }),
+  lembranca("Mini polaroid de mesa", 40, "plano", { codigo: "POL", medida: "8×10 cm", personalizacao: { ...PERSONALIZACAO_PLANA, artes: ["foto", "fotos"], fotos: { min: 1, max: 1, formato: "quadrado" } } }),
 
   botton("Botton broche pequeno", "3,2 cm", 4, 3.5, { codigo: "BOT-P" }),
   botton("Botton broche médio", "4,4 cm", 5, 4.5, { codigo: "BOT-M" }),
