@@ -706,7 +706,7 @@ function encaixeNoEstudio(molde: Molde, formato: string): EncaixeNoEstudio | nul
   const centro = (caixa.esquerda + caixa.direita) / 2;
   if (molde === "botton" && formato !== "quadrado") {
     const escala = 0.76;
-    const base = 314;
+    const base = 303;
     const transformacao = `translate(${(180 - centro * escala).toFixed(2)} ${(base - caixa.base * escala).toFixed(2)}) scale(${escala})`;
     return {
       transformacao,
