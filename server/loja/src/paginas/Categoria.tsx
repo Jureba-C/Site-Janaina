@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CartaoProduto } from "../componentes/CartaoProduto";
+import { Foto } from "../componentes/Foto";
 import { Icone } from "../componentes/Icone";
 import type { PaginaCategoria } from "../tipos";
 
@@ -33,16 +34,24 @@ export function Categoria({ pagina }: { pagina: PaginaCategoria }) {
   const outroGrupo = pagina.outras.filter(c => c.grupo !== categoria.grupo);
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const ativos = [filtros.outra, filtros.preco, filtros.ordem && filtros.ordem !== "destaque" ? filtros.ordem : ""].filter(Boolean).length;
+  const chipsAtivos = [
+    { rotulo: outroGrupo.find(c => c.slug === filtros.outra)?.nome, sem: { ...filtros, outra: "" } },
+    { rotulo: FAIXAS.find(f => f.id && f.id === filtros.preco)?.nome, sem: { ...filtros, preco: "" } },
+    { rotulo: filtros.ordem !== "destaque" ? ORDENS.find(o => o.id === filtros.ordem)?.nome : undefined, sem: { ...filtros, ordem: "destaque" } },
+  ].filter((c): c is { rotulo: string; sem: PaginaCategoria["filtros"] } => Boolean(c.rotulo));
   return (
     <div className="envolve pagina-lista">
       <nav className="trilha" aria-label="Você está em">
         <a href="/">Início</a><span aria-hidden="true">›</span><span aria-current="page">{categoria.nome}</span>
       </nav>
       <div className="lista-topo">
-        <div>
-          <p className="sobretitulo">{categoria.grupo === "ocasiao" ? "Presentes para" : "Categoria"}</p>
-          <h1>{categoria.nome}</h1>
-          <p className="lista-contagem" role="status">{pagina.total === 1 ? "1 produto" : `${pagina.total} produtos`}</p>
+        <div className="lista-titulo">
+          {categoria.foto ? <Foto src={categoria.foto.src} alt="" sizes="96px" largura={96} altura={96} className="lista-foto" prioridade /> : null}
+          <div>
+            {categoria.grupo === "ocasiao" ? <p className="sobretitulo">Presentes para</p> : null}
+            <h1>{categoria.nome}</h1>
+            <p className="lista-contagem" role="status">{pagina.total === 1 ? "1 produto" : `${pagina.total} produtos`}</p>
+          </div>
         </div>
         <button type="button" className="botao botao-vazado botao-filtrar" aria-expanded={filtrosAbertos} aria-controls="filtros-categoria" onClick={() => setFiltrosAbertos(a => !a)}>
           <Icone nome="filtro" tamanho={18} />Filtrar e ordenar{ativos ? <span className="filtros-contagem">{ativos}</span> : null}
@@ -75,6 +84,15 @@ export function Categoria({ pagina }: { pagina: PaginaCategoria }) {
           <a href={enderecoDaPagina(categoria.slug, { ...filtros, outra: "" }, 1)} aria-current={!filtros.outra ? "true" : undefined}>Todos</a>
           {outroGrupo.map(c => <a key={c.slug} href={enderecoDaPagina(categoria.slug, { ...filtros, outra: c.slug }, 1)} aria-current={filtros.outra === c.slug ? "true" : undefined}>{c.nome}</a>)}
         </nav>
+      ) : null}
+      {chipsAtivos.length ? (
+        <ul className="filtros-ativos" aria-label="Filtros aplicados">
+          {chipsAtivos.map(c => (
+            <li key={c.rotulo}>
+              <a href={enderecoDaPagina(categoria.slug, c.sem, 1)} aria-label={`Tirar o filtro ${c.rotulo}`}>{c.rotulo}<Icone nome="fechar" tamanho={14} /></a>
+            </li>
+          ))}
+        </ul>
       ) : null}
       <h2 className="visualmente-oculto">Produtos</h2>
       {pagina.produtos.length ? (

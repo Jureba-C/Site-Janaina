@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { linkWhatsApp } from "../compartilhado";
-import { CartaoProduto } from "../componentes/CartaoProduto";
+import { CartaoProduto, IlustracaoDaPeca } from "../componentes/CartaoProduto";
 import { Foto } from "../componentes/Foto";
 import { BordaRasgada, Folhas, RamoDeIpe, recorteCirculo } from "../componentes/Enfeites";
 import { Florzinha } from "../componentes/Marca";
@@ -167,10 +167,7 @@ function Vitrine({ pagina }: { pagina: PaginaInicio }) {
   return (
     <section className="secao envolve" aria-labelledby="mais-pedidas">
       <div className="secao-topo secao-topo-lado">
-        <div>
-          <p className="cursiva sobre-titulo">as queridinhas<RamoDeIpe className="floreio" /></p>
-          <h2 id="mais-pedidas">{atual.nome}</h2>
-        </div>
+        <h2 id="mais-pedidas">{atual.id === "mais-pedidas" ? "Mais pedidas" : `${atual.nome} em destaque`}</h2>
         <div role="tablist" aria-label="Vitrines" className="abas">
           {vitrines.map(v => (
             <button key={v.id} type="button" role="tab" id={`aba-${v.id}`} aria-selected={v.id === atual.id} aria-controls="vitrine-painel" className={v.id === atual.id ? "ativa" : undefined} onClick={() => setAba(v.id)}>{v.nome}</button>
@@ -184,6 +181,34 @@ function Vitrine({ pagina }: { pagina: PaginaInicio }) {
           <Icone nome="setaDireita" tamanho={22} />
         </a>
       </div>
+    </section>
+  );
+}
+
+function TiposDaHome({ pagina }: { pagina: PaginaInicio }) {
+  if (!pagina.tipos.length) return null;
+  return (
+    <section className="secao envolve" aria-labelledby="tipos-titulo">
+      <div className="secao-topo secao-topo-lado">
+        <h2 id="tipos-titulo">Escolha por tipo</h2>
+      </div>
+      <ul className="tipos-grade">
+        {pagina.tipos.map((t, i) => (
+          <li key={t.slug}>
+            <a className="tipo-cartao" href={`/categoria/${t.slug}`}>
+              <span className={`tipo-imagem tipo-fundo-${i % 3}`}>
+                {t.foto ? (
+                  <Foto src={t.foto.src} alt="" sizes="(max-width: 640px) 45vw, 180px" largura={180} altura={180} className="tipo-foto" />
+                ) : t.exemplo ? (
+                  <IlustracaoDaPeca produto={t.exemplo} rotulo="" />
+                ) : null}
+              </span>
+              <span className="tipo-nome">{t.nome}</span>
+              <span className="tipo-qtd">{t.quantidade} {t.quantidade === 1 ? "produto" : "produtos"}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -227,6 +252,7 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
     <>
       <BannerDoTopo pagina={pagina} />
       <Vantagens loja={loja} />
+      <TiposDaHome pagina={pagina} />
       <Vitrine pagina={pagina} />
 
       <section className="secao envolve" aria-labelledby="momentos">
@@ -292,7 +318,6 @@ export function Inicio({ pagina, loja }: { pagina: PaginaInicio; loja: Loja }) {
           { titulo: "Brindes para empresas", texto: "Garrafas, canecas e kits com a sua marca, para equipe, clientes e eventos.", img: "/img/provisorias/garrafa-inox-brasilia.jpg", alt: "Garrafa de inox com line art de Brasília", mensagem: "Olá! Quero um orçamento de brindes para empresa." },
         ].map(g => (
           <a key={g.titulo} className="cartao-grande" href={linkWhatsApp(loja.whatsapp, g.mensagem)} target="_blank" rel="noopener noreferrer">
-            <span className="fita fita-crepe cartao-fita" aria-hidden="true" />
             <Foto src={g.img} alt={g.alt} sizes="(max-width: 640px) 40vw, 260px" largura={260} altura={300} className="cartao-grande-foto" />
             <span className="cartao-grande-texto">
               <span className="cartao-grande-titulo">{g.titulo}</span>

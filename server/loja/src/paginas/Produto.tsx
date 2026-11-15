@@ -382,7 +382,11 @@ function Avisos({ loja, produto }: { loja: Loja; produto: TipoProduto }) {
   return (
     <ul className="avisos-produto">
       {produto.config.personalizacao.ativa ? <li><Icone nome="lapis" tamanho={20} /><span><strong>Personalização inclusa</strong> no valor: nome, frase, arte ou fotos.</span></li> : null}
-      <li><Icone nome="relogio" tamanho={20} /><span><strong>Prazo de produção:</strong> {loja.prazoProducao ? `${loja.prazoProducao} ${loja.prazoProducao === 1 ? "dia útil" : "dias úteis"}` : "[a confirmar com a Janaina]"} + frete.</span></li>
+      <li><Icone nome="relogio" tamanho={20} />{loja.prazoProducao ? (
+        <span><strong>Prazo de produção:</strong> {`${loja.prazoProducao} ${loja.prazoProducao === 1 ? "dia útil" : "dias úteis"}`} + frete.</span>
+      ) : (
+        <span><strong>Prazo de produção</strong> <a href={linkWhatsApp(loja.whatsapp, `Olá! Qual o prazo de produção de ${produto.nome}?`)} target="_blank" rel="noopener noreferrer">combinado pelo WhatsApp</a>, mais o frete.</span>
+      )}</li>
       <li><Icone nome="caixas" tamanho={20} /><span>Acima de 10 unidades, <a href={linkWhatsApp(loja.whatsapp, `Olá! Quero mais de 10 unidades de ${produto.nome}.`)} target="_blank" rel="noopener noreferrer">condições especiais no WhatsApp</a>.</span></li>
       {produto.config.aviso === "ultimas" ? <li className="aviso-ultimas"><Icone nome="alerta" tamanho={20} /><span><strong>Últimas unidades.</strong> Confirme a disponibilidade com a Janaina se for para uma data especial.</span></li> : null}
     </ul>

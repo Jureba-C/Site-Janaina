@@ -180,7 +180,7 @@ function botton(nome, medida, preco, precoAtacado, extra = {}){
   return {
     name: nome, price: preco,
     config: {
-      categorias: ["lembrancas", "empresas", "aniversario", "professores"],
+      categorias: ["botons", "lembrancas", "empresas", "aniversario", "professores"],
       medida,
       molde: "botton",
       faixas: [{ min: 11, preco: precoAtacado }],
@@ -278,7 +278,7 @@ const LISTA = [
   botton("Botton broche médio", "4,4 cm", 5, 4.5, { codigo: "BOT-M" }),
   botton("Botton broche grande", "5,5 cm", 6.5, 5.5, { codigo: "BOT-G" }),
   botton("Ímã de botton", "5,5 cm", 5.5, 4.5, { codigo: "BOT-IMA" }),
-  botton("Chaveiro abridor de garrafa", "4,4 cm", 12, 10, { codigo: "BOT-ABR", categorias: ["lembrancas", "empresas", "dia-dos-pais"] }),
+  botton("Chaveiro abridor de garrafa", "4,4 cm", 12, 10, { codigo: "BOT-ABR", categorias: ["botons", "lembrancas", "empresas", "dia-dos-pais"] }),
 
   acessorio("Tampa de bambu para caneca", 18, "caixa", { codigo: "ACE-TAM" }),
   acessorio("Pires de madeira", 17, "caixa", { codigo: "ACE-PIR" }),
@@ -337,6 +337,7 @@ const BUILTIN_CATEGORIES = [
   { slug: "garrafas-e-termicos", label: "Garrafas e térmicos", grupo: "tipo" },
   { slug: "ipes-brasilia", label: "Ipês Brasília", grupo: "tipo" },
   { slug: "lembrancas", label: "Lembranças", grupo: "tipo" },
+  { slug: "botons", label: "Botons", grupo: "tipo" },
   { slug: "acessorios-e-embalagens", label: "Acessórios e embalagens", grupo: "tipo" },
   { slug: "casamento", label: "Casamento", grupo: "ocasiao" },
   { slug: "padrinhos", label: "Padrinhos", grupo: "ocasiao" },

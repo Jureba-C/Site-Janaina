@@ -89,6 +89,8 @@ export interface ProdutoResumo {
   aviso: "ultimas" | "consultar" | null;
   personalizavel: boolean;
   qtdEstampas: number;
+  cores: string[];
+  tipo: string | null;
   estampaVitrine: EstampaPublica | null;
 }
 
@@ -157,9 +159,23 @@ export interface CartaoDeAvaliacao {
   foto: string | null;
 }
 
+export interface FotoDoTipo {
+  src: string;
+  alt: string;
+}
+
+export interface TipoDaHome {
+  slug: string;
+  nome: string;
+  quantidade: number;
+  foto: FotoDoTipo | null;
+  exemplo: ProdutoResumo | null;
+}
+
 export interface PaginaInicio {
   tipo: "inicio";
   destaques: FotoDestaque[];
+  tipos: TipoDaHome[];
   vitrines: { id: string; nome: string; produtos: ProdutoResumo[] }[];
   avaliacoes: { total: number; media: number; itens: CartaoDeAvaliacao[] };
 }
@@ -172,7 +188,7 @@ export interface FiltrosCategoria {
 
 export interface PaginaCategoria {
   tipo: "categoria";
-  categoria: Categoria;
+  categoria: Categoria & { foto: FotoDoTipo | null };
   produtos: ProdutoResumo[];
   total: number;
   pagina: number;

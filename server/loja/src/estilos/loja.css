@@ -259,7 +259,7 @@ main:focus { outline: none; }
 .vantagens { margin-top: 56px; }
 
 
-.secao { margin-top: 96px; }
+.secao { margin-top: 80px; }
 .secao-topo { text-align: center; }
 .secao h2, .lista-topo h1, .produto-titulo, .secao-produto h2 {
   font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; font-weight: 700; letter-spacing: -0.01em;
@@ -298,7 +298,7 @@ main:focus { outline: none; }
 .botao-favorito.ativo svg { fill: currentColor; }
 .cartao-produto-corpo { padding: 16px 6px 4px; display: flex; flex-direction: column; flex: 1; }
 .cartao-produto-nome { font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; font-weight: 600; font-size: 20px; line-height: 1.2; }
-.cartao-produto-nome a { color: var(--tinta); text-decoration: none; }
+.cartao-produto-nome a { color: var(--tinta); text-decoration: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .cartao-produto-nome a::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
 .botao-favorito { z-index: 2; }
 .cartao-produto-acao { position: relative; z-index: 2; }
@@ -451,7 +451,7 @@ main:focus { outline: none; }
 .produto-info { flex: 1 1 460px; min-width: 0; }
 .produto-titulo { margin-top: 8px; font-size: clamp(30px, 3vw, 40px); line-height: 1.08; }
 .produto-codigo { margin-top: 6px; font-size: 14px; color: var(--tinta-suave); }
-.avisos-produto { list-style: none; margin: 20px 0 0; padding: 16px 18px; background: var(--branco); border: 1px solid var(--borda); border-radius: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
+.avisos-produto { list-style: none; margin: 20px 0 0; padding: 16px 0 0; border-top: 1px solid var(--borda); display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
 .avisos-produto li { display: flex; gap: 10px; }
 .avisos-produto svg { flex: none; color: var(--terracota-forte); margin-top: 1px; }
 .avisos-produto strong { font-weight: 600; }
@@ -715,7 +715,7 @@ main:focus { outline: none; }
 @media (max-width: 640px) {
   :root { --margem: 16px; }
   .vantagens { margin-top: 40px; }
-  .secao { margin-top: 64px; }
+  .secao { margin-top: 52px; }
   .sobre-titulo { font-size: 28px; }
   .polaroid-nome { font-size: 10px; letter-spacing: 0.08em; margin-top: 6px; }
   .momentos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 4px; margin-top: 20px; }
@@ -1001,7 +1001,7 @@ a.vantagem-link:hover .vantagem-texto strong { color: var(--terracota-forte); te
 .banner { position: relative; margin-top: 24px; }
 .banner-vista { position: relative; overflow: hidden; border-radius: 32px; }
 .banner-trilho { display: flex; transition: transform .75s cubic-bezier(.65, 0, .25, 1); will-change: transform; }
-.banner-slide { position: relative; flex: 0 0 100%; min-width: 0; height: 460px; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); align-items: center; gap: 32px; padding: 0 96px 0 104px; background-color: var(--fundo, #F4E9DD); background-image: radial-gradient(rgba(158, 74, 24, 0.09) 1.3px, transparent 1.6px); background-size: 22px 22px; overflow: hidden; }
+.banner-slide { position: relative; flex: 0 0 100%; min-width: 0; height: 460px; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); align-items: center; gap: 32px; padding: 0 96px 0 104px; background-color: var(--fundo, #F4E9DD); overflow: hidden; }
 .banner-texto { position: relative; z-index: 2; min-width: 0; }
 .banner-titulo { font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100, "opsz" 144; font-weight: 700; font-size: clamp(40px, 4.4vw, 62px); line-height: 1; letter-spacing: -0.02em; color: var(--tinta); }
 .banner-frase { margin-top: 8px; font-size: clamp(30px, 3vw, 42px); line-height: 1.1; }
@@ -1068,4 +1068,61 @@ a.vantagem-link:hover .vantagem-texto strong { color: var(--terracota-forte); te
 }
 @media (prefers-reduced-motion: reduce) {
   .banner-trilho, .banner-polaroide, .banner-slide .banner-titulo, .banner-slide .banner-frase, .banner-slide .banner-botao { transition: none; }
+}
+
+.tipos-grade { list-style: none; margin: 28px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.tipo-cartao { display: grid; gap: 4px; color: var(--tinta); text-decoration: none; border-radius: 22px; }
+.tipo-imagem { display: grid; place-items: center; aspect-ratio: 1; border-radius: 22px; overflow: hidden; background: var(--rosa-claro); margin-bottom: 8px; transition: transform .25s ease; }
+.tipo-fundo-1 { background: var(--papel-2); }
+.tipo-fundo-2 { background: #F1E6DA; }
+.tipo-foto { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tipo-imagem picture { display: block; width: 100%; height: 100%; }
+.tipo-imagem .ilustracao-peca { width: 86%; height: 86%; }
+.tipo-nome { font-family: var(--fonte-titulo); font-variation-settings: "SOFT" 100; font-weight: 600; font-size: 19px; line-height: 1.2; }
+.tipo-qtd { font-size: 14px; color: var(--tinta-suave); }
+.tipo-cartao:hover .tipo-imagem { transform: translateY(-3px); }
+.tipo-cartao:hover .tipo-nome { color: var(--terracota-forte); }
+.tipo-cartao:focus-visible { outline: 3px solid var(--terracota-forte); outline-offset: 4px; }
+@media (min-width: 1200px) {
+  .tipos-grade { gap: 24px; }
+}
+@media (max-width: 900px) {
+  .tipos-grade { gap: 16px; }
+}
+@media (max-width: 640px) {
+  .tipos-grade { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 10px; margin-top: 18px; }
+  .tipo-cartao { gap: 2px; }
+  .tipo-imagem { border-radius: 16px; margin-bottom: 4px; }
+  .tipo-nome { font-size: 14px; line-height: 1.15; }
+  .tipo-qtd { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tipo-imagem { transition: none; }
+}
+
+.cartao-cores { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.cartao-cores span { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(50, 50, 48, 0.18); }
+.cartao-produto[data-tipo="xicaras-e-kits"] .cartao-produto-foto,
+.cartao-produto[data-tipo="botons"] .cartao-produto-foto,
+.cartao-produto[data-tipo="lembrancas"] .cartao-produto-foto { background: var(--rosa-claro); }
+.cartao-produto[data-tipo="garrafas-e-termicos"] .cartao-produto-foto,
+.cartao-produto[data-tipo="vidros-e-copos"] .cartao-produto-foto { background: #F1E6DA; }
+@media (max-width: 640px) {
+  .cartao-cores { gap: 4px; margin-top: 6px; }
+  .cartao-cores span { width: 12px; height: 12px; }
+}
+
+.lista-titulo { display: flex; align-items: center; gap: 18px; }
+.lista-foto { display: block; width: 96px; height: 96px; border-radius: 22px; object-fit: cover; flex: none; }
+.filtros-ativos { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.filtros-ativos a { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px 0 14px; border-radius: 999px; background: var(--rosa-claro); color: var(--terracota-forte); font-weight: 600; font-size: 14px; text-decoration: none; }
+.filtros-ativos a:hover { background: #F2D3CE; }
+@media (max-width: 640px) {
+  .chips-filtro { display: none; }
+  .lista-foto { width: 64px; height: 64px; border-radius: 16px; }
+  .lista-titulo { gap: 14px; }
+}
+
+@media (max-width: 640px) {
+  .galeria-rotulo, .estudio-galeria .estudio-ramo { display: none; }
 }

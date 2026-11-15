@@ -97,6 +97,9 @@ e que nenhum dado da Adriana voltou.
 | Cupom de boas-vindas | `WELCOME_COUPON_CODE = "BEMVINDA10"` no `server.js` |
 | Cores e fontes | `loja/src/estilos/loja.css` (loja), `css/style.css` (demais páginas), `CORES` em `lib/email.js` |
 | Textos da home | `loja/src/paginas/Inicio.tsx` |
+| "Escolha por tipo" da home (só tipos com produto) | `tiposDaHome()` e fotos em `FOTO_DO_TIPO` (`lib/loja-dados.js`); tipo sem foto usa a ilustração da peça |
+| Abas da vitrine da home (Mais pedidas mistura os tipos) | `ABAS_POR_TIPO` e `vitrines()` em `lib/loja-dados.js` |
+| Bolinhas de cor no cartão | `coresDoProduto()` em `lib/loja-dados.js` (grupo de variação `cor` com `hex`) |
 | Política de trocas/privacidade | `politica.html` (itens `[a confirmar]`) |
 
 ## Mapa do sistema

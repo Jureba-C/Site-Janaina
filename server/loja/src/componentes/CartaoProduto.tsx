@@ -32,7 +32,7 @@ export function CartaoProduto({ produto, prioridade = false }: { produto: Produt
   const pix = precoNoPix(produto.precoMinimo);
   const selo = produto.esgotado ? "Esgotado" : produto.aviso === "ultimas" ? "Últimas peças" : produto.selos[0] || (produto.qtdEstampas > 1 ? `${produto.qtdEstampas} estampas` : undefined);
   return (
-    <article className={`cartao-produto${produto.esgotado ? " esgotado" : ""}`}>
+    <article className={`cartao-produto${produto.esgotado ? " esgotado" : ""}`} data-tipo={produto.tipo || undefined}>
       <a className="cartao-produto-foto" href={produto.endereco} tabIndex={-1} aria-hidden="true">
         {produto.foto ? (
           <Foto src={produto.foto} alt="" sizes="(max-width: 640px) 50vw, (max-width: 1100px) 33vw, 290px" prioridade={prioridade} />
@@ -47,6 +47,11 @@ export function CartaoProduto({ produto, prioridade = false }: { produto: Produt
       <div className="cartao-produto-corpo">
         <h3 className="cartao-produto-nome"><a href={produto.endereco}>{produto.nome}</a></h3>
         {produto.medida ? <p className="cartao-produto-medida">{produto.medida}</p> : null}
+        {produto.cores?.length > 1 ? (
+          <p className="cartao-cores" role="img" aria-label={`Disponível em ${produto.cores.length} cores`}>
+            {produto.cores.map(hex => <span key={hex} style={{ background: hex }} />)}
+          </p>
+        ) : null}
         <p className="cartao-produto-pix">
           {produto.aPartirDe ? <span className="a-partir">a partir de</span> : null}
           <strong>{dinheiro(pix)}</strong> <span>no Pix</span>

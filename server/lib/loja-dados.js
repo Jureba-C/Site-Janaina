@@ -34,6 +34,14 @@ function precoMinimo(p){
   return { valor: regras.round2(preco), aPartirDe: variavel };
 }
 
+const MAX_CORES_NO_CARTAO = 6;
+
+function coresDoProduto(config){
+  const grupo = config.variacoes.find(g => g.id === "cor" && g.opcoes.some(o => o.hex));
+  if(!grupo) return [];
+  return grupo.opcoes.filter(o => o.hex && !o.esgotado).map(o => o.hex).slice(0, MAX_CORES_NO_CARTAO);
+}
+
 function resumo(id, p){
   const minimo = precoMinimo(p);
   const disponiveis = estampas.estampasDisponiveis(p.config);
@@ -56,6 +64,8 @@ function resumo(id, p){
     aviso: p.config.aviso,
     personalizavel: p.config.personalizacao.ativa,
     qtdEstampas: disponiveis.length,
+    cores: coresDoProduto(p.config),
+    tipo: p.config.categorias[0] || null,
     estampaVitrine: disponiveis.length && p.config.estampas && p.config.estampas.obrigatoria ? disponiveis[0] : null,
   };
 }
@@ -107,24 +117,66 @@ function comCategoria(visiveis, slug){
   return visiveis.filter(({ p }) => p.config.categorias.includes(slug));
 }
 
+const ABAS_POR_TIPO = [
+  { id: "canecas", nome: "Canecas" },
+  { id: "garrafas-e-termicos", nome: "Garrafas" },
+  { id: "xicaras-e-kits", nome: "Xícaras" },
+  { id: "vidros-e-copos", nome: "Vidros" },
+  { id: "botons", nome: "Botons" },
+];
+
+function intercalarPorTipo(lista){
+  const filas = new Map();
+  for(const item of lista){
+    const tipo = item.p.config.categorias[0] || "";
+    if(!filas.has(tipo)) filas.set(tipo, []);
+    filas.get(tipo).push(item);
+  }
+  const resultado = [];
+  for(let rodada = 0; resultado.length < lista.length; rodada++){
+    for(const fila of filas.values()) if(fila[rodada]) resultado.push(fila[rodada]);
+  }
+  return resultado;
+}
+
 function vitrines(visiveis){
-  const comSelo = (selo) => visiveis.filter(({ p }) => p.badges.includes(selo));
   const disponiveis = visiveis.filter(({ p }) => !p.soldOut);
-  const maisPedidas = [...comSelo("Mais pedida"), ...disponiveis.filter(({ p }) => p.config.personalizacao.ativa)];
-  const novidades = [
-    ...comSelo("Novidade"),
-    ...disponiveis.filter(({ id }) => id >= catalogo.CUSTOM_PRODUCT_ID_START).reverse(),
-  ];
+  const comSelo = (selo) => disponiveis.filter(({ p }) => p.badges.includes(selo));
+  const personalizaveis = disponiveis.filter(({ p }) => p.config.personalizacao.ativa);
+  const maisPedidas = [...comSelo("Mais pedida"), ...intercalarPorTipo(personalizaveis)];
   const unicos = (lista) => {
     const vistos = new Set();
     return lista.filter(({ id }) => (vistos.has(id) ? false : vistos.add(id))).slice(0, NA_VITRINE).map(({ id, p }) => resumo(id, p));
   };
   return [
     { id: "mais-pedidas", nome: "Mais pedidas", produtos: unicos(maisPedidas) },
-    { id: "novidades", nome: "Novidades", produtos: unicos(novidades) },
-    { id: "casamento", nome: "Casamento", produtos: unicos(comCategoria(disponiveis, "casamento")) },
-    { id: "brasilia", nome: "Brasília", produtos: unicos(comCategoria(disponiveis, "brasilia")) },
+    ...ABAS_POR_TIPO.map(aba => ({ ...aba, produtos: unicos(comCategoria(disponiveis, aba.id)) })),
   ];
+}
+
+const FOTO_DO_TIPO = {
+  "canecas": { src: "/img/provisorias/canecas-alca-colorida.jpg", alt: "Canecas com alça e interior coloridos" },
+  "xicaras-e-kits": { src: "/img/provisorias/xicaras-casamento.jpg", alt: "Xícaras de casamento empilhadas" },
+  "garrafas-e-termicos": { src: "/img/provisorias/garrafa-professores.jpg", alt: "Garrafa personalizada com fotos de alunos" },
+  "ipes-brasilia": { src: "/img/provisorias/ipe-amarelo.jpg", alt: "Ipê amarelo feito à mão" },
+  "acessorios-e-embalagens": { src: "/img/provisorias/caneca-caixa-presente.jpg", alt: "Caneca com caixa de presente e laço" },
+};
+
+function tiposDaHome(visiveis){
+  const disponiveis = visiveis.filter(({ p }) => !p.soldOut);
+  return categoriasComContagem(visiveis)
+    .filter(c => c.grupo === "tipo" && c.quantidade > 0)
+    .map(c => {
+      const doTipo = disponiveis.filter(({ p }) => p.config.categorias.includes(c.slug));
+      const exemplo = (c.slug !== "canecas" && doTipo.find(({ p }) => p.config.molde !== "caneca")) || doTipo[0];
+      return {
+        slug: c.slug,
+        nome: c.nome,
+        quantidade: c.quantidade,
+        foto: FOTO_DO_TIPO[c.slug] || null,
+        exemplo: exemplo ? resumo(exemplo.id, exemplo.p) : null,
+      };
+    });
 }
 
 const CARTOES_DE_AVALIACAO = 6;
@@ -163,7 +215,7 @@ function paginaInicio(){
   const visiveis = todosVisiveis();
   return {
     loja: dadosDaLoja(visiveis),
-    pagina: { tipo: "inicio", destaques: destaques(), vitrines: vitrines(visiveis), avaliacoes: avaliacoesDaHome() },
+    pagina: { tipo: "inicio", destaques: destaques(), tipos: tiposDaHome(visiveis), vitrines: vitrines(visiveis), avaliacoes: avaliacoesDaHome() },
     caminho: "/",
   };
 }
@@ -245,7 +297,7 @@ function paginaCategoria(slug, consulta){
   return {
     loja: dadosDaLoja(visiveis),
     pagina: {
-      tipo: "categoria", categoria, filtros, total: lista.length, pagina, paginas,
+      tipo: "categoria", categoria: { ...categoria, foto: FOTO_DO_TIPO[slug] || null }, filtros, total: lista.length, pagina, paginas,
       produtos: lista.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA),
       outras,
     },
@@ -266,8 +318,15 @@ function paginaProduto(id){
     .map(nome => visiveis.find(item => item.p.name === nome))
     .filter(item => item && item.id !== id)
     .map(({ id: i, p: x }) => resumo(i, x));
-  const relacionados = visiveis
-    .filter(item => item.id !== id && !item.p.soldOut && item.p.config.categorias[0] === p.config.categorias[0])
+  const candidatos = visiveis.filter(item => item.id !== id && !item.p.soldOut);
+  const ocasioes = new Set(p.config.categorias.slice(1));
+  const mesmoTipo = candidatos.filter(item => item.p.config.categorias[0] === p.config.categorias[0]).slice(0, 2);
+  const outrosTipos = intercalarPorTipo(candidatos.filter(item =>
+    item.p.config.categorias[0] !== p.config.categorias[0] && item.p.config.categorias.some(c => ocasioes.has(c))
+  ));
+  const vistos = new Set();
+  const relacionados = [...mesmoTipo, ...outrosTipos, ...candidatos]
+    .filter(item => (vistos.has(item.id) ? false : vistos.add(item.id)))
     .slice(0, 4)
     .map(({ id: i, p: x }) => resumo(i, x));
   const avaliacoes = db.avaliacoesDoProduto(id, 6);
