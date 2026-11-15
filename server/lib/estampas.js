@@ -1,18 +1,18 @@
 const crypto = require("node:crypto");
 const sharp = require("sharp");
 const db = require("./db");
+const regras = require("../js/regras-produto.js");
 
 const FORMATOS_ACEITOS = new Set(["jpeg", "png", "webp", "tiff"]);
 const LIMITE_BYTES = 30 * 1024 * 1024;
 const LIMITE_PIXELS = 120000000;
 const LARGURA_TEXTURA = 2048;
 
-const TAMANHOS_IDEAIS = {
-  caneca: { mm: [240, 95], px: [2835, 1122] },
-  xicara: { mm: [210, 60], px: [2480, 709] },
-  garrafa: { mm: [200, 150], px: [2362, 1772] },
-  copo: { mm: [230, 110], px: [2717, 1299] },
-};
+const PONTOS_POR_MM = 300 / 25.4;
+const TAMANHOS_IDEAIS = Object.fromEntries(regras.MOLDES_COM_ESTAMPA.map(molde => {
+  const m = regras.MEDIDAS_DO_MOLDE[molde];
+  return [molde, { mm: [m.largura, m.altura], px: [Math.round(m.largura * PONTOS_POR_MM), Math.round(m.altura * PONTOS_POR_MM)] }];
+}));
 
 async function prepararImagens(buffer) {
   let meta;
@@ -73,7 +73,7 @@ function estampaPublica(e) {
 
 function estampasDisponiveis(config) {
   if (!config || !config.estampas || !config.estampas.ativa) return [];
-  const ativas = db.listarEstampas().filter(e => e.ativa);
+  const ativas = db.listarEstampas().filter(e => e.ativa && (!e.moldes.length || e.moldes.includes(config.molde)));
   const ids = config.estampas.ids || [];
   const lista = ids.length ? ids.map(id => ativas.find(e => e.id === id)).filter(Boolean) : ativas;
   return lista.map(estampaPublica);

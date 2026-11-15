@@ -154,6 +154,7 @@
           <button type="button" class="admin-tab-btn is-active" data-tab="producao"><i class="bi bi-clipboard-check"></i> Produção <span class="admin-tab-contador d-none" id="producaoContador"></span></button>
           <button type="button" class="admin-tab-btn" data-tab="pedidos"><i class="bi bi-bag-check"></i> Vendas e pedidos</button>
           <button type="button" class="admin-tab-btn" data-tab="produtos"><i class="bi bi-tags"></i> Produtos</button>
+          <button type="button" class="admin-tab-btn" data-tab="estampas"><i class="bi bi-palette"></i> Estampas</button>
           <button type="button" class="admin-tab-btn" data-tab="dashboard"><i class="bi bi-speedometer2"></i> Dashboard</button>
           <button type="button" class="admin-tab-btn" data-tab="cupons"><i class="bi bi-ticket-perforated"></i> Cupons</button>
           <button type="button" class="admin-tab-btn" data-tab="clientes"><i class="bi bi-people"></i> Clientes</button>
@@ -192,7 +193,6 @@
             <h2 class="admin-section-title">Loja e configurações</h2>
             <p class="admin-hint">O que você mexe de vez em quando: o que aparece no site, e-mails para as clientes e as configurações do painel.</p>
             <div class="loja-atalhos">
-              <button type="button" class="loja-atalho" data-tab-ir="estampas"><i class="bi bi-palette" aria-hidden="true"></i><span><strong>Estampas</strong><small>Estampas que dão a volta na caneca</small></span></button>
               <button type="button" class="loja-atalho" data-tab-ir="depoimentos"><i class="bi bi-chat-heart" aria-hidden="true"></i><span><strong>Depoimentos</strong><small>Elogios recebidos por WhatsApp ou Instagram</small></span></button>
               <button type="button" class="loja-atalho" data-tab-ir="novidades"><i class="bi bi-send" aria-hidden="true"></i><span><strong>Novidades por e-mail</strong><small>Mandar novidades para quem deixou o e-mail</small></span></button>
               <button type="button" class="loja-atalho" data-tab-ir="mensagens"><i class="bi bi-chat-dots" aria-hidden="true"></i><span><strong>Mensagens</strong><small>Recebidas pelo formulário de contato</small></span></button>
@@ -497,16 +497,19 @@
             <div id="avaliacoesLista" class="orders-list d-none"></div>
           </section>
 
-          <section class="admin-tab-panel d-none" data-tab-panel="estampas" data-grupo="loja">
-            <button type="button" class="admin-voltar" data-tab-ir="loja"><i class="bi bi-arrow-left" aria-hidden="true"></i> Loja e configurações</button>
+          <section class="admin-tab-panel d-none" data-tab-panel="estampas">
             <h2 class="admin-section-title">Estampas</h2>
-            <p class="admin-hint">Estampa é a arte que dá a volta inteira na peça (flores, monumentos de Brasília…). Suba o mesmo arquivo que você usa para imprimir: o site mostra na caneca para a cliente e o painel devolve o arquivo original no pedido. Para ligar as estampas num produto, abra o produto em <strong>Produtos</strong> → "Estampas".</p>
+            <p class="admin-hint">Estampa é a arte que cobre a peça toda: dá a volta na caneca, na xícara, na garrafa e no copo, e cobre a face do boton, do azulejo, da placa e da caixa. Suba o mesmo arquivo que você usa para imprimir: o site mostra na peça para a cliente e o painel devolve o arquivo original no pedido. Para ligar as estampas num produto, abra o produto em <strong>Produtos</strong> → "Estampas". Lá também dá para deixar a cliente montar a própria estampa.</p>
             <form class="estampa-form" id="estampaForm">
               <div class="estampa-form-linha">
                 <label class="small fw-semibold" for="estampaArquivo">Arquivo da estampa</label>
                 <input type="file" class="form-control form-control-sm" id="estampaArquivo" name="arquivo" accept="image/png,image/jpeg,image/webp,image/tiff" required>
-                <span class="small text-muted" id="estampaTamanhoIdeal">Caneca 325 ml: 240 × 95 mm (2835 × 1122 px a 300 dpi), dando a volta até a alça.</span>
+                <span class="small text-muted" id="estampaTamanhoIdeal">Tamanho ideal a 300 dpi: escolha os tipos de peça abaixo.</span>
               </div>
+              <fieldset class="estampa-form-linha estampa-moldes">
+                <legend class="small fw-semibold">Serve para <span class="text-muted fw-normal">(nenhum marcado = todas as peças)</span></legend>
+                <div id="estampaMoldes" class="estampa-moldes-lista"></div>
+              </fieldset>
               <div class="estampa-form-linha estampa-form-campos">
                 <label class="small fw-semibold">Nome <input type="text" class="form-control form-control-sm" name="nome" maxlength="60" placeholder="Ex.: Flores do cerrado" required></label>
                 <label class="small fw-semibold">Coleção <input type="text" class="form-control form-control-sm" name="colecao" maxlength="40" placeholder="Ex.: Flores" list="estampaColecoes" required></label>
@@ -1000,6 +1003,7 @@
 <script src="js/admin-seguranca.js" defer></script>
 <script src="js/auth.js" defer></script>
 <script src="js/pricing.js" defer></script>
+<script src="js/regras-produto.js" defer></script>
 <script src="js/admin-loja.js" defer></script>
 <script src="js/admin-producao.js" defer></script>
 <script src="js/admin-estampas.js" defer></script>

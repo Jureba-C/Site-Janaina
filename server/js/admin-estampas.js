@@ -2,7 +2,10 @@
   "use strict";
 
   let estampas = [];
+  let tamanhos = {};
+  let moldes = [];
   let carregando = null;
+  const NOMES_DOS_MOLDES = { caneca: "Caneca", xicara: "Xícara", garrafa: "Garrafa", copo: "Copo", botton: "Boton", azulejo: "Azulejo", plano: "Placa", caixa: "Caixa" };
 
   function el(id){ return document.getElementById(id); }
 
@@ -21,11 +24,28 @@
     return dados;
   }
 
+  function caixinhasDeMoldes(marcados, nome){
+    return moldes.map(m => `<label class="estampa-molde"><input type="checkbox" ${nome ? `name="${nome}"` : "data-molde"} value="${esc(m)}"${marcados.includes(m) ? " checked" : ""}> ${esc(NOMES_DOS_MOLDES[m] || m)}</label>`).join("");
+  }
+
   function avisoDeProporcao(e){
     if(!e.largura || !e.altura) return "";
     const proporcao = e.largura / e.altura;
-    if(Math.abs(proporcao - 240 / 95) <= 0.12) return "";
-    return `<p class="estampa-aviso"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Proporção diferente da caneca (${e.largura} × ${e.altura} px). O site corta pelo centro.</p>`;
+    const alvo = (e.moldes && e.moldes.length ? e.moldes : moldes).filter(m => tamanhos[m]);
+    const diferentes = alvo.filter(m => {
+      const [w, h] = tamanhos[m].mm;
+      return Math.abs(proporcao / (w / h) - 1) > 0.15;
+    });
+    if(!diferentes.length) return "";
+    return `<p class="estampa-aviso"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Formato diferente de ${diferentes.map(m => NOMES_DOS_MOLDES[m] || m).join(", ")} (${e.largura} × ${e.altura} px). Nessas peças o site corta pelo centro.</p>`;
+  }
+
+  function dicaDeTamanho(){
+    const alvo = el("estampaTamanhoIdeal");
+    if(!alvo) return;
+    const marcados = [...document.querySelectorAll("#estampaMoldes input:checked")].map(i => i.value);
+    const lista = (marcados.length ? marcados : moldes).filter(m => tamanhos[m]);
+    alvo.textContent = `Tamanho ideal a 300 dpi: ${lista.map(m => `${NOMES_DOS_MOLDES[m] || m} ${tamanhos[m].mm[0]} × ${tamanhos[m].mm[1]} mm (${tamanhos[m].px[0]} × ${tamanhos[m].px[1]} px)`).join(" · ")}. Produto com área de impressão própria usa a medida dele.`;
   }
 
   function cartao(e, i){
@@ -38,6 +58,7 @@
           <label class="small">Coleção <input class="form-control form-control-sm" data-campo="colecao" value="${esc(e.colecao)}" maxlength="40" list="estampaColecoes"></label>
           <label class="small">Valor extra (R$) <input type="number" class="form-control form-control-sm" data-campo="preco" value="${esc(e.preco)}" min="0" max="500" step="0.01"></label>
           <label class="small estampa-ativa"><input type="checkbox" data-campo="ativa"${e.ativa ? " checked" : ""}> aparece na loja</label>
+          <fieldset class="estampa-moldes"><legend class="small">Serve para <span class="text-muted">(nenhum = todas)</span></legend><div class="estampa-moldes-lista">${caixinhasDeMoldes(e.moldes || [])}</div></fieldset>
           ${avisoDeProporcao(e)}
           <div class="estampa-acoes">
             <button type="button" class="btn-blush btn-sm-blush" data-acao="salvar">Salvar</button>
@@ -66,7 +87,17 @@
     if(!el("estampaLista")) return [];
     if(!carregando){
       carregando = pedir("/api/admin/estampas")
-        .then(dados => { estampas = dados.estampas || []; render(); return estampas; })
+        .then(dados => {
+          estampas = dados.estampas || [];
+          tamanhos = dados.tamanhos || {};
+          const primeiraVez = !moldes.length;
+          moldes = dados.moldes || Object.keys(tamanhos);
+          const caixa = el("estampaMoldes");
+          if(caixa && primeiraVez) caixa.innerHTML = caixinhasDeMoldes([], "moldes");
+          dicaDeTamanho();
+          render();
+          return estampas;
+        })
         .finally(() => { carregando = null; });
     }
     return carregando;
@@ -82,6 +113,7 @@
     try{
       await pedir("/api/admin/estampas", { method: "POST", body: new FormData(form) });
       form.reset();
+      dicaDeTamanho();
       aviso.textContent = "Estampa adicionada. Ligue nos produtos em Produtos → Estampas.";
       await carregar();
     }catch(err){
@@ -105,7 +137,7 @@
         await pedir(`/api/admin/estampas/${encodeURIComponent(id)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nome: campo("nome").value, colecao: campo("colecao").value, preco: Number(campo("preco").value) || 0, ativa: campo("ativa").checked }),
+          body: JSON.stringify({ nome: campo("nome").value, colecao: campo("colecao").value, preco: Number(campo("preco").value) || 0, ativa: campo("ativa").checked, moldes: [...cartaoEl.querySelectorAll("[data-molde]:checked")].map(i => i.value) }),
         });
         await carregar();
         return;
@@ -133,6 +165,7 @@
   function ligar(){
     el("estampaForm")?.addEventListener("submit", enviar);
     el("estampaLista")?.addEventListener("click", aoClicar);
+    el("estampaMoldes")?.addEventListener("change", dicaDeTamanho);
   }
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", ligar);

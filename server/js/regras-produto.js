@@ -33,7 +33,7 @@
   const HEX_VALIDO = /^#[0-9a-fA-F]{6}$/;
   const ID_FOTO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   const ID_ESTAMPA = /^[a-z0-9][a-z0-9-]{2,39}$/;
-  const MOLDES_COM_ESTAMPA = ["caneca", "xicara", "garrafa", "copo"];
+  const MOLDES_COM_ESTAMPA = ["caneca", "xicara", "garrafa", "copo", "botton", "azulejo", "plano", "caixa"];
   const COBERTURA_DA_VOLTA = { caneca: 0.93, xicara: 0.926, garrafa: 0.95, copo: 0.95 };
 
   function voltaDaPeca(molde) {
@@ -43,6 +43,50 @@
     return { cobertura, vao, centroDaFrente, centroDoVerso: 1 - centroDaFrente, inicioNaTextura: (vao / 2 - 0.25 + 1) % 1 };
   }
   const CHAVE_FOTO = /^[0-9a-f]{32}$/;
+
+  const MEDIDAS_DO_MOLDE = {
+    caneca: { largura: 240, altura: 95, cilindro: 110, alca: true },
+    xicara: { largura: 210, altura: 60, cilindro: 118, alca: true },
+    garrafa: { largura: 200, altura: 150, cilindro: 66 },
+    copo: { largura: 230, altura: 110, cilindro: 80 },
+    azulejo: { largura: 150, altura: 150 },
+    plano: { largura: 220, altura: 180 },
+    botton: { largura: 55, altura: 55 },
+    caixa: { largura: 150, altura: 150 },
+    flor: { largura: 110, altura: 18 },
+    foto: { largura: 200, altura: 95 },
+  };
+  const TAMANHO_MINIMO = 10;
+  const TAMANHO_MAXIMO = 400;
+
+  function medidaDoNome(valor) {
+    const casou = /(\d+(?:[.,]\d+)?)\s*[×x]\s*(\d+(?:[.,]\d+)?)\s*cm/i.exec(String(valor || ""));
+    if (casou) return { largura: Number(casou[1].replace(",", ".")) * 10, altura: Number(casou[2].replace(",", ".")) * 10 };
+    const diametro = /(\d+(?:[.,]\d+)?)\s*cm/i.exec(String(valor || ""));
+    if (diametro) return { largura: Number(diametro[1].replace(",", ".")) * 10, altura: Number(diametro[1].replace(",", ".")) * 10 };
+    return null;
+  }
+
+  function normalizarTamanho(bruto) {
+    if (!bruto || typeof bruto !== "object") return null;
+    const largura = Number(bruto.largura), altura = Number(bruto.altura);
+    const dentro = (n) => Number.isFinite(n) && n >= TAMANHO_MINIMO && n <= TAMANHO_MAXIMO;
+    if (!dentro(largura) || !dentro(altura)) return null;
+    return { largura: Math.round(largura * 10) / 10, altura: Math.round(altura * 10) / 10 };
+  }
+
+  function medidaDaPeca(config, escolhas) {
+    const c = config || {};
+    const base = { ...(MEDIDAS_DO_MOLDE[c.molde] || MEDIDAS_DO_MOLDE.caneca) };
+    const nomes = base.cilindro ? [] : (c.variacoes || []).map(g => {
+      const id = escolhas && escolhas.variacoes ? escolhas.variacoes[g.id] : null;
+      const opcao = g.opcoes.find(o => o.id === id);
+      return opcao ? opcao.nome : null;
+    }).filter(Boolean);
+    const medida = nomes.map(medidaDoNome).find(Boolean) || c.tamanho || (base.cilindro ? null : medidaDoNome(c.medida));
+    if (medida) { base.largura = medida.largura; base.altura = medida.altura; }
+    return base;
+  }
 
   function round2(n) {
     return Math.round((Number(n) || 0) * 100) / 100;
@@ -189,6 +233,7 @@
       corPeca: HEX_VALIDO.test(String(c.corPeca || "")) ? String(c.corPeca).toUpperCase() : "#FFFFFF",
       corAlca: HEX_VALIDO.test(String(c.corAlca || "")) ? String(c.corAlca).toUpperCase() : null,
       magica: Boolean(c.magica),
+      tamanho: normalizarTamanho(c.tamanho),
       moldeFoto: molde === "foto" ? { foto: texto(c.moldeFoto && c.moldeFoto.foto, 300) || null, area: normalizarArea(c.moldeFoto && c.moldeFoto.area) } : null,
       variacoes: normalizarVariacoes(c.variacoes),
       adicionais: normalizarAdicionais(c.adicionais),
@@ -373,6 +418,7 @@
   return {
     MOLDES, LETRAS, ARTES, CAMPOS_TEXTO, MAX_FOTOS, QTD_MAXIMA, QTD_CONDICAO_ESPECIAL, ID_ESTAMPA, MOLDES_COM_ESTAMPA,
     estampasDoProduto, estampaEscolhida, COBERTURA_DA_VOLTA, voltaDaPeca,
+    MEDIDAS_DO_MOLDE, TAMANHO_MINIMO, TAMANHO_MAXIMO, medidaDoNome, normalizarTamanho, medidaDaPeca,
     round2, normalizarConfig, normalizarVariacoes, normalizarPersonalizacao,
     precoBase, precoUnitario, escolhasPadrao, validarEscolhas, resumoDasEscolhas, chaveDaLinha,
     nomeDaLetra, nomeDaArte,

@@ -358,6 +358,7 @@ interface Superficie {
   raio: number;
   altura: number;
   luz: string | null;
+  plana?: { x: number; y: number; largura: number; altura: number };
 }
 
 interface Geometria {
@@ -411,6 +412,10 @@ function corpoCilindrico(idBase: string, x: number, y: number, w: number, h: num
       <path d={`M${x} ${y}h${w}v${h - raioBase}q0 ${raioBase} ${-raioBase} ${raioBase}h${-(w - 2 * raioBase)}q${-raioBase} 0 ${-raioBase} ${-raioBase}z`} fill={`url(#${idBase}-luz)`} />
     </g>
   );
+}
+
+function superficiePlana(forma: string, x: number, y: number, largura: number, altura: number): Superficie {
+  return { forma, cx: x + largura / 2, cy: y + altura / 2, raio: 0, altura, luz: null, plana: { x, y, largura, altura } };
 }
 
 function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado, idBase: string, urlDaFotoDoMolde: string | null): Geometria {
@@ -504,18 +509,22 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
     return {
       sob: <path d="M110 330h140l18 26H92z" fill="#C9A26B" />,
       corpo: <g><rect x={70} y={70} width={220} height={250} rx={6} fill="#D9CBBB" /><rect x={76} y={76} width={208} height={238} rx={3} fill={cores.peca} /></g>,
+      superficie: superficiePlana("M79 76h202a3 3 0 0 1 3 3v232a3 3 0 0 1 -3 3h-202a3 3 0 0 1 -3 -3v-232a3 3 0 0 1 3 -3z", 76, 76, 208, 238),
       frenteDaArte: { cx: 180, cy: 195, largura: 186, altura: 214, raio: null },
     };
   }
   if (molde === "plano") {
     return {
       corpo: <g><rect x={40} y={90} width={280} height={210} rx={22} fill={escurecer(cores.peca, 0.08)} /><rect x={46} y={96} width={268} height={198} rx={18} fill={cores.peca} /></g>,
+      superficie: superficiePlana("M64 96h232a18 18 0 0 1 18 18v162a18 18 0 0 1 -18 18h-232a18 18 0 0 1 -18 -18v-162a18 18 0 0 1 18 -18z", 46, 96, 268, 198),
       frenteDaArte: { cx: 180, cy: 195, largura: 240, altura: 170, raio: null },
     };
   }
   if (molde === "botton") {
     return {
-      corpo: <g><circle cx={180} cy={190} r={128} fill={escurecer(cores.peca, 0.12)} /><circle cx={180} cy={186} r={124} fill={cores.peca} /><path d="M92 120a124 124 0 0 1 120 -55" stroke="#fff" strokeOpacity=".7" strokeWidth={8} fill="none" strokeLinecap="round" /></g>,
+      corpo: <g><circle cx={180} cy={190} r={128} fill={escurecer(cores.peca, 0.12)} /><circle cx={180} cy={186} r={124} fill={cores.peca} /></g>,
+      sobre: <path d="M92 120a124 124 0 0 1 120 -55" stroke="#fff" strokeOpacity=".7" strokeWidth={8} fill="none" strokeLinecap="round" />,
+      superficie: superficiePlana("M56 186a124 124 0 1 0 248 0a124 124 0 1 0 -248 0z", 56, 62, 248, 248),
       frenteDaArte: { cx: 180, cy: 190, largura: 190, altura: 190, raio: null },
     };
   }
@@ -524,11 +533,16 @@ function geometria(molde: Molde, config: ConfigProduto, cores: Cores, lado: Lado
       corpo: (
         <g stroke="#B65E27" strokeWidth={2} strokeLinejoin="round">
           <path d="M70 150h220v170H70z" fill="#F2EBE2" />
+          <path d="M180 154v166" fill="none" stroke="#DFA1AC" strokeWidth={10} />
+        </g>
+      ),
+      sobre: (
+        <g stroke="#B65E27" strokeWidth={2} strokeLinejoin="round">
           <path d="M58 120h244v34H58z" fill={cores.peca === "#FFFFFF" ? "#FBF8F3" : cores.peca} />
-          <path d="M180 120v200" fill="none" stroke="#DFA1AC" strokeWidth={10} />
           <path d="M180 118c-26-46-74-34-58 0M180 118c26-46 74-34 58 0" fill="none" stroke="#DFA1AC" strokeWidth={8} strokeLinecap="round" />
         </g>
       ),
+      superficie: superficiePlana("M71 151h218v168H71z", 71, 151, 218, 168),
       frenteDaArte: { cx: 180, cy: 240, largura: 150, altura: 120, raio: null },
     };
   }
@@ -574,6 +588,15 @@ function Sombra({ molde, formato, centro, raio }: { molde: Molde; formato: strin
 }
 
 function EstampaNaPeca({ superficie, estampa, molde, lado, idBase, fatias }: { superficie: Superficie; estampa: EstampaPublica; molde: Molde; lado: Lado; idBase: string; fatias: number }) {
+  if (superficie.plana) {
+    const p = superficie.plana;
+    return (
+      <g>
+        <defs><clipPath id={`${idBase}-corpo`}><path d={superficie.forma} /></clipPath></defs>
+        <image href={estampa.textura} x={p.x} y={p.y} width={p.largura} height={p.altura} preserveAspectRatio="xMidYMid slice" clipPath={`url(#${idBase}-corpo)`} />
+      </g>
+    );
+  }
   const volta = regras.voltaDaPeca(molde);
   const r = superficie.raio;
   const larguraDaImagem = volta.cobertura * 2 * Math.PI * r;

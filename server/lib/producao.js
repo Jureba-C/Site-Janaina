@@ -2,17 +2,7 @@ const sharp = require("sharp");
 const { textoEmCurvas } = require("./texto-em-curvas.js");
 const regras = require("../js/regras-produto.js");
 
-const GABARITOS = {
-  caneca: { largura: 240, altura: 95, cilindro: 110, alca: true },
-  xicara: { largura: 210, altura: 60, cilindro: 118, alca: true },
-  garrafa: { largura: 200, altura: 150, cilindro: 66 },
-  copo: { largura: 230, altura: 110, cilindro: 80 },
-  azulejo: { largura: 150, altura: 150 },
-  plano: { largura: 220, altura: 180 },
-  botton: { largura: 55, altura: 55 },
-  caixa: { largura: 150, altura: 150 },
-  foto: { largura: 200, altura: 95 },
-};
+const GABARITOS = regras.MEDIDAS_DO_MOLDE;
 
 const ARTE_POR_MOLDE = {
   caneca: { largura: 189, altura: 194 },
@@ -27,22 +17,8 @@ const ARTE_POR_MOLDE = {
 
 const LADO_MAXIMO_DA_FOTO = 2400;
 
-function medidaDoNome(texto){
-  const casou = /(\d+(?:[.,]\d+)?)\s*[×x]\s*(\d+(?:[.,]\d+)?)\s*cm/i.exec(String(texto || ""));
-  if(casou) return { largura: Number(casou[1].replace(",", ".")) * 10, altura: Number(casou[2].replace(",", ".")) * 10 };
-  const diametro = /(\d+(?:[.,]\d+)?)\s*cm/i.exec(String(texto || ""));
-  if(diametro) return { largura: Number(diametro[1].replace(",", ".")) * 10, altura: Number(diametro[1].replace(",", ".")) * 10 };
-  return null;
-}
-
 function gabaritoDoItem(config, escolhas){
-  const base = { ...(GABARITOS[config.molde] || GABARITOS.caneca) };
-  if(!base.cilindro){
-    const nomes = config.variacoes.map(g => g.opcoes.find(o => o.id === escolhas?.variacoes?.[g.id])?.nome).filter(Boolean);
-    const medida = [...nomes, config.medida].map(medidaDoNome).find(Boolean);
-    if(medida){ base.largura = medida.largura; base.altura = medida.altura; }
-  }
-  return base;
+  return regras.medidaDaPeca(config, escolhas);
 }
 
 async function recortarFoto(dados, foto){
@@ -67,6 +43,16 @@ function semSvgExterno(svg){
   const inicio = svg.indexOf(">") + 1;
   const fim = svg.lastIndexOf("</svg>");
   return svg.slice(inicio, fim).replace(/<style>[\s\S]*?<\/style>/, "");
+}
+
+function camadaDaEstampa(estampa, largura, altura, molde){
+  const redondo = molde === "botton";
+  const recorte = redondo ? `<defs><clipPath id="RecorteDaEstampa"><circle cx="${largura / 2}" cy="${altura / 2}" r="${Math.min(largura, altura) / 2}"/></clipPath></defs>` : "";
+  const atributo = redondo ? ` clip-path="url(#RecorteDaEstampa)"` : "";
+  const conteudo = estampa.svg
+    ? estampa.svg
+    : `<image x="0" y="0" width="${largura}" height="${altura}" preserveAspectRatio="xMidYMid slice" xlink:href="data:${estampa.mime};base64,${Buffer.from(estampa.data).toString("base64")}"/>`;
+  return `${recorte}<g id="Estampa"${atributo}>${conteudo}</g>\n`;
 }
 
 async function arquivoDeProducao({ config, escolhas, lerFoto, svgDaArte, titulo, estampa = null }){
@@ -118,7 +104,7 @@ async function arquivoDeProducao({ config, escolhas, lerFoto, svgDaArte, titulo,
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${largura}mm" height="${altura}mm" viewBox="0 0 ${largura} ${altura}">
 <title>${String(titulo).replace(/[<&>]/g, "")}</title>
-${estampa ? `<g id="Estampa"><image x="0" y="0" width="${largura}" height="${altura}" preserveAspectRatio="xMidYMid slice" xlink:href="data:${estampa.mime};base64,${Buffer.from(estampa.data).toString("base64")}"/></g>\n` : ""}<g id="Arte">${grupos.join("")}</g>
+${estampa ? camadaDaEstampa(estampa, largura, altura, config.molde) : ""}<g id="Arte">${grupos.join("")}</g>
 <g id="Guias" opacity="0.8">${guias.join("")}</g>
 </svg>
 `;

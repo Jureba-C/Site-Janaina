@@ -4390,7 +4390,7 @@ app.put("/api/admin/depoimentos/ordem", auth.requireAdmin, auth.requireAdminTwoF
 });
 
 const ID_DA_ESTAMPA = /^[a-z0-9][a-z0-9-]{2,39}$/;
-const uploadDeEstampa = multer({ storage: multer.memoryStorage(), limits: { fileSize: estampas.LIMITE_BYTES, files: 1, fields: 10 } });
+const uploadDeEstampa = multer({ storage: multer.memoryStorage(), limits: { fileSize: estampas.LIMITE_BYTES, files: 1, fields: 20 } });
 
 function camposDaEstampa(corpo){
   const nome = textoDeFoto(corpo?.nome, 60);
@@ -4399,11 +4399,13 @@ function camposDaEstampa(corpo){
   if(!nome || nome.length < 2) throw { status: 400, message: "Dê um nome para a estampa (até 60 letras)." };
   if(!colecao || colecao.length < 2) throw { status: 400, message: "Escreva a coleção (ex.: Flores, Brasília)." };
   if(!Number.isFinite(preco) || preco < 0 || preco > 500) throw { status: 400, message: "Valor extra da estampa: de 0 a 500 reais." };
-  return { nome, colecao, preco: Math.round(preco * 100) / 100, ativa: corpo?.ativa === undefined ? true : corpo.ativa === true || corpo.ativa === "true" };
+  const brutos = Array.isArray(corpo?.moldes) ? corpo.moldes : typeof corpo?.moldes === "string" ? corpo.moldes.split(",") : null;
+  const moldes = brutos ? [...new Set(brutos.map(m => String(m).trim()).filter(m => regras.MOLDES_COM_ESTAMPA.includes(m)))] : undefined;
+  return { nome, colecao, preco: Math.round(preco * 100) / 100, ativa: corpo?.ativa === undefined ? true : corpo.ativa === true || corpo.ativa === "true", moldes };
 }
 
 function estampaDoPainel(e){
-  return { ...estampas.estampaPublica(e), ativa: e.ativa, exemplo: e.exemplo, largura: e.largura, altura: e.altura };
+  return { ...estampas.estampaPublica(e), ativa: e.ativa, exemplo: e.exemplo, largura: e.largura, altura: e.altura, moldes: e.moldes };
 }
 
 app.get("/api/estampas", (req, res) => {
@@ -4424,7 +4426,7 @@ app.get("/api/estampas/:id/:tipo", (req, res) => {
 });
 
 app.get("/api/admin/estampas", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {
-  res.json({ estampas: db.listarEstampas().map(estampaDoPainel), tamanhos: estampas.TAMANHOS_IDEAIS });
+  res.json({ estampas: db.listarEstampas().map(estampaDoPainel), tamanhos: estampas.TAMANHOS_IDEAIS, moldes: regras.MOLDES_COM_ESTAMPA });
 });
 
 app.get("/api/admin/estampas/:id/original", auth.requireAdmin, auth.requireAdminTwoFactor, (req, res) => {

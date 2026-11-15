@@ -71,7 +71,9 @@ test("regras: estampa inválida é recusada, obrigatória é cobrada e o valor e
   assert.equal(regras.precoUnitario(produto, { personalizacao: { estampa: "flores-abc" } }, 1), 47.5);
   assert.deepEqual(regras.resumoDasEscolhas(produto, { personalizacao: { estampa: "flores-abc" } }), [{ rotulo: "Estampa", valor: "Flores" }]);
   const azulejo = regras.normalizarConfig({ molde: "azulejo", estampas: { ativa: true } });
-  assert.equal(azulejo.estampas.ativa, false, "estampa só em peça cilíndrica");
+  assert.equal(azulejo.estampas.ativa, true, "azulejo também recebe estampa");
+  const flor = regras.normalizarConfig({ molde: "flor", estampas: { ativa: true } });
+  assert.equal(flor.estampas.ativa, false, "peça sem área de impressão não recebe estampa");
 });
 
 test("a volta da caneca: emenda atrás da alça e frente no mesmo lugar da prévia e do arquivo", () => {
@@ -160,4 +162,24 @@ test("arquivo de produção: estampa original cobrindo o gabarito, texto em curv
 
   const apagar = await fetch(`${ORIGIN}/api/admin/estampas/${estampa.id}`, { method: "DELETE", headers: { Origin: ORIGIN, Cookie: adminCookie } });
   assert.equal(apagar.status, 409, "estampa em pedido em produção não pode ser apagada");
+});
+
+test("Serve para: estampa marcada só para boton não aparece na caneca", async () => {
+  const res = await subir(await estampaDeTeste(), { nome: "Só boton", colecao: "Flores", moldes: "botton" });
+  assert.equal(res.status, 201);
+  const { estampa } = await res.json();
+  assert.deepEqual(estampa.moldes, ["botton"]);
+  const estampas = require("../lib/estampas.js");
+  const naCaneca = estampas.estampasDisponiveis(regras.normalizarConfig({ molde: "caneca", estampas: { ativa: true } }));
+  const noBoton = estampas.estampasDisponiveis(regras.normalizarConfig({ molde: "botton", estampas: { ativa: true } }));
+  assert.ok(!naCaneca.some(e => e.id === estampa.id));
+  assert.ok(noBoton.some(e => e.id === estampa.id));
+  const trocar = await fetch(`${ORIGIN}/api/admin/estampas/${estampa.id}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json", Origin: ORIGIN, Cookie: adminCookie },
+    body: JSON.stringify({ nome: "Só boton", colecao: "Flores", preco: 0, ativa: true, moldes: ["caneca", "inventado"] }),
+  });
+  assert.deepEqual((await trocar.json()).estampa.moldes, ["caneca"]);
+  const painel = await (await fetch(`${ORIGIN}/api/admin/estampas`, { headers: { Cookie: adminCookie } })).json();
+  assert.deepEqual(painel.tamanhos.botton.mm, [55, 55]);
+  assert.ok(painel.moldes.includes("azulejo"));
 });

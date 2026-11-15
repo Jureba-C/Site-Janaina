@@ -224,3 +224,7 @@
 .seg-item strong{ display:block; font-size:.92rem; color:var(--ink); }
 .seg-item small{ display:block; font-size:.78rem; color:var(--ink-soft); overflow-wrap:anywhere; }
 .seg-vazio{ color:var(--ink-soft); font-size:.9rem; padding:.5rem 0; }
+.estampa-moldes{ border:0; padding:0; margin:0; min-width:0; }
+.estampa-moldes legend{ float:none; width:auto; margin:0 0 .25rem; font-size:.8rem; }
+.estampa-moldes-lista{ display:flex; flex-wrap:wrap; gap:.3rem .8rem; }
+.estampa-molde{ display:inline-flex; align-items:center; gap:.3rem; font-size:.82rem; }

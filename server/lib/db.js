@@ -424,6 +424,7 @@ ensureColumn("orders", "review_token", "TEXT");
 ensureColumn("product_overrides", "config_json", "TEXT");
 ensureColumn("custom_products", "config_json", "TEXT");
 ensureColumn("custom_categories", "grupo", "TEXT");
+ensureColumn("estampas", "moldes", "TEXT NOT NULL DEFAULT '[]'");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS personalizacao_fotos (
@@ -2303,7 +2304,7 @@ function hashCurto(texto){
   return h.toString(36);
 }
 
-const COLUNAS_DA_ESTAMPA = `id, nome, colecao, preco, ativa, exemplo, position, largura, altura, original_mime, created_at, updated_at`;
+const COLUNAS_DA_ESTAMPA = `id, nome, colecao, preco, ativa, exemplo, position, largura, altura, original_mime, moldes, created_at, updated_at`;
 const stmtListaEstampas = db.prepare(`SELECT ${COLUNAS_DA_ESTAMPA} FROM estampas ORDER BY position, created_at`);
 const stmtLeEstampa = db.prepare(`SELECT ${COLUNAS_DA_ESTAMPA} FROM estampas WHERE id = ?`);
 const stmtImagensDaEstampa = {
@@ -2312,10 +2313,10 @@ const stmtImagensDaEstampa = {
   miniatura: db.prepare(`SELECT 'image/webp' AS mime, miniatura AS data FROM estampas WHERE id = ?`),
 };
 const stmtInsereEstampa = db.prepare(
-  `INSERT INTO estampas (id, nome, colecao, preco, ativa, exemplo, position, largura, altura, original_mime, original, textura, miniatura, created_at, updated_at)
-   VALUES (?, ?, ?, ?, ?, ?, (SELECT IFNULL(MAX(position), -1) + 1 FROM estampas), ?, ?, ?, ?, ?, ?, ?, ?)`
+  `INSERT INTO estampas (id, nome, colecao, preco, ativa, exemplo, position, largura, altura, original_mime, original, textura, miniatura, moldes, created_at, updated_at)
+   VALUES (?, ?, ?, ?, ?, ?, (SELECT IFNULL(MAX(position), -1) + 1 FROM estampas), ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 );
-const stmtAtualizaEstampa = db.prepare(`UPDATE estampas SET nome = ?, colecao = ?, preco = ?, ativa = ?, updated_at = ? WHERE id = ?`);
+const stmtAtualizaEstampa = db.prepare(`UPDATE estampas SET nome = ?, colecao = ?, preco = ?, ativa = ?, moldes = COALESCE(?, moldes), updated_at = ? WHERE id = ?`);
 const stmtApagaEstampa = db.prepare(`DELETE FROM estampas WHERE id = ?`);
 const stmtMoveEstampa = db.prepare(`UPDATE estampas SET position = ?, updated_at = ? WHERE id = ?`);
 const stmtPedidosComEstampa = db.prepare(
@@ -2323,8 +2324,14 @@ const stmtPedidosComEstampa = db.prepare(
 );
 const stmtVersaoEstampas = db.prepare(`SELECT COUNT(*) AS n, IFNULL(MAX(updated_at), 0) AS t FROM estampas`);
 
+function moldesDaEstampa(texto){
+  try {
+    const lista = JSON.parse(texto || "[]");
+    return Array.isArray(lista) ? lista.filter(m => typeof m === "string") : [];
+  } catch { return []; }
+}
 function linhaDeEstampa(l){
-  return l ? { ...l, ativa: Boolean(l.ativa), exemplo: Boolean(l.exemplo) } : null;
+  return l ? { ...l, ativa: Boolean(l.ativa), exemplo: Boolean(l.exemplo), moldes: moldesDaEstampa(l.moldes) } : null;
 }
 function listarEstampas(){ return stmtListaEstampas.all().map(linhaDeEstampa); }
 function lerEstampa(id){ return linhaDeEstampa(stmtLeEstampa.get(id)); }
@@ -2334,10 +2341,11 @@ function imagemDaEstampa(id, tipo){
 }
 function inserirEstampa(e){
   const agora = Date.now();
-  stmtInsereEstampa.run(e.id, e.nome, e.colecao, e.preco || 0, e.ativa === false ? 0 : 1, e.exemplo ? 1 : 0, e.largura, e.altura, e.originalMime, e.original, e.textura, e.miniatura, agora, agora);
+  stmtInsereEstampa.run(e.id, e.nome, e.colecao, e.preco || 0, e.ativa === false ? 0 : 1, e.exemplo ? 1 : 0, e.largura, e.altura, e.originalMime, e.original, e.textura, e.miniatura, JSON.stringify(e.moldes || []), agora, agora);
 }
 function atualizarEstampa(id, campos){
-  return stmtAtualizaEstampa.run(campos.nome, campos.colecao, campos.preco || 0, campos.ativa ? 1 : 0, Date.now(), id).changes > 0;
+  const moldes = Array.isArray(campos.moldes) ? JSON.stringify(campos.moldes) : null;
+  return stmtAtualizaEstampa.run(campos.nome, campos.colecao, campos.preco || 0, campos.ativa ? 1 : 0, moldes, Date.now(), id).changes > 0;
 }
 function apagarEstampa(id){ return stmtApagaEstampa.run(id).changes > 0; }
 function pedidosAbertosComEstampa(id){ return stmtPedidosComEstampa.get(`%"estampa":"${id}"%`).n; }

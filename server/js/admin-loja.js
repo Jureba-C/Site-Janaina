@@ -24,7 +24,34 @@
   let config = null;
   let fotosDoProduto = [];
   let categorias = [];
-  const MOLDES_COM_ESTAMPA = ["caneca", "xicara", "garrafa", "copo"];
+  const regras = window.ArteRegrasProduto;
+  const MOLDES_COM_ESTAMPA = regras.MOLDES_COM_ESTAMPA;
+
+  function blocoDeTamanho(molde){
+    const padrao = regras.MEDIDAS_DO_MOLDE[molde];
+    if(!padrao) return "";
+    const t = config.tamanho || {};
+    const redondo = molde === "botton";
+    const dica = padrao.cilindro
+      ? "Largura é a volta impressa (de uma ponta à outra da arte) e altura é a faixa de impressão."
+      : redondo ? "Diâmetro da face do boton." : "Largura e altura da área que recebe a arte.";
+    return `
+        <p class="al-subtitulo mt-2">Área de impressão</p>
+        <div class="al-linha">
+          <label class="al-campo al-numero">${redondo ? "Diâmetro" : "Largura"} (mm) <input type="number" class="form-control form-control-sm" data-tamanho="largura" min="${regras.TAMANHO_MINIMO}" max="${regras.TAMANHO_MAXIMO}" step="0.5" value="${esc(t.largura || "")}" placeholder="${padrao.largura}"></label>
+          ${redondo ? "" : `<label class="al-campo al-numero">Altura (mm) <input type="number" class="form-control form-control-sm" data-tamanho="altura" min="${regras.TAMANHO_MINIMO}" max="${regras.TAMANHO_MAXIMO}" step="0.5" value="${esc(t.altura || "")}" placeholder="${padrao.altura}"></label>`}
+        </div>
+        <p class="form-text">${dica} É a medida que vai para o arquivo de produção e para o tamanho real das estampas. Em branco = ${redondo ? `${padrao.largura} mm` : `${padrao.largura} × ${padrao.altura} mm`}. Variação com medida no nome (ex.: "20×20 cm") vale mais que este campo.</p>`;
+  }
+
+  function lerTamanho(molde){
+    const padrao = regras.MEDIDAS_DO_MOLDE[molde];
+    const campo = (k) => Number(raiz.querySelector(`[data-tamanho=${k}]`)?.value);
+    const largura = campo("largura");
+    if(!padrao || !largura) return null;
+    const altura = molde === "botton" ? largura : (campo("altura") || padrao.altura);
+    return { largura, altura };
+  }
 
   function blocoDeEstampas(){
     const e = config.estampas || { ativa: false, ids: [], obrigatoria: false };
@@ -37,9 +64,9 @@
             <img src="${esc(x.miniatura)}" alt="" width="90" height="60" loading="lazy">
             <span>${esc(x.nome)}<small>${esc(x.colecao)}${x.ativa ? "" : " · oculta"}</small></span>
           </label>`).join("")}</div>`
-      : `<p class="form-text">Nenhuma estampa cadastrada. Suba em Loja e configurações → Estampas.</p>`;
+      : `<p class="form-text">Nenhuma estampa cadastrada. Suba na aba Estampas do painel.</p>`;
     return `
-        <label class="al-check"><input type="checkbox" data-campo="estampas-ativa"${e.ativa ? " checked" : ""}> a cliente escolhe uma estampa (só caneca, xícara, garrafa e copo)</label>
+        <label class="al-check"><input type="checkbox" data-campo="estampas-ativa"${e.ativa ? " checked" : ""}> a cliente escolhe uma estampa</label>
         <label class="al-check"><input type="checkbox" data-campo="estampas-obrigatoria"${e.obrigatoria ? " checked" : ""}> toda peça sai com estampa (sem a opção "sem estampa")</label>
         <p class="form-text">Marque quais estampas este produto oferece. Nenhuma marcada = todas as estampas que aparecem na loja.</p>
         ${lista}`;
@@ -121,6 +148,7 @@
           <label class="al-campo">Cor da alça <input type="color" class="form-control form-control-color" data-campo="corAlca" value="${esc(config.corAlca || config.corPeca || "#FFFFFF")}"></label>
           <label class="al-check"><input type="checkbox" data-campo="magica"${config.magica ? " checked" : ""}> caneca mágica (arte aparece com o calor)</label>
         </div>
+        <div data-bloco-tamanho>${blocoDeTamanho(config.molde)}</div>
         <div class="al-linha" ${config.molde === "copo" ? "" : "hidden"} data-so-copo>
           <label class="al-campo">Formato <select class="form-select form-select-sm" data-campo="formato">${opcoesDe(FORMATOS_DO_COPO, config.formato || "")}</select></label>
         </div>
@@ -247,6 +275,7 @@
       corPeca: valor("[data-campo=corPeca]").value,
       corAlca: valor("[data-campo=corAlca]").value,
       magica: valor("[data-campo=magica]").checked,
+      tamanho: lerTamanho(molde),
       moldeFoto: molde === "foto" ? {
         foto: valor("[data-campo=moldeFoto]").value || null,
         area: { x: num(valor("[data-area=x]"), 25) / 100, y: num(valor("[data-area=y]"), 25) / 100, w: num(valor("[data-area=w]"), 50) / 100, h: num(valor("[data-area=h]"), 40) / 100, curva: valor("[data-area=curva]").checked },
@@ -298,6 +327,8 @@
       if(e.target.matches("[data-campo=molde]")){
         raiz.querySelector("[data-so-copo]").hidden = e.target.value !== "copo";
         raiz.querySelector("[data-so-foto]").hidden = e.target.value !== "foto";
+        config.tamanho = null;
+        raiz.querySelector("[data-bloco-tamanho]").innerHTML = blocoDeTamanho(e.target.value);
       }
       if(e.target.matches("[data-campo=previa]")){
         const grupo = e.target.closest("[data-grupo]");
